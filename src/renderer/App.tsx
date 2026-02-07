@@ -1,9 +1,10 @@
-import { useState } from 'react';
-
-type GamePhase = 'setup' | 'day' | 'night';
+import { useGameStore } from '../store/gameStore';
+import SetupView from '../components/SetupView';
+import NightView from '../components/NightView';
+import DayView from '../components/DayView';
 
 function App() {
-  const [phase, setPhase] = useState<GamePhase>('setup');
+  const { phase } = useGameStore();
 
   return (
     <div className="app">
@@ -12,63 +13,12 @@ function App() {
         <p className="subtitle">說書人魔典</p>
       </header>
 
-      <nav className="phase-nav">
-        <button
-          className={phase === 'setup' ? 'active' : ''}
-          onClick={() => setPhase('setup')}
-        >
-          游戏设置
-        </button>
-        <button
-          className={phase === 'night' ? 'active' : ''}
-          onClick={() => setPhase('night')}
-        >
-          夜晚阶段
-        </button>
-        <button
-          className={phase === 'day' ? 'active' : ''}
-          onClick={() => setPhase('day')}
-        >
-          白天阶段
-        </button>
-      </nav>
-
       <main className="main-content">
-        {phase === 'setup' && <SetupPhase />}
-        {phase === 'night' && <NightPhase />}
-        {phase === 'day' && <DayPhase />}
+        {phase === 'setup' && <SetupView />}
+        {phase === 'night' && <NightView />}
+        {phase === 'day' && <DayView />}
       </main>
     </div>
-  );
-}
-
-function SetupPhase() {
-  return (
-    <section className="phase-panel">
-      <h2>游戏设置</h2>
-      <p>选择剧本、分配角色、设置玩家人数</p>
-      <div className="placeholder">剧本和角色配置区域</div>
-    </section>
-  );
-}
-
-function NightPhase() {
-  return (
-    <section className="phase-panel">
-      <h2>夜晚阶段</h2>
-      <p>按顺序唤醒角色，处理夜间行动</p>
-      <div className="placeholder">夜间行动顺序列表</div>
-    </section>
-  );
-}
-
-function DayPhase() {
-  return (
-    <section className="phase-panel">
-      <h2>白天阶段</h2>
-      <p>管理讨论、提名与投票流程</p>
-      <div className="placeholder">投票与处决管理区域</div>
-    </section>
   );
 }
 
