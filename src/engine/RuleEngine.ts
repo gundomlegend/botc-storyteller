@@ -1,5 +1,6 @@
 import type { RoleData, Jinx, Player, GameState, NightResult, RoleHandler } from './types';
 import { GameStateManager } from './GameState';
+import { t } from './locale';
 import { handlers } from './handlers';
 import rolesData from '../data/roles/trouble-brewing.json';
 import jinxesData from '../data/jinxes.json';
@@ -39,8 +40,8 @@ export class RuleEngine {
     if (!player.isAlive && !roleData.worksWhenDead) {
       return {
         skip: true,
-        skipReason: `${roleData.name_cn}已死亡，無死後能力`,
-        display: `${player.seat}號 ${player.name}（${roleData.name_cn}）已死亡，跳過`,
+        skipReason: `${t(roleData, 'name')}已死亡，無死後能力`,
+        display: `${player.seat}號 ${player.name}（${t(roleData, 'name')}）已死亡，跳過`,
       };
     }
 
@@ -75,6 +76,10 @@ export class RuleEngine {
         gameState,
         infoReliable,
         statusReason,
+        getRoleName: (roleId: string) => {
+          const rd = this.roleRegistry.get(roleId);
+          return rd ? t(rd, 'name') : roleId;
+        },
       });
     }
 
@@ -88,13 +93,13 @@ export class RuleEngine {
     infoReliable: boolean,
     statusReason: string
   ): NightResult {
-    const reminder = roleData.firstNightReminder || roleData.otherNightReminder_cn;
+    const reminder = t(roleData, 'firstNightReminder') || t(roleData, 'otherNightReminder');
 
     return {
       action: 'show_info',
       display: reminder,
       info: {
-        role: roleData.name_cn,
+        role: t(roleData, 'name'),
         reminder,
         reliable: infoReliable,
         statusReason,
@@ -142,11 +147,11 @@ export class RuleEngine {
     const lines: string[] = ['【爪牙與惡魔互認】', ''];
     if (demon) {
       const demonRole = this.roleRegistry.get(demon.role);
-      lines.push(`惡魔：${demon.seat}號 ${demon.name}（${demonRole?.name_cn ?? demon.role}）`);
+      lines.push(`惡魔：${demon.seat}號 ${demon.name}（${demonRole ? t(demonRole, 'name') : demon.role}）`);
     }
     for (const m of minions) {
       const mRole = this.roleRegistry.get(m.role);
-      lines.push(`爪牙：${m.seat}號 ${m.name}（${mRole?.name_cn ?? m.role}）`);
+      lines.push(`爪牙：${m.seat}號 ${m.name}（${mRole ? t(mRole, 'name') : m.role}）`);
     }
     lines.push('', '請讓以上玩家睜眼，互相確認身份後閉眼。');
 
@@ -164,13 +169,13 @@ export class RuleEngine {
 
     const bluffNames = bluffs.map((id) => {
       const rd = this.roleRegistry.get(id);
-      return rd ? `${rd.name_cn}（${rd.name}）` : id;
+      return rd ? t(rd, 'name') : id;
     });
 
     const lines: string[] = ['【惡魔虛張聲勢】', ''];
     if (demon) {
       const demonRole = this.roleRegistry.get(demon.role);
-      lines.push(`讓 ${demon.seat}號 ${demon.name}（${demonRole?.name_cn ?? demon.role}）睜眼`);
+      lines.push(`讓 ${demon.seat}號 ${demon.name}（${demonRole ? t(demonRole, 'name') : demon.role}）睜眼`);
     }
     lines.push('', '展示以下三個角色標記：');
     bluffNames.forEach((name, i) => lines.push(`  ${i + 1}. ${name}`));
@@ -187,5 +192,11 @@ export class RuleEngine {
 
   getRoleData(roleId: string): RoleData | undefined {
     return this.roleRegistry.get(roleId);
+  }
+
+  /** 根據當前語系取得角色顯示名稱 */
+  getRoleName(roleId: string): string {
+    const rd = this.roleRegistry.get(roleId);
+    return rd ? t(rd, 'name') : roleId;
   }
 }

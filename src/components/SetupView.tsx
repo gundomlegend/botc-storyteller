@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { t } from '../engine/locale';
 import type { RoleData } from '../engine/types';
 import rolesData from '../data/roles/trouble-brewing.json';
 
@@ -91,7 +92,7 @@ export default function SetupView() {
 
   const getRoleName = (roleId: string) => {
     const r = roles.find((role) => role.id === roleId);
-    return r ? `${r.name_cn} (${r.name})` : roleId;
+    return r ? t(r, 'name') : roleId;
   };
 
   return (

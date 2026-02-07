@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { t } from '../engine/locale';
 import type { NightOrderItem, NightResult } from '../engine/types';
 import PlayerSelector from './PlayerSelector';
 
@@ -49,7 +50,7 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
         <h3>
           {item.seat}號 — {item.roleName}
         </h3>
-        {roleData && <p className="ability-desc">{roleData.ability}</p>}
+        {roleData && <p className="ability-desc">{t(roleData, 'ability')}</p>}
         <p className="ability-reminder">{item.reminder}</p>
       </div>
 
