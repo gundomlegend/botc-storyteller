@@ -24,7 +24,7 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
               <span className="special-seat">{demon.seat}號</span>
               <span className="special-name">{demon.name}</span>
               <span className="special-role">
-                {ruleEngine.getRoleData(demon.role)?.name_cn ?? demon.role}
+                {ruleEngine.getRoleName(demon.role)}
               </span>
               <span className="special-team-tag">惡魔</span>
             </div>
@@ -34,7 +34,7 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
               <span className="special-seat">{m.seat}號</span>
               <span className="special-name">{m.name}</span>
               <span className="special-role">
-                {ruleEngine.getRoleData(m.role)?.name_cn ?? m.role}
+                {ruleEngine.getRoleName(m.role)}
               </span>
               <span className="special-team-tag">爪牙</span>
             </div>

@@ -2,7 +2,7 @@ import type { RoleHandler, HandlerContext, NightResult, Player } from '../types'
 
 export class FortunetellerHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { player, target, infoReliable, statusReason } = context;
+    const { player, target, infoReliable, statusReason, getRoleName } = context;
 
     if (!target) {
       return {
@@ -36,7 +36,7 @@ export class FortunetellerHandler implements RoleHandler {
       mustFollow,
       canLie: !mustFollow,
       reasoning,
-      display: this.formatDisplay(player, target, isEvil, finalInfo, reasoning),
+      display: this.formatDisplay(player, target, isEvil, finalInfo, reasoning, getRoleName),
     };
   }
 
@@ -45,10 +45,11 @@ export class FortunetellerHandler implements RoleHandler {
     target: Player,
     actualEvil: boolean,
     suggestedEvil: boolean,
-    reasoning: string
+    reasoning: string,
+    getRoleName: (roleId: string) => string
   ): string {
     return `查驗 ${target.seat}號 (${target.name})
-真實身份：${target.role} (${actualEvil ? '邪惡' : '善良'})
+真實身份：${getRoleName(target.role)} (${actualEvil ? '邪惡' : '善良'})
 
 ${reasoning}
 

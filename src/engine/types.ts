@@ -106,6 +106,8 @@ export interface HandlerContext {
   gameState: GameState;
   infoReliable: boolean;
   statusReason: string;
+  /** 根據當前語系將 roleId 轉為顯示名稱 */
+  getRoleName: (roleId: string) => string;
 }
 
 export interface RoleHandler {

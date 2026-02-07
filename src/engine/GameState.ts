@@ -1,4 +1,5 @@
 import type { RoleData, Player, GameState, GameEvent, NightOrderItem } from './types';
+import { t } from './locale';
 import rolesData from '../data/roles/trouble-brewing.json';
 
 let eventCounter = 0;
@@ -263,13 +264,13 @@ export class GameStateManager {
       if (priority <= 0) continue;
 
       const reminder = isFirstNight
-        ? roleData.firstNightReminder_cn
-        : roleData.otherNightReminder;
+        ? t(roleData, 'firstNightReminder')
+        : t(roleData, 'otherNightReminder');
 
       items.push({
         seat: player.seat,
         role: player.role,
-        roleName: roleData.name_cn,
+        roleName: t(roleData, 'name'),
         priority,
         isDead: !player.isAlive,
         isPoisoned: player.isPoisoned,

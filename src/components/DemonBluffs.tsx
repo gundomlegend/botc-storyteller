@@ -24,7 +24,7 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
         {demon && (
           <p className="special-step">
             讓 {demon.seat}號 {demon.name}（
-            {ruleEngine.getRoleData(demon.role)?.name_cn ?? demon.role}）睜眼
+            {ruleEngine.getRoleName(demon.role)}）睜眼
           </p>
         )}
 
@@ -35,8 +35,8 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
             const roleData = ruleEngine.getRoleData(roleId);
             return (
               <div key={roleId} className="bluff-token">
-                <div className="bluff-name-cn">{roleData?.name_cn ?? roleId}</div>
-                <div className="bluff-name-en">{roleData?.name ?? ''}</div>
+                <div className="bluff-name-cn">{ruleEngine.getRoleName(roleId)}</div>
+                <div className="bluff-name-en">{roleData?.name ?? roleId}</div>
               </div>
             );
           })}
