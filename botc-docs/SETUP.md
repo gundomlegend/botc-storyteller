@@ -259,7 +259,7 @@ src/
     "id": "fortuneteller_recluse",
     "role1": "fortuneteller",
     "role2": "recluse",
-    "reason": "隱士可以對占卜師顯示為惡魔。"
+    "reason": "陌客可以對占卜師顯示為惡魔。"
   }
 ]
 ```

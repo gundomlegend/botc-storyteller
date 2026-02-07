@@ -232,7 +232,7 @@ export class GameStateManager {
       if (priority <= 0) continue;
 
       const reminder = isFirstNight
-        ? roleData.firstNightReminder
+        ? roleData.firstNightReminder_cn
         : roleData.otherNightReminder;
 
       items.push({

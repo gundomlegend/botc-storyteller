@@ -140,11 +140,11 @@ console.log(result.reasoning);   // '占卜師狀態正常...'
 **輸出**: `NightResult`
 
 **適用角色**:
-- 侍女 (Washerwoman)
-- 圖書館員 (Librarian)
+- 洗衣婦 (Washerwoman)
+- 圖書管理員 (Librarian)
 - 調查員 (Investigator)
 - 廚師 (Chef)
-- 守夜人 (Undertaker)
+- 送葬者 (Undertaker)
 - 守鴉人 (Ravenkeeper)
 - 管家 (Butler)
 - 間諜 (Spy)
@@ -153,7 +153,7 @@ console.log(result.reasoning);   // '占卜師狀態正常...'
 ```typescript
 {
   action: 'show_info',
-  display: roleData.firstNightReminder || roleData.otherNightReminder,
+  display: roleData.firstNightReminder_cn || roleData.otherNightReminder_cn,
   info: {
     role: roleData.name_cn,
     reminder: reminder,
@@ -166,12 +166,12 @@ console.log(result.reasoning);   // '占卜師狀態正常...'
 
 **範例輸出**:
 ```typescript
-// 侍女
+// 洗衣婦
 {
   action: 'show_info',
   display: '展示一個鎮民角色標記。指向兩位玩家，其中一位是該角色。',
   info: {
-    role: '侍女',
+    role: '洗衣婦',
     reminder: '展示一個鎮民角色標記...',
     reliable: true,
     statusReason: ''
@@ -323,7 +323,7 @@ const result = engine.processNightAbility(
 }
 ```
 
-### 案例 4: 簡單角色（侍女）
+### 案例 4: 簡單角色（洗衣婦）
 ```typescript
 const washerwoman = {
   seat: 3,
@@ -334,7 +334,7 @@ const washerwoman = {
 
 const result = engine.processNightAbility(
   washerwoman,
-  null,              // 侍女不需要選擇目標
+  null,              // 洗衣婦不需要選擇目標
   gameState,
   manager
 );
@@ -344,7 +344,7 @@ const result = engine.processNightAbility(
   action: 'show_info',
   display: '展示一個鎮民角色標記。指向兩位玩家...',
   info: {
-    role: '侍女',
+    role: '洗衣婦',
     reminder: '展示一個鎮民角色標記...',
     reliable: true,
     statusReason: ''

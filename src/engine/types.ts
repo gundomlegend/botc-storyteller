@@ -6,10 +6,13 @@ export interface RoleData {
   name_cn: string;
   team: 'townsfolk' | 'outsider' | 'minion' | 'demon';
   ability: string;
+  ability_cn: string;
   firstNight: number;
   firstNightReminder: string;
+  firstNightReminder_cn: string;
   otherNight: number;
   otherNightReminder: string;
+  otherNightReminder_cn: string;
   reminders: string[];
   setup: boolean;
   affectedByPoison: boolean;

@@ -54,9 +54,9 @@
 ```
 第一夜順序：
 1-10    : 設置相關（惡魔爪牙醒來等）
-11-20   : 資訊收集（侍女、圖書館員等）
+11-20   : 資訊收集（洗衣婦、圖書管理員等）
 21-30   : 夜間能力（占卜師、共情者等）
-31-40   : 死亡檢測（守夜人等）
+31-40   : 死亡檢測（送葬者等）
 
 其他夜晚順序：
 1-10    : 狀態設置（毒藥師、僧侶等）
@@ -168,7 +168,7 @@
     "id": "fortuneteller_recluse",
     "role1": "fortuneteller",
     "role2": "recluse",
-    "reason": "隱士可以對占卜師顯示為惡魔。"
+    "reason": "陌客可以對占卜師顯示為惡魔。"
   },
   {
     "id": "monk_poisoner",
@@ -352,32 +352,32 @@ npx ts-node src/data/validate.ts
 
 ### 鎮民 (Townsfolk) - 7個
 
-1. **侍女** (Washerwoman) - firstNight: 23
-2. **圖書館員** (Librarian) - firstNight: 24
+1. **洗衣婦** (Washerwoman) - firstNight: 23
+2. **圖書管理員** (Librarian) - firstNight: 24
 3. **調查員** (Investigator) - firstNight: 25
 4. **廚師** (Chef) - firstNight: 26
 5. **共情者** (Empath) - firstNight: 27, otherNight: 38
 6. **占卜師** (Fortune Teller) - firstNight: 28, otherNight: 39
-7. **守夜人** (Undertaker) - otherNight: 40
+7. **送葬者** (Undertaker) - otherNight: 40
 8. **僧侶** (Monk) - otherNight: 12
 9. **守鴉人** (Ravenkeeper) - otherNight: 41
-10. **聖女** (Virgin) - 白天能力
+10. **貞潔者** (Virgin) - 白天能力
 11. **獵手** (Slayer) - 白天能力
 12. **士兵** (Soldier) - 被動能力
-13. **市長** (Mayor) - 被動能力
+13. **鎮長** (Mayor) - 被動能力
 
 ### 外來者 (Outsider) - 4個
 
 1. **管家** (Butler) - firstNight: 29, otherNight: 42
 2. **酒鬼** (Drunk) - setup: true
-3. **隱士** (Recluse) - 被動能力
+3. **陌客** (Recluse) - 被動能力
 4. **聖徒** (Saint) - 被動能力
 
 ### 爪牙 (Minion) - 4個
 
 1. **投毒者** (Poisoner) - firstNight: 17, otherNight: 8
 2. **間諜** (Spy) - firstNight: 48, otherNight: 68
-3. **猩紅女郎** (Scarlet Woman) - otherNight: 19
+3. **紅唇女郎** (Scarlet Woman) - otherNight: 19
 4. **男爵** (Baron) - setup: true
 
 ### 惡魔 (Demon) - 1個

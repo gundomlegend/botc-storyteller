@@ -2,34 +2,46 @@
   {
     "id": "washerwoman",
     "name": "Washerwoman",
-    "name_cn": "侍女",
+    "name_cn": "洗衣婦",
     "team": "townsfolk",
     "ability": "You start knowing that 1 of 2 players is a particular Townsfolk.",
     "firstNight": 23,
     "firstNightReminder": "Show the character token of a Townsfolk in play. Point to two players, one of which is that character.",
     "otherNight": 0,
     "otherNightReminder": "",
-    "reminders": ["Townsfolk", "Wrong"],
+    "reminders": [
+      "Townsfolk",
+      "Wrong"
+    ],
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "遊戲開始時，你會得知兩名玩家之中，有一人是指定的鎮民角色。",
+    "firstNightReminder_cn": "提示場上某位鎮民的角色後，指向兩名玩家，其中一人為該角色。",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "librarian",
     "name": "Librarian",
-    "name_cn": "圖書館員",
+    "name_cn": "圖書管理員",
     "team": "townsfolk",
     "ability": "You start knowing that 1 of 2 players is a particular Outsider. (Or that zero are in play.)",
     "firstNight": 24,
     "firstNightReminder": "Show the character token of an Outsider in play. Point to two players, one of which is that character.",
     "otherNight": 0,
     "otherNightReminder": "",
-    "reminders": ["Outsider", "Wrong"],
+    "reminders": [
+      "Outsider",
+      "Wrong"
+    ],
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "遊戲開始時，你會得知兩名玩家之中，有一人是指定的外來者。（或場上沒有外來者。）",
+    "firstNightReminder_cn": "提示場上某位外來者的角色後，指向兩名玩家，其中一人為該角色。",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "investigator",
@@ -41,11 +53,17 @@
     "firstNightReminder": "Show the character token of a Minion in play. Point to two players, one of which is that character.",
     "otherNight": 0,
     "otherNightReminder": "",
-    "reminders": ["Minion", "Wrong"],
+    "reminders": [
+      "Minion",
+      "Wrong"
+    ],
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "遊戲開始時，你會得知兩名玩家之中，有一人是指定的爪牙。",
+    "firstNightReminder_cn": "提示場上某位爪牙的角色後，指向兩名玩家，其中一人為該角色。",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "chef",
@@ -61,7 +79,10 @@
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "遊戲開始時，你會得知有多少組相鄰且存活的邪惡玩家。",
+    "firstNightReminder_cn": "告知廚師相鄰且存活的邪惡玩家組合數量。",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "empath",
@@ -77,7 +98,10 @@
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "每晚，你會得知你左右兩側相鄰且存活的玩家中，有幾位是邪惡陣營。",
+    "firstNightReminder_cn": "告知共情者左右相鄰且存活的玩家中邪惡玩家的數量（0、1 或 2）。",
+    "otherNightReminder_cn": "告知共情者左右相鄰且存活的玩家中邪惡玩家的數量（0、1 或 2）。"
   },
   {
     "id": "fortuneteller",
@@ -89,27 +113,37 @@
     "firstNightReminder": "The Fortune Teller points to two players. Give the head signal (nod yes, shake no) for whether one of those players is the Demon.",
     "otherNight": 39,
     "otherNightReminder": "The Fortune Teller points to two players. Show the head signal (nod 'yes', shake 'no') for whether one of those players is the Demon.",
-    "reminders": ["Red Herring"],
+    "reminders": [
+      "Red Herring"
+    ],
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "每晚，選擇兩名玩家：你會得知其中是否有惡魔。場上有一名好人會被你視為惡魔。",
+    "firstNightReminder_cn": "占卜師指向兩名玩家，以點頭或搖頭表示其中是否有惡魔。",
+    "otherNightReminder_cn": "占卜師指向兩名玩家，以點頭（是）或搖頭（否）表示其中是否有惡魔。"
   },
   {
     "id": "undertaker",
     "name": "Undertaker",
-    "name_cn": "守夜人",
+    "name_cn": "送葬者",
     "team": "townsfolk",
     "ability": "Each night*, you learn which character died by execution today.",
     "firstNight": 0,
     "firstNightReminder": "",
     "otherNight": 40,
     "otherNightReminder": "If a player was executed today, show that character token to the Undertaker.",
-    "reminders": ["Executed"],
+    "reminders": [
+      "Executed"
+    ],
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "每晚，你會得知今天被處刑玩家的角色。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": "若今日有玩家被處刑，向送葬者提示該玩家的角色。"
   },
   {
     "id": "monk",
@@ -121,11 +155,16 @@
     "firstNightReminder": "",
     "otherNight": 12,
     "otherNightReminder": "The Monk points to a player. That player is safe from the Demon tonight.",
-    "reminders": ["Protected"],
+    "reminders": [
+      "Protected"
+    ],
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "每晚，選擇一名玩家（不能是自己）：今晚惡魔的攻擊對該玩家無效。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": "僧侶指向一名玩家。今晚惡魔的攻擊對該玩家無效。"
   },
   {
     "id": "ravenkeeper",
@@ -141,23 +180,31 @@
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": true
+    "worksWhenDead": true,
+    "ability_cn": "若你在夜晚死亡，你會被喚醒並選擇一名玩家：你會得知其角色。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": "若守鴉人今晚死亡，喚醒守鴉人使其指向一名玩家，並提示該玩家的角色。"
   },
   {
     "id": "virgin",
     "name": "Virgin",
-    "name_cn": "聖女",
+    "name_cn": "貞潔者",
     "team": "townsfolk",
     "ability": "The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately.",
     "firstNight": 0,
     "firstNightReminder": "",
     "otherNight": 0,
     "otherNightReminder": "",
-    "reminders": ["No Ability"],
+    "reminders": [
+      "No Ability"
+    ],
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "你第一次被提名時，若提名你的人是鎮民，則其立即被處刑。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "slayer",
@@ -169,11 +216,16 @@
     "firstNightReminder": "",
     "otherNight": 0,
     "otherNightReminder": "",
-    "reminders": ["No Ability"],
+    "reminders": [
+      "No Ability"
+    ],
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "每局限使用一次，在白天你可公開指定一名玩家：若其為惡魔，則其死亡。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "soldier",
@@ -189,12 +241,15 @@
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "惡魔的攻擊對你無效。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "mayor",
     "name": "Mayor",
-    "name_cn": "市長",
+    "name_cn": "鎮長",
     "team": "townsfolk",
     "ability": "If only 3 players live & no execution occurs, your team wins. If you die at night, another player might die instead.",
     "firstNight": 0,
@@ -205,7 +260,10 @@
     "setup": false,
     "affectedByPoison": true,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "若只剩 3 名玩家存活，且白天沒人被處決，你的陣營直接獲勝。若你在夜晚即將死亡，可能改由另一名玩家死亡。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "butler",
@@ -217,11 +275,16 @@
     "firstNightReminder": "The Butler points to a player. Mark that player as the Butler's master.",
     "otherNight": 42,
     "otherNightReminder": "The Butler points to a player. Mark that player as the Butler's master.",
-    "reminders": ["Master"],
+    "reminders": [
+      "Master"
+    ],
     "setup": false,
     "affectedByPoison": false,
     "affectedByDrunk": false,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "每晚，選擇一名玩家（不能是自己）：明天，只有在他也投票時你才能投票。",
+    "firstNightReminder_cn": "管家指向一名玩家，將該玩家標記為管家的主人。",
+    "otherNightReminder_cn": "管家指向一名玩家，將該玩家標記為管家的主人。"
   },
   {
     "id": "drunk",
@@ -237,12 +300,15 @@
     "setup": true,
     "affectedByPoison": false,
     "affectedByDrunk": false,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "你不知道自己是酒鬼。你以為自己是某位鎮民角色，但其實你不是。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "recluse",
     "name": "Recluse",
-    "name_cn": "隱士",
+    "name_cn": "陌客",
     "team": "outsider",
     "ability": "You might register as evil & as a Minion or Demon, even if dead.",
     "firstNight": 0,
@@ -253,7 +319,10 @@
     "setup": false,
     "affectedByPoison": false,
     "affectedByDrunk": false,
-    "worksWhenDead": true
+    "worksWhenDead": true,
+    "ability_cn": "你可能被視為邪惡，且被視為爪牙或惡魔，即使你已死亡亦然。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "saint",
@@ -269,7 +338,10 @@
     "setup": false,
     "affectedByPoison": false,
     "affectedByDrunk": false,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "若你在白天被處決，你的陣營直接落敗。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "poisoner",
@@ -281,11 +353,16 @@
     "firstNightReminder": "The Poisoner points to a player. That player is poisoned.",
     "otherNight": 8,
     "otherNightReminder": "The Poisoner points to a player. That player is poisoned.",
-    "reminders": ["Poisoned"],
+    "reminders": [
+      "Poisoned"
+    ],
     "setup": false,
     "affectedByPoison": false,
     "affectedByDrunk": false,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "每晚，選擇一名玩家：該玩家今晚以及明天白天中毒。",
+    "firstNightReminder_cn": "投毒者指向一名玩家。該玩家中毒。",
+    "otherNightReminder_cn": "投毒者指向一名玩家。該玩家中毒。"
   },
   {
     "id": "spy",
@@ -301,23 +378,31 @@
     "setup": false,
     "affectedByPoison": false,
     "affectedByDrunk": false,
-    "worksWhenDead": true
+    "worksWhenDead": true,
+    "ability_cn": "每晚，你可以查看魔典。你可能被視為好人，且被視為鎮民或外來者，即使你已死亡亦然。",
+    "firstNightReminder_cn": "向間諜出示魔典。",
+    "otherNightReminder_cn": "向間諜出示魔典。"
   },
   {
     "id": "scarletwoman",
     "name": "Scarlet Woman",
-    "name_cn": "猩紅女郎",
+    "name_cn": "紅唇女郎",
     "team": "minion",
     "ability": "If there are 5 or more players alive & the Demon dies, you become the Demon. (Travellers don't count.)",
     "firstNight": 0,
     "firstNightReminder": "",
     "otherNight": 19,
     "otherNightReminder": "If the Scarlet Woman became the Demon today, show her the 'You are' card and the Imp token.",
-    "reminders": ["Demon"],
+    "reminders": [
+      "Demon"
+    ],
     "setup": false,
     "affectedByPoison": false,
     "affectedByDrunk": false,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "若仍有 5 名或以上玩家存活且惡魔死亡，則換你成為惡魔。（旅行者不算在內。）",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": "若紅唇女郎今日成為惡魔，向她出示「你是」卡牌與小惡魔標記。"
   },
   {
     "id": "baron",
@@ -333,7 +418,10 @@
     "setup": true,
     "affectedByPoison": false,
     "affectedByDrunk": false,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "場上會有額外的外來者。[+2 外來者]",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": ""
   },
   {
     "id": "imp",
@@ -345,10 +433,15 @@
     "firstNightReminder": "",
     "otherNight": 24,
     "otherNightReminder": "The Imp points to a player. That player dies.",
-    "reminders": ["Dead"],
+    "reminders": [
+      "Dead"
+    ],
     "setup": false,
     "affectedByPoison": false,
     "affectedByDrunk": true,
-    "worksWhenDead": false
+    "worksWhenDead": false,
+    "ability_cn": "每晚，選擇一名玩家使其死亡。若你以此方式自殺，一名爪牙將成為新的小惡魔。",
+    "firstNightReminder_cn": "",
+    "otherNightReminder_cn": "小惡魔指向一名玩家。該玩家死亡。"
   }
 ]
