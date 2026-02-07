@@ -38,7 +38,6 @@ function shuffle<T>(arr: T[]): T[] {
 function randomizeRoles(count: number): string[] {
   const dist = PLAYER_DISTRIBUTION[count];
   if (!dist) return [];
-
   const picked: string[] = [];
   picked.push(...shuffle(rolesByTeam.townsfolk).slice(0, dist.townsfolk).map((r) => r.id));
   picked.push(...shuffle(rolesByTeam.outsider).slice(0, dist.outsider).map((r) => r.id));
@@ -76,12 +75,15 @@ export default function SetupView() {
   const handleStart = () => {
     const roleIds = randomizeRoles(playerCount);
     setAssignedRoles(roleIds);
+    console.log('Starting game with roleIds:', roleIds);
 
     const players = names.map((name, i) => ({
       seat: i + 1,
       name: name.trim(),
       role: roleIds[i],
     }));
+
+    console.log('Starting game with players:', players);
 
     initGame(players);
     startNight();

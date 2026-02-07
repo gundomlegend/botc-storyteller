@@ -63,6 +63,9 @@ All mutations go through `GameStateManager` methods (e.g., `addStatus()`, `killP
 Role abilities defined in [src/data/roles/trouble-brewing.json](src/data/roles/trouble-brewing.json) with fields:
 - `id` (English kebab-case: "fortune-teller")
 - `name_cn` (Chinese name)
+- `ability_cn` (Chinese ability)
+- `firstNightReminder_cn` (Chinese firstNightReminder)
+- `otherNightReminder_cn` (Chinese otherNightReminder)
 - `team` (townsfolk/outsider/minion/demon)
 - `firstNight` / `otherNight` (sort order, 1-50 range)
 - `affectedByPoison`, `affectedByDrunk`, `worksWhenDead` (state flags)

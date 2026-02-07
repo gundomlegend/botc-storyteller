@@ -88,7 +88,7 @@ export class RuleEngine {
     infoReliable: boolean,
     statusReason: string
   ): NightResult {
-    const reminder = roleData.firstNightReminder || roleData.otherNightReminder;
+    const reminder = roleData.firstNightReminder || roleData.otherNightReminder_cn;
 
     return {
       action: 'show_info',

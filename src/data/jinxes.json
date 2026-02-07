@@ -3,18 +3,18 @@
     "id": "fortuneteller_spy",
     "role1": "fortuneteller",
     "role2": "spy",
-    "reason": "間諜對占卜師顯示為善良。"
+    "reason": "占卜師看間諜會顯示為善良。"
   },
   {
     "id": "fortuneteller_recluse",
     "role1": "fortuneteller",
     "role2": "recluse",
-    "reason": "隱士可以對占卜師顯示為惡魔。"
+    "reason": "占卜師看陌客可以顯示為惡魔。"
   },
   {
     "id": "monk_poisoner",
     "role1": "monk",
     "role2": "poisoner",
-    "reason": "如果毒藥師中毒僧侶保護的玩家，該保護仍然有效。"
+    "reason": "如果投毒者下毒僧侶保護的玩家，該保護仍然有效。"
   }
 ]
