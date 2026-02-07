@@ -1,0 +1,144 @@
+import { useState } from 'react';
+import { useGameStore } from '../store/gameStore';
+import type { RoleData } from '../engine/types';
+import rolesData from '../data/roles/trouble-brewing.json';
+
+const roles = rolesData as RoleData[];
+const rolesByTeam = {
+  townsfolk: roles.filter((r) => r.team === 'townsfolk'),
+  outsider: roles.filter((r) => r.team === 'outsider'),
+  minion: roles.filter((r) => r.team === 'minion'),
+  demon: roles.filter((r) => r.team === 'demon'),
+};
+
+// DATA_FORMAT.md 人數配置表
+const PLAYER_DISTRIBUTION: Record<number, { townsfolk: number; outsider: number; minion: number; demon: number }> = {
+  5:  { townsfolk: 3, outsider: 0, minion: 1, demon: 1 },
+  6:  { townsfolk: 3, outsider: 1, minion: 1, demon: 1 },
+  7:  { townsfolk: 5, outsider: 0, minion: 1, demon: 1 },
+  8:  { townsfolk: 5, outsider: 1, minion: 1, demon: 1 },
+  9:  { townsfolk: 5, outsider: 2, minion: 1, demon: 1 },
+  10: { townsfolk: 7, outsider: 0, minion: 2, demon: 1 },
+  11: { townsfolk: 7, outsider: 1, minion: 2, demon: 1 },
+  12: { townsfolk: 7, outsider: 2, minion: 2, demon: 1 },
+  13: { townsfolk: 9, outsider: 0, minion: 3, demon: 1 },
+  14: { townsfolk: 9, outsider: 1, minion: 3, demon: 1 },
+  15: { townsfolk: 9, outsider: 2, minion: 3, demon: 1 },
+};
+
+function shuffle<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function randomizeRoles(count: number): string[] {
+  const dist = PLAYER_DISTRIBUTION[count];
+  if (!dist) return [];
+
+  const picked: string[] = [];
+  picked.push(...shuffle(rolesByTeam.townsfolk).slice(0, dist.townsfolk).map((r) => r.id));
+  picked.push(...shuffle(rolesByTeam.outsider).slice(0, dist.outsider).map((r) => r.id));
+  picked.push(...shuffle(rolesByTeam.minion).slice(0, dist.minion).map((r) => r.id));
+  picked.push(...shuffle(rolesByTeam.demon).slice(0, dist.demon).map((r) => r.id));
+
+  return shuffle(picked);
+}
+
+export default function SetupView() {
+  const { initGame, startNight } = useGameStore();
+  const [playerCount, setPlayerCount] = useState(7);
+  const [names, setNames] = useState<string[]>(() => Array(7).fill(''));
+  const [assignedRoles, setAssignedRoles] = useState<string[] | null>(null);
+
+  const dist = PLAYER_DISTRIBUTION[playerCount];
+
+  const handleCountChange = (count: number) => {
+    setPlayerCount(count);
+    setNames((prev) => {
+      if (count > prev.length) {
+        return [...prev, ...Array(count - prev.length).fill('')];
+      }
+      return prev.slice(0, count);
+    });
+    setAssignedRoles(null);
+  };
+
+  const updateName = (index: number, value: string) => {
+    setNames((prev) => prev.map((n, i) => (i === index ? value : n)));
+  };
+
+  const canStart = names.every((n) => n.trim());
+
+  const handleStart = () => {
+    const roleIds = randomizeRoles(playerCount);
+    setAssignedRoles(roleIds);
+
+    const players = names.map((name, i) => ({
+      seat: i + 1,
+      name: name.trim(),
+      role: roleIds[i],
+    }));
+
+    initGame(players);
+    startNight();
+  };
+
+  const getRoleName = (roleId: string) => {
+    const r = roles.find((role) => role.id === roleId);
+    return r ? `${r.name_cn} (${r.name})` : roleId;
+  };
+
+  return (
+    <section className="setup-view">
+      <h2>遊戲設置</h2>
+
+      <div className="setup-count">
+        <label>玩家人數：</label>
+        <select
+          value={playerCount}
+          onChange={(e) => handleCountChange(Number(e.target.value))}
+        >
+          {Array.from({ length: 11 }, (_, i) => i + 5).map((n) => (
+            <option key={n} value={n}>
+              {n} 人
+            </option>
+          ))}
+        </select>
+        {dist && (
+          <span className="setup-dist">
+            鎮民 {dist.townsfolk} / 外來者 {dist.outsider} / 爪牙 {dist.minion} / 惡魔 {dist.demon}
+          </span>
+        )}
+      </div>
+
+      <div className="setup-players">
+        {names.map((name, i) => (
+          <div key={i} className="setup-player-row">
+            <span className="seat-number">{i + 1}</span>
+            <input
+              type="text"
+              placeholder={`玩家 ${i + 1} 名稱`}
+              value={name}
+              onChange={(e) => updateName(i, e.target.value)}
+            />
+            {assignedRoles && assignedRoles[i] && (
+              <span className="assigned-role">{getRoleName(assignedRoles[i])}</span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <button
+        className="btn-primary"
+        disabled={!canStart}
+        onClick={handleStart}
+      >
+        開始遊戲 — 隨機分配角色，進入第一夜
+      </button>
+    </section>
+  );
+}
