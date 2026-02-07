@@ -9,7 +9,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>Blood on the Clocktower</h1>
-        <p className="subtitle">说书人助手</p>
+        <p className="subtitle">說書人魔典</p>
       </header>
 
       <nav className="phase-nav">
