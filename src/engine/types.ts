@@ -54,6 +54,7 @@ export interface GameState {
   history: GameEvent[];
   setupComplete: boolean;
   selectedRoles: string[];
+  demonBluffs: string[];
 }
 
 export interface GameEvent {

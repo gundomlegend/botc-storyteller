@@ -74,6 +74,10 @@
 - [ ] `generateNightOrder(isFirstNight)` - 生成夜間順序
 - [ ] `logEvent(event)` - 記錄事件
 - [ ] `getHistory()` - 獲取歷史記錄
+- [ ] `getMinionPlayers()` - 獲取所有爪牙
+- [ ] `getDemonPlayer()` - 獲取惡魔
+- [ ] `generateDemonBluffs()` - 生成三個虛張聲勢角色
+- [ ] `getDemonBluffs()` - 獲取虛張聲勢角色
 
 **AC**:
 - 所有方法實作完成
@@ -100,6 +104,22 @@ assert(manager.hasStatus(1, 'poisoned') === true);
 manager.startNight();
 const order = manager.generateNightOrder(true);
 assert(order.length > 0);
+
+// 測試 4: 生成虛張聲勢
+const bluffs = manager.generateDemonBluffs();
+assert(bluffs.length === 3);
+assert(!bluffs.includes(anyAssignedRole));
+
+// 測試 5: 獲取邪惡玩家
+const minions = manager.getMinionPlayers();
+const demon = manager.getDemonPlayer();
+assert(minions.length > 0);
+assert(demon !== undefined);
+
+// 測試 6: 第一夜順序包含特殊階段
+const order = manager.generateNightOrder(true);
+assert(order[0].role === '__minion_demon_recognition__');
+assert(order[1].role === '__demon_bluffs__');
 ```
 
 ---
@@ -115,8 +135,15 @@ assert(order.length > 0);
 - [ ] `defaultHandler(roleData, player, infoReliable, statusReason)` - 預設處理器
 - [ ] `checkJinxes(roleId, stateManager)` - 檢查 Jinx
 - [ ] `getRoleData(roleId)` - 獲取角色資料
+- [ ] `processFirstNightSpecial(type, stateManager)` - 處理第一夜特殊階段
+- [ ] `processMinionDemonRecognition(stateManager)` - 處理爪牙惡魔互認
+- [ ] `processDemonBluffs(stateManager)` - 處理惡魔虛張聲勢
 
 **AC**:
+- 第一夜順序自動包含特殊階段
+- 爪牙惡魔互認顯示正確的玩家
+- 惡魔虛張聲勢生成三個未分配角色
+- 虛張聲勢不包含任何已分配的角色
 - 可以正確處理簡單角色（使用預設處理器）
 - 可以檢測中毒/醉酒狀態
 - 可以檢測 Jinx 規則

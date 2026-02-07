@@ -17,6 +17,7 @@ export class GameStateManager {
       history: [],
       setupComplete: false,
       selectedRoles: [],
+      demonBluffs: [],
     };
 
     this.roleRegistry = new Map();
@@ -221,6 +222,36 @@ export class GameStateManager {
     });
   }
 
+  getMinionPlayers(): Player[] {
+    return this.getAllPlayers().filter((p) => p.team === 'minion');
+  }
+
+  getDemonPlayer(): Player | undefined {
+    return this.getAllPlayers().find((p) => p.team === 'demon');
+  }
+
+  generateDemonBluffs(): string[] {
+    const assignedRoles = new Set(this.state.selectedRoles);
+    const goodRoles = (rolesData as RoleData[]).filter(
+      (r) => (r.team === 'townsfolk' || r.team === 'outsider') && !assignedRoles.has(r.id)
+    );
+
+    // Shuffle and pick 3
+    const shuffled = [...goodRoles];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const bluffs = shuffled.slice(0, 3).map((r) => r.id);
+    this.state.demonBluffs = bluffs;
+    return bluffs;
+  }
+
+  getDemonBluffs(): string[] {
+    return this.state.demonBluffs;
+  }
+
   generateNightOrder(isFirstNight: boolean): NightOrderItem[] {
     const items: NightOrderItem[] = [];
 
@@ -249,6 +280,42 @@ export class GameStateManager {
     }
 
     items.sort((a, b) => a.priority - b.priority);
+
+    // 第一夜：在最前面加入特殊階段
+    if (isFirstNight) {
+      const specialItems: NightOrderItem[] = [];
+
+      // 爪牙惡魔互認 (priority 1)
+      specialItems.push({
+        seat: 0,
+        role: '__minion_demon_recognition__',
+        roleName: '爪牙與惡魔互認',
+        priority: 1,
+        isDead: false,
+        isPoisoned: false,
+        isDrunk: false,
+        isProtected: false,
+        reminder: '讓所有爪牙和惡魔睜眼，互相確認身份。',
+      });
+
+      // 惡魔虛張聲勢 (priority 2) - 7人以上才需要
+      if (this.state.playerCount >= 7) {
+        specialItems.push({
+          seat: 0,
+          role: '__demon_bluffs__',
+          roleName: '惡魔虛張聲勢',
+          priority: 2,
+          isDead: false,
+          isPoisoned: false,
+          isDrunk: false,
+          isProtected: false,
+          reminder: '讓惡魔睜眼，展示三個未分配的善良角色標記。',
+        });
+      }
+
+      return [...specialItems, ...items];
+    }
+
     return items;
   }
 

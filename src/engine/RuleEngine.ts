@@ -121,6 +121,70 @@ export class RuleEngine {
     return null;
   }
 
+  processFirstNightSpecial(
+    type: string,
+    stateManager: GameStateManager
+  ): NightResult {
+    switch (type) {
+      case '__minion_demon_recognition__':
+        return this.processMinionDemonRecognition(stateManager);
+      case '__demon_bluffs__':
+        return this.processDemonBluffs(stateManager);
+      default:
+        return { skip: true, skipReason: `未知特殊階段：${type}`, display: '' };
+    }
+  }
+
+  processMinionDemonRecognition(stateManager: GameStateManager): NightResult {
+    const minions = stateManager.getMinionPlayers();
+    const demon = stateManager.getDemonPlayer();
+
+    const lines: string[] = ['【爪牙與惡魔互認】', ''];
+    if (demon) {
+      const demonRole = this.roleRegistry.get(demon.role);
+      lines.push(`惡魔：${demon.seat}號 ${demon.name}（${demonRole?.name_cn ?? demon.role}）`);
+    }
+    for (const m of minions) {
+      const mRole = this.roleRegistry.get(m.role);
+      lines.push(`爪牙：${m.seat}號 ${m.name}（${mRole?.name_cn ?? m.role}）`);
+    }
+    lines.push('', '請讓以上玩家睜眼，互相確認身份後閉眼。');
+
+    return {
+      action: 'show_info',
+      display: lines.join('\n'),
+      info: { demon: demon?.seat, minions: minions.map((m) => m.seat) },
+      gesture: 'none',
+    };
+  }
+
+  processDemonBluffs(stateManager: GameStateManager): NightResult {
+    const demon = stateManager.getDemonPlayer();
+    const bluffs = stateManager.generateDemonBluffs();
+
+    const bluffNames = bluffs.map((id) => {
+      const rd = this.roleRegistry.get(id);
+      return rd ? `${rd.name_cn}（${rd.name}）` : id;
+    });
+
+    const lines: string[] = ['【惡魔虛張聲勢】', ''];
+    if (demon) {
+      const demonRole = this.roleRegistry.get(demon.role);
+      lines.push(`讓 ${demon.seat}號 ${demon.name}（${demonRole?.name_cn ?? demon.role}）睜眼`);
+    }
+    lines.push('', '展示以下三個角色標記：');
+    bluffNames.forEach((name, i) => lines.push(`  ${i + 1}. ${name}`));
+    lines.push('', '這些是未被分配的善良角色，惡魔可宣稱是這些角色。');
+    lines.push('讓惡魔閉眼。');
+
+    return {
+      action: 'show_info',
+      display: lines.join('\n'),
+      info: { bluffs, bluffNames },
+      gesture: 'none',
+    };
+  }
+
   getRoleData(roleId: string): RoleData | undefined {
     return this.roleRegistry.get(roleId);
   }

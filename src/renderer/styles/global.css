@@ -686,6 +686,137 @@ body {
   text-align: right;
 }
 
+/* ===== First Night Special ===== */
+
+.night-order-item.special {
+  border-color: #f39c12;
+  color: #f39c12;
+}
+
+.night-order-item.special.active {
+  background: rgba(243, 156, 18, 0.15);
+  border-color: #f39c12;
+}
+
+.first-night-special {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.first-night-special h3 {
+  font-size: 1.3rem;
+  color: #f39c12;
+  margin-bottom: 16px;
+}
+
+.special-instruction {
+  margin-bottom: 16px;
+}
+
+.special-step {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+}
+
+.special-player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.special-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--bg-card);
+  font-size: 0.9rem;
+}
+
+.special-seat {
+  color: var(--accent);
+  font-weight: bold;
+  min-width: 36px;
+}
+
+.special-name {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.special-role {
+  color: var(--text-secondary);
+}
+
+.special-team-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.special-player.demon .special-team-tag {
+  background: #c0392b;
+  color: #fff;
+}
+
+.special-player.minion .special-team-tag {
+  background: #8e44ad;
+  color: #fff;
+}
+
+.bluff-tokens {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.bluff-token {
+  flex: 1;
+  padding: 16px 12px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.bluff-name-cn {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.bluff-name-en {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.special-note {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin: 10px 0;
+}
+
+.special-summary {
+  background: var(--bg-card);
+  padding: 12px;
+  border-radius: 6px;
+  white-space: pre-line;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  display: none;
+}
+
+.special-actions {
+  margin-top: 16px;
+}
+
 /* ===== DisplayPage ===== */
 
 .display-app {
