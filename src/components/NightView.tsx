@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import AbilityProcessor from './AbilityProcessor';
+import MinionDemonRecognition from './MinionDemonRecognition';
+import DemonBluffs from './DemonBluffs';
+
+function isSpecialPhase(role: string): boolean {
+  return role === '__minion_demon_recognition__' || role === '__demon_bluffs__';
+}
 
 export default function NightView() {
   const { night, nightOrder, startDay } = useGameStore();
@@ -17,6 +23,28 @@ export default function NightView() {
   const handleEndNight = () => {
     setCurrentIndex(0);
     startDay();
+  };
+
+  const renderCurrentProcessor = () => {
+    if (!currentItem) {
+      return <div className="night-empty">沒有需要處理的角色</div>;
+    }
+
+    if (currentItem.role === '__minion_demon_recognition__') {
+      return <MinionDemonRecognition onComplete={handleDone} />;
+    }
+
+    if (currentItem.role === '__demon_bluffs__') {
+      return <DemonBluffs onComplete={handleDone} />;
+    }
+
+    return (
+      <AbilityProcessor
+        key={`${currentItem.seat}-${currentIndex}`}
+        item={currentItem}
+        onDone={handleDone}
+      />
+    );
   };
 
   return (
@@ -38,14 +66,19 @@ export default function NightView() {
                 'night-order-item',
                 i === currentIndex ? 'active' : '',
                 item.isDead ? 'dead' : '',
+                isSpecialPhase(item.role) ? 'special' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
               onClick={() => setCurrentIndex(i)}
             >
-              <span className="order-priority">{item.priority}</span>
+              <span className="order-priority">
+                {isSpecialPhase(item.role) ? '★' : item.priority}
+              </span>
               <span className="order-role">{item.roleName}</span>
-              <span className="order-seat">{item.seat}號</span>
+              {!isSpecialPhase(item.role) && (
+                <span className="order-seat">{item.seat}號</span>
+              )}
               {item.isPoisoned && <span className="order-tag poisoned">毒</span>}
               {item.isDrunk && <span className="order-tag drunk">醉</span>}
               {item.isDead && <span className="order-tag dead">死</span>}
@@ -53,17 +86,9 @@ export default function NightView() {
           ))}
         </div>
 
-        {/* 右側：能力處理器 */}
+        {/* 右側：處理器 */}
         <div className="night-processor">
-          {currentItem ? (
-            <AbilityProcessor
-              key={`${currentItem.seat}-${currentIndex}`}
-              item={currentItem}
-              onDone={handleDone}
-            />
-          ) : (
-            <div className="night-empty">沒有需要處理的角色</div>
-          )}
+          {renderCurrentProcessor()}
         </div>
       </div>
 
