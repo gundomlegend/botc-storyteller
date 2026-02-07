@@ -10,7 +10,7 @@ function createMainWindow(): void {
     height: 900,
     minWidth: 900,
     minHeight: 600,
-    title: '說書人控制台',
+    title: '說書人魔典',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -34,7 +34,7 @@ function createDisplayWindow(): void {
   displayWindow = new BrowserWindow({
     width: 1024,
     height: 768,
-    title: '公共顯示',
+    title: '城鎮公告',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
