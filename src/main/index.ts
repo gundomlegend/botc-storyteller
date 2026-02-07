@@ -1,13 +1,16 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
 
-function createWindow(): void {
-  const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
+let mainWindow: BrowserWindow | null = null;
+let displayWindow: BrowserWindow | null = null;
+
+function createMainWindow(): void {
+  mainWindow = new BrowserWindow({
+    width: 1400,
+    height: 900,
     minWidth: 900,
     minHeight: 600,
-    title: 'BOTC Storyteller - 血染钟楼说书人助手',
+    title: '說書人控制台',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -16,14 +19,46 @@ function createWindow(): void {
   });
 
   if (process.env.NODE_ENV === 'development') {
-    win.loadURL('http://localhost:5173');
-    win.webContents.openDevTools();
+    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.webContents.openDevTools();
   } else {
-    win.loadFile(path.join(__dirname, '../renderer/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
 }
 
-app.whenReady().then(createWindow);
+function createDisplayWindow(): void {
+  displayWindow = new BrowserWindow({
+    width: 1024,
+    height: 768,
+    title: '公共顯示',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  if (process.env.NODE_ENV === 'development') {
+    displayWindow.loadURL('http://localhost:5173/#/display');
+  } else {
+    displayWindow.loadFile(path.join(__dirname, '../renderer/index.html'), {
+      hash: '/display',
+    });
+  }
+
+  displayWindow.on('closed', () => {
+    displayWindow = null;
+  });
+}
+
+app.whenReady().then(() => {
+  createMainWindow();
+  createDisplayWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -32,7 +67,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+  if (mainWindow === null) {
+    createMainWindow();
   }
 });
