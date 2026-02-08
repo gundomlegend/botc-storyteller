@@ -1,7 +1,6 @@
 # GameStateManager 規格文件
 
 ## 概述
-
 `GameStateManager` 是遊戲狀態管理的核心類別，負責：
 - 管理所有玩家資料
 - 追蹤遊戲進度（夜晚/白天）
@@ -44,6 +43,12 @@ export class GameStateManager {
   
   // 夜間順序
   generateNightOrder(isFirstNight: boolean): NightOrderItem[];
+
+  // 邪惡方輔助（第一夜用）
+  getMinionPlayers(): Player[];
+  getDemonPlayer(): Player | undefined;
+  generateDemonBluffs(): string[];
+  getDemonBluffs(): string[];
   
   // 歷史記錄
   logEvent(event: Omit<GameEvent, 'id' | 'timestamp' | 'night' | 'day'>): void;
@@ -88,6 +93,14 @@ constructor() {
 ---
 
 ### initializePlayers()
+**限制**
+- 不可重複初始化
+- seat 不可重複
+- roleId 必須存在
+- 初始化後自動排序
+
+**錯誤處理**
+- 發現非法資料 → throw Error
 
 **功能**: 初始化所有玩家
 
@@ -173,6 +186,11 @@ console.log(`存活玩家：${alive.length}`);
 
 ### addStatus()
 
+**限制**
+- 若玩家不存在 → 忽略
+- 若玩家已死亡 → 不加入
+- 若狀態已存在 → 不重複加入
+
 **功能**: 給玩家添加狀態效果
 
 **輸入**:
@@ -180,7 +198,8 @@ console.log(`存活玩家：${alive.length}`);
 - `type: 'poisoned' | 'protected' | 'drunk'` - 狀態類型
 - `data?: any` - 額外資料（如酒鬼認為的角色）
 
-**行為**:
+**行為**
+- 狀態變化必須記錄歷史事件
 
 **中毒 (poisoned)**:
 ```typescript
@@ -207,6 +226,8 @@ manager.addStatus(2, 'drunk', { believesRole: 'fortuneteller' });
 ---
 
 ### removeStatus()
+**限制**
+- 不存在狀態 → 忽略
 
 **功能**: 移除玩家的狀態效果
 
@@ -221,6 +242,9 @@ manager.addStatus(2, 'drunk', { believesRole: 'fortuneteller' });
 ### hasStatus()
 
 **功能**: 檢查玩家是否有某狀態
+
+**行為**
+- 若玩家不存在 → 回傳 false
 
 **輸入**:
 - `seat: number`
@@ -238,6 +262,10 @@ if (manager.hasStatus(3, 'poisoned')) {
 ---
 
 ### killPlayer()
+
+**限制**
+- 已死亡玩家再次 kill → 忽略
+- kill 必須為冪等操作（idempotent）
 
 **功能**: 殺死玩家
 
@@ -260,6 +288,8 @@ manager.killPlayer(5, 'demon_kill');
 ---
 
 ### startNight()
+**限制**
+- 不可在 night 狀態重複呼叫
 
 **功能**: 開始新的夜晚
 
@@ -267,7 +297,8 @@ manager.killPlayer(5, 'demon_kill');
 1. 夜晚計數器 +1
 2. 設定階段為 'night'
 3. 清除所有保護狀態（保護只持續一晚）
-4. 記錄夜晚開始事件
+4. 清除所有中毒狀態（中毒持續到隔日白天，進入下一夜時清除）
+5. 記錄夜晚開始事件
 
 **範例**:
 ```typescript
@@ -278,18 +309,23 @@ console.log(`第 ${manager.getState().night} 夜`);
 ---
 
 ### startDay()
+**限制**
+- 不可在 day 狀態重複呼叫
 
 **功能**: 開始新的白天
 
 **行為**:
 1. 白天計數器 +1
 2. 設定階段為 'day'
-3. 清除所有中毒狀態（中毒持續到白天結束）
-4. 記錄白天開始事件
+3. 記錄白天開始事件
 
 ---
 
 ### generateNightOrder()
+**補充規則**
+- 死亡角色仍列入順序（標記 isDead）
+- drunk / poisoned 不影響排序
+- priority 必須唯一
 
 **功能**: 生成夜間行動順序清單
 
@@ -351,6 +387,10 @@ order.forEach(item => {
 ---
 
 ### logEvent()
+**限制**
+- 不可修改既有 event
+- id 必須唯一
+- timestamp 使用系統時間
 
 **功能**: 記錄遊戲事件
 
@@ -380,69 +420,6 @@ manager.logEvent({
 
 ---
 
-## 測試用例
-
-### 測試 1: 基本初始化
-```typescript
-const manager = new GameStateManager();
-
-manager.initializePlayers([
-  { seat: 1, name: '測試1', role: 'fortuneteller' },
-  { seat: 2, name: '測試2', role: 'imp' }
-]);
-
-// 驗證
-assert(manager.getAllPlayers().length === 2);
-assert(manager.getPlayer(1)?.role === 'fortuneteller');
-assert(manager.getPlayer(1)?.isAlive === true);
-```
-
-### 測試 2: 狀態管理
-```typescript
-// 添加中毒
-manager.addStatus(1, 'poisoned');
-assert(manager.hasStatus(1, 'poisoned') === true);
-
-// 添加保護
-manager.addStatus(2, 'protected');
-assert(manager.hasStatus(2, 'protected') === true);
-
-// 開始夜晚（清除保護）
-manager.startNight();
-assert(manager.hasStatus(2, 'protected') === false);
-```
-
-### 測試 3: 夜間順序生成
-```typescript
-manager.startNight();
-const order = manager.generateNightOrder(true);
-
-// 驗證
-assert(order.length > 0);
-assert(order[0].priority <= order[1].priority); // 排序正確
-
-// 驗證包含正確資訊
-const ftItem = order.find(i => i.role === 'fortuneteller');
-assert(ftItem !== undefined);
-assert(ftItem.reminder.length > 0);
-```
-
-### 測試 4: 死亡處理
-```typescript
-manager.killPlayer(1, 'demon_kill');
-
-const player = manager.getPlayer(1);
-assert(player?.isAlive === false);
-assert(player?.deathCause === 'demon_kill');
-
-// 驗證存活玩家列表
-const alive = manager.getAlivePlayers();
-assert(alive.length === 1);
-assert(alive[0].seat === 2);
-```
-
----
-
 ## 使用範例
 
 ### 完整遊戲流程
@@ -458,6 +435,7 @@ manager.initializePlayers([
 
 // 2. 第一夜
 manager.startNight();
+// 中毒狀態被清除
 const firstNightOrder = manager.generateNightOrder(true);
 
 // 3. 處理投毒者能力
@@ -471,7 +449,6 @@ manager.addStatus(2, 'protected'); // 保護2號
 
 // 6. 第一天
 manager.startDay();
-// 中毒狀態被清除
 
 // 7. 查看歷史
 const history = manager.getHistory();

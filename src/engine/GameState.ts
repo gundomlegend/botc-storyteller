@@ -7,6 +7,7 @@ let eventCounter = 0;
 export class GameStateManager {
   private state: GameState;
   private roleRegistry: Map<string, RoleData>;
+  private poisonExpiresAtNight: Map<number, number> = new Map();
 
   constructor() {
     this.state = {
@@ -103,6 +104,9 @@ export class GameStateManager {
     switch (type) {
       case 'poisoned':
         player.isPoisoned = true;
+        // 毒：持續到「下一個夜晚開始」才解除
+        // 例如：N1 下毒 => expiresAtNight = 2 => N2 startNight() 一開始清掉
+        this.poisonExpiresAtNight.set(seat, this.state.night + 1);
         this.logEvent({
           type: 'poison',
           description: `${player.seat}號 ${player.name} 被中毒`,
@@ -200,6 +204,15 @@ export class GameStateManager {
       player.isProtected = false;
     }
 
+    // 清除「到期的中毒」：毒在下一個夜晚開始時失效
+    for (const [seat, expiresAt] of this.poisonExpiresAtNight.entries()) {
+      if (expiresAt === this.state.night) {
+        const p = this.state.players.get(seat);
+        if (p) p.isPoisoned = false;
+        this.poisonExpiresAtNight.delete(seat);
+      }
+    }
+
     this.logEvent({
       type: 'phase_change',
       description: `第 ${this.state.night} 夜開始`,
@@ -210,11 +223,6 @@ export class GameStateManager {
   startDay(): void {
     this.state.day += 1;
     this.state.phase = 'day';
-
-    // 清除所有中毒狀態（中毒持續到白天結束）
-    for (const player of this.state.players.values()) {
-      player.isPoisoned = false;
-    }
 
     this.logEvent({
       type: 'phase_change',
