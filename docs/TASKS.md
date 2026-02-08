@@ -97,11 +97,15 @@
 - [ ] `getRoleData(roleId)`
 
 狀態操作：
-- [ ] `addStatus(seat, type, data?)`
+- [ ] `addStatus(seat, type, sourceSeat, data?)` — 新增 `sourceSeat` 參數，記錄施加來源；拒絕對已死亡玩家加狀態
 - [ ] `removeStatus(seat, type)`
 - [ ] `hasStatus(seat, type)`
-- [ ] `killPlayer(seat, cause)`
+- [ ] `killPlayer(seat, cause)` — 內部呼叫 `revokeEffectsFrom(seat, 'death')`
 - [ ] `markAbilityUsed(seat)`
+
+能力失效支援（見 `AbilityInvalidation.contract.md`）：
+- [ ] `revokeEffectsFrom(sourceSeat, reason)` — 撤銷指定玩家施加的所有持續性狀態
+- [ ] `replaceRole(seat, newRole)` — 角色替換，內部呼叫 `revokeEffectsFrom(seat, 'role_change')`
 
 階段控制：
 - [ ] `startNight()`（清除 protected 與 poisoned）
@@ -127,6 +131,9 @@
 - [ ] history 只可 append
 - [ ] startNight 清除 protected
 - [ ] startNight 清除 poisoned（確保 N1 下毒 → D1 中毒；N2 不中毒）
+- [ ] `addStatus` 記錄 `sourceSeat`，死亡玩家靜默忽略
+- [ ] `killPlayer` 自動撤銷該玩家施加的持續狀態（`revokeEffectsFrom`）
+- [ ] `replaceRole` 自動撤銷舊角色持續狀態並更新角色資料
 
 **AC（測試：Contract Tests 必須通過）**
 - [ ] 新增 `src/engine/__tests__/GameState.contract.test.ts`（或合併在 GameState.test.ts 但要清楚標示 Contract）
@@ -137,7 +144,7 @@
 ### Day 4-5：RuleEngine（處理流程骨架）
 
 #### Task 3.1：實作 RuleEngine 核心
-檔案：`src/engine/RuleEngine.ts`  
+檔案：`src/engine/RuleEngine.ts`
 規格：`docs/SPEC_RuleEngine.md`
 
 - [ ] 設計一個「可注入 handlers」的引擎
@@ -145,9 +152,16 @@
 - [ ] 能回傳每一步處理結果（給 UI 顯示）
 - [ ] 支援 Jinx 規則檢查（先做到結構/介面即可）
 
+能力失效 — 統一後處理（見 `AbilityInvalidation.contract.md`）：
+- [ ] `startNightResolution()` — 每夜結算前重置 `NightContext`
+- [ ] `applyInvalidation()` — handler 回傳後統一檢查：效果型 + `!infoReliable` → 標記 `effectNullified: true`
+- [ ] `NightContext.blockedRoles` — 攔截類能力（如 Exorcist）阻止後續角色結算
+
 **AC**
 - [ ] 可以跑完一個夜晚流程（不含 UI）
 - [ ] 可以產生「本夜行動清單 + 執行結果」
+- [ ] 中毒的僧侶保護結果帶有 `effectNullified: true`
+- [ ] `NightContext` 攔截可阻止 Demon 行動
 
 ---
 
