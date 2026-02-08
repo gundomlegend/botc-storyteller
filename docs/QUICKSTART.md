@@ -11,10 +11,11 @@
 請按照以下步驟建立血染鐘樓說書人助手專案：
 
 1. 閱讀 SETUP.md 並執行所有初始化步驟
-2. 閱讀 docs/SPEC_GameState.md 並實作 GameStateManager
-3. 閱讀 docs/SPEC_RuleEngine.md 並實作 RuleEngine
-4. 閱讀 docs/SPEC_Handlers.md 並實作所有處理器
-5. 執行測試驗證所有功能
+2. 閱讀 docs/contracts/GameState.contract.md
+3. 閱讀 docs/specs/GameState.spec.md 並實作 GameStateManager
+4. 閱讀 docs/SPEC_RuleEngine.md 並實作 RuleEngine
+5. 閱讀 docs/SPEC_Handlers.md 並實作所有處理器
+6. 執行測試驗證所有功能
 
 完成後告訴我結果。
 ```

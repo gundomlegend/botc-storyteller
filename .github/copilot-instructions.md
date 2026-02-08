@@ -80,7 +80,7 @@ Jinx rules in [src/data/jinxes.json](src/data/jinxes.json) – if two roles trig
 | `src/renderer/` | React app (Vite root), includes App.tsx, components/, styles/ |
 | `src/engine/` | GameState, RuleEngine, type definitions – **no React imports** |
 | `src/data/` | JSON: roles/trouble-brewing.json, jinxes.json |
-| `botc-docs/` | Development specs (GameState, RuleEngine, data formats) |
+| `docs/` | Development specs (GameState, RuleEngine, data formats) |
 
 ### Naming Conventions
 - **Components** (`.tsx`): `PascalCase` → `PlayerCard.tsx`, `NightView.tsx`
@@ -121,7 +121,7 @@ When adding a new feature:
 - [ ] React component in `src/renderer/components/`
 - [ ] Styles in `src/renderer/styles/`, name matching component (kebab-case)
 - [ ] Update JSON data if adding role/jinx to `src/data/`
-- [ ] Document in `botc-docs/` if architecture-level change
+- [ ] Document in `docs/` if architecture-level change
 
 ## Testing Strategy
 Unit tests focus on:
@@ -140,7 +140,7 @@ Use TypeScript's compiler as first check – avoid `any` and lean on strict type
 - **electron-builder** – Packaging for Windows/Mac/Linux
 
 ## Resources
-- [botc-docs/SPEC_GameState.md](botc-docs/SPEC_GameState.md) – GameState API spec
-- [botc-docs/SPEC_RuleEngine.md](botc-docs/SPEC_RuleEngine.md) – Rule processing engine
-- [botc-docs/DATA_FORMAT.md](botc-docs/DATA_FORMAT.md) – Role and Jinx JSON schemas
-- [botc-docs/DEVELOPMENT.md](botc-docs/DEVELOPMENT.md) – Code style, component patterns
+- [docs/SPEC_GameState.md](docs/SPEC_GameState.md) – GameState API spec
+- [docs/SPEC_RuleEngine.md](docs/SPEC_RuleEngine.md) – Rule processing engine
+- [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) – Role and Jinx JSON schemas
+- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) – Code style, component patterns
