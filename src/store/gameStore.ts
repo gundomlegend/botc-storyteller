@@ -21,7 +21,7 @@ interface GameStore {
   startNight: () => void;
   startDay: () => void;
   processAbility: (playerSeat: number, targetSeat: number | null) => NightResult;
-  addStatus: (seat: number, type: 'poisoned' | 'protected' | 'drunk') => void;
+  addStatus: (seat: number, type: 'poisoned' | 'protected' | 'drunk', sourceSeat: number) => void;
   removeStatus: (seat: number, type: 'poisoned' | 'protected') => void;
   killPlayer: (seat: number, cause: 'demon_kill' | 'execution' | 'virgin_ability' | 'other') => void;
 
@@ -100,8 +100,8 @@ export const useGameStore = create<GameStore>((set) => {
       return result;
     },
 
-    addStatus: (seat, type) => {
-      stateManager.addStatus(seat, type);
+    addStatus: (seat, type, sourceSeat) => {
+      stateManager.addStatus(seat, type, sourceSeat);
       refresh();
     },
 
