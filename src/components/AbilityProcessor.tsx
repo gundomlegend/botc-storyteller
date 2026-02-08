@@ -27,11 +27,17 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
   };
 
   const handleConfirm = () => {
+    // effectNullified: 中毒/醉酒導致效果不落地，跳過狀態變更
+    if (result?.effectNullified) {
+      onDone();
+      return;
+    }
+
     // 根據結果執行狀態變更
     if (result?.action === 'add_protection' && selectedTarget != null) {
-      useGameStore.getState().addStatus(selectedTarget, 'protected');
+      useGameStore.getState().addStatus(selectedTarget, 'protected', item.seat);
     } else if (result?.action === 'add_poison' && selectedTarget != null) {
-      useGameStore.getState().addStatus(selectedTarget, 'poisoned');
+      useGameStore.getState().addStatus(selectedTarget, 'poisoned', item.seat);
     } else if (
       result?.action === 'kill' &&
       selectedTarget != null &&
@@ -97,6 +103,10 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
 
           {result.reasoning && (
             <div className="result-reasoning">{result.reasoning}</div>
+          )}
+
+          {result.effectNullified && (
+            <div className="result-warning">效果已無效化（中毒/醉酒），不會實際生效</div>
           )}
 
           {result.mustFollow && (

@@ -1,14 +1,17 @@
-import type { RoleData, Jinx, Player, GameState, NightResult, RoleHandler } from './types';
+import type { RoleData, Jinx, Player, GameState, NightResult, NightContext, RoleHandler } from './types';
 import { GameStateManager } from './GameState';
 import { t } from './locale';
 import { handlers } from './handlers';
 import rolesData from '../data/roles/trouble-brewing.json';
 import jinxesData from '../data/jinxes.json';
 
+const EFFECT_ACTIONS = new Set(['add_protection', 'add_poison', 'kill']);
+
 export class RuleEngine {
   private roleRegistry: Map<string, RoleData>;
   private jinxRegistry: Jinx[];
   private handlers: Map<string, RoleHandler>;
+  private nightContext: NightContext;
 
   constructor() {
     this.roleRegistry = new Map();
@@ -18,6 +21,11 @@ export class RuleEngine {
 
     this.jinxRegistry = jinxesData as Jinx[];
     this.handlers = handlers;
+    this.nightContext = { blockedRoles: new Set() };
+  }
+
+  startNightResolution(): void {
+    this.nightContext = { blockedRoles: new Set() };
   }
 
   processNightAbility(
@@ -36,7 +44,16 @@ export class RuleEngine {
       };
     }
 
-    // 2. 檢查死亡狀態
+    // 2. 檢查 NightContext 攔截（AC4）
+    if (this.nightContext.blockedRoles.has(roleData.team)) {
+      return {
+        skip: true,
+        skipReason: `${t(roleData, 'name')}被攔截，本夜無法行動`,
+        display: `${player.seat}號 ${player.name}（${t(roleData, 'name')}）被攔截，跳過`,
+      };
+    }
+
+    // 3. 檢查死亡狀態
     if (!player.isAlive && !roleData.worksWhenDead) {
       return {
         skip: true,
@@ -45,7 +62,7 @@ export class RuleEngine {
       };
     }
 
-    // 3. 檢查狀態影響
+    // 4. 檢查狀態影響
     let infoReliable = true;
     let statusReason = '';
 
@@ -59,17 +76,19 @@ export class RuleEngine {
       statusReason = statusReason ? `${statusReason}且醉酒` : '醉酒';
     }
 
-    // 4. 檢查 Jinx 規則
+    // 5. 檢查 Jinx 規則
     const jinxReason = this.checkJinxes(player.role, stateManager);
     if (jinxReason) {
       infoReliable = false;
       statusReason = statusReason ? `${statusReason}，且${jinxReason}` : jinxReason;
     }
 
-    // 5. 調用處理器
+    // 6. 調用處理器
     const handler = this.handlers.get(player.role);
+    let result: NightResult;
+
     if (handler) {
-      return handler.process({
+      result = handler.process({
         roleData,
         player,
         target,
@@ -81,10 +100,32 @@ export class RuleEngine {
           return rd ? t(rd, 'name') : roleId;
         },
       });
+    } else {
+      result = this.defaultHandler(roleData, player, infoReliable, statusReason);
     }
 
-    // 6. 使用預設處理器
-    return this.defaultHandler(roleData, player, infoReliable, statusReason);
+    // 7. 統一後處理（AC1）
+    return this.applyInvalidation(result, infoReliable, statusReason);
+  }
+
+  private applyInvalidation(
+    result: NightResult,
+    infoReliable: boolean,
+    statusReason: string
+  ): NightResult {
+    if (result.skip || result.needInput || infoReliable) {
+      return result;
+    }
+
+    if (result.action && EFFECT_ACTIONS.has(result.action)) {
+      return {
+        ...result,
+        effectNullified: true,
+        reasoning: `${statusReason}，效果不落地（仍喚醒玩家）`,
+      };
+    }
+
+    return result;
   }
 
   private defaultHandler(
