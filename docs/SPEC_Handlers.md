@@ -345,24 +345,71 @@ describe('PoisonerHandler', () => {
    ├─ 未選擇 → 返回需要輸入
    └─ 已選擇 → 繼續
    ↓
-2. 檢查保護狀態
+2. 檢查是否自殺（Star Pass）
+   ├─ target.seat === player.seat → 進入 Star Pass 流程
+   │   ├─ 尋找存活爪牙
+   │   │   ├─ 無存活爪牙 → 純自殺（無繼承）
+   │   │   └─ 有存活爪牙 → 選擇繼承者
+   │   │       ├─ 紅唇女郎（scarletwoman）存活 → 優先選她
+   │   │       └─ 否則 → 隨機選一位存活爪牙
+   │   └─ 回傳 star pass 結果（含新惡魔資訊 + 喚醒提示）
+   └─ 否 → 繼續一般擊殺流程
+   ↓
+3. 檢查保護狀態
    ├─ 受保護 → 擊殺失敗
    └─ 未保護 → 繼續
    ↓
-3. 檢查士兵免疫
+4. 檢查士兵免疫
    ├─ 是士兵 → 擊殺失敗
    └─ 非士兵 → 繼續
    ↓
-4. 擊殺成功
+5. 擊殺成功
    └─ 外部會調用 gameState.killPlayer(target, 'demon_kill')
+```
+
+#### Star Pass 結果格式
+
+外部（AbilityProcessor）收到 `info.starPass === true` 時，需依序執行：
+1. `killPlayer(impSeat, 'demon_kill')` — Imp 死亡（觸發 AC2 revokeEffectsFrom）
+2. `replaceRole(newDemonSeat, 'imp')` — 爪牙變成 Imp（觸發 AC3 revokeEffectsFrom）
+
+```typescript
+// Star Pass 回傳範例
+{
+  action: 'kill',
+  info: {
+    targetSeat: player.seat,     // 自己
+    targetName: player.name,
+    blocked: false,
+    starPass: true,
+    newDemonSeat: 3,
+    newDemonName: '某某',
+    newDemonOldRole: 'poisoner',
+  },
+  display: '小惡魔自殺！\n3號 某某（投毒者）成為新的小惡魔\n\n請喚醒該玩家並告知其成為新的惡魔',
+  gesture: 'none'
+}
+
+// 純自殺（無存活爪牙）回傳範例
+{
+  action: 'kill',
+  info: {
+    targetSeat: player.seat,
+    targetName: player.name,
+    blocked: false,
+    starPass: false,
+  },
+  display: '小惡魔自殺！\n無存活爪牙可繼承，惡魔陣營失去惡魔',
+  gesture: 'none'
+}
 ```
 
 #### 程式碼實作
 ```typescript
 export class ImpHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { target } = context;
-    
+    const { player, target, gameState, getRoleName } = context;
+
     // 步驟 1: 檢查目標
     if (!target) {
       return {
@@ -372,49 +419,56 @@ export class ImpHandler implements RoleHandler {
         display: '等待小惡魔選擇擊殺目標...'
       };
     }
-    
-    // 步驟 2: 檢查保護
-    if (target.isProtected) {
+
+    // 步驟 2: 檢查自殺（Star Pass）
+    if (target.seat === player.seat) {
+      return this.handleStarPass(player, gameState, getRoleName);
+    }
+
+    // 步驟 3: 檢查保護
+    if (target.isProtected) { ... }
+
+    // 步驟 4: 檢查士兵
+    if (target.role === 'soldier' && !target.isPoisoned && !target.isDrunk) { ... }
+
+    // 步驟 5: 擊殺成功
+    return { action: 'kill', info: { ... }, ... };
+  }
+
+  private handleStarPass(
+    player: Player,
+    gameState: GameState,
+    getRoleName: (roleId: string) => string
+  ): NightResult {
+    // 尋找存活爪牙
+    const aliveMinions = Array.from(gameState.players.values())
+      .filter(p => p.team === 'minion' && p.isAlive);
+
+    if (aliveMinions.length === 0) {
       return {
         action: 'kill',
-        info: {
-          targetSeat: target.seat,
-          targetName: target.name,
-          blocked: true,
-          reason: '目標受到僧侶保護'
-        },
-        display: `小惡魔選擇擊殺 ${target.seat}號 (${target.name})
-⚠️ 該玩家受到僧侶保護，擊殺失敗！`,
+        info: { targetSeat: player.seat, targetName: player.name, blocked: false, starPass: false },
+        display: `小惡魔自殺！\n無存活爪牙可繼承，惡魔陣營失去惡魔`,
         gesture: 'none'
       };
     }
-    
-    // 步驟 3: 檢查士兵
-    if (target.role === 'soldier' && !target.isPoisoned && !target.isDrunk) {
-      return {
-        action: 'kill',
-        info: {
-          targetSeat: target.seat,
-          targetName: target.name,
-          blocked: true,
-          reason: '目標是士兵'
-        },
-        display: `小惡魔選擇擊殺 ${target.seat}號 (${target.name})
-⚠️ 該玩家是士兵，免疫惡魔擊殺！`,
-        gesture: 'none'
-      };
-    }
-    
-    // 步驟 4: 擊殺成功
+
+    // 紅唇女郎優先，否則隨機
+    const scarletWoman = aliveMinions.find(p => p.role === 'scarletwoman');
+    const newDemon = scarletWoman ?? aliveMinions[Math.floor(Math.random() * aliveMinions.length)];
+
     return {
       action: 'kill',
       info: {
-        targetSeat: target.seat,
-        targetName: target.name,
-        blocked: false
+        targetSeat: player.seat,
+        targetName: player.name,
+        blocked: false,
+        starPass: true,
+        newDemonSeat: newDemon.seat,
+        newDemonName: newDemon.name,
+        newDemonOldRole: newDemon.role,
       },
-      display: `小惡魔擊殺 ${target.seat}號 (${target.name})
-該玩家將在黎明時死亡`,
+      display: `小惡魔自殺！\n${newDemon.seat}號 ${newDemon.name}（${getRoleName(newDemon.role)}）成為新的小惡魔\n\n請喚醒該玩家並告知其成為新的惡魔`,
       gesture: 'none'
     };
   }
@@ -429,42 +483,79 @@ describe('ImpHandler', () => {
       player: imp,
       target: normalPlayer
     });
-    
+
     expect(result.action).toBe('kill');
     expect(result.info.blocked).toBe(false);
   });
-  
+
   test('保護阻擋擊殺', () => {
     protectedPlayer.isProtected = true;
-    
+
     const result = handler.process({
       player: imp,
       target: protectedPlayer
     });
-    
+
     expect(result.info.blocked).toBe(true);
     expect(result.info.reason).toContain('保護');
   });
-  
+
   test('士兵免疫', () => {
     const result = handler.process({
       player: imp,
       target: soldier
     });
-    
+
     expect(result.info.blocked).toBe(true);
     expect(result.info.reason).toContain('士兵');
   });
-  
+
   test('中毒士兵可被擊殺', () => {
     soldier.isPoisoned = true;
-    
+
     const result = handler.process({
       player: imp,
       target: soldier
     });
-    
+
     expect(result.info.blocked).toBe(false);
+  });
+
+  test('自殺時爪牙繼承（Star Pass）', () => {
+    // gameState 中有存活爪牙
+    const result = handler.process({
+      player: imp,
+      target: imp,   // 目標是自己
+      gameState: stateWithAliveMinions
+    });
+
+    expect(result.action).toBe('kill');
+    expect(result.info.starPass).toBe(true);
+    expect(result.info.newDemonSeat).toBeDefined();
+    expect(result.display).toContain('成為新的小惡魔');
+    expect(result.display).toContain('請喚醒該玩家');
+  });
+
+  test('自殺時紅唇女郎優先繼承', () => {
+    const result = handler.process({
+      player: imp,
+      target: imp,
+      gameState: stateWithScarletWoman
+    });
+
+    expect(result.info.starPass).toBe(true);
+    expect(result.info.newDemonOldRole).toBe('scarletwoman');
+  });
+
+  test('自殺時無存活爪牙', () => {
+    const result = handler.process({
+      player: imp,
+      target: imp,
+      gameState: stateWithNoAliveMinions
+    });
+
+    expect(result.info.starPass).toBe(false);
+    expect(result.display).toContain('無存活爪牙');
   });
 });
 ```

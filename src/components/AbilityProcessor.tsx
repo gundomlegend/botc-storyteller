@@ -40,12 +40,22 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
       useGameStore.getState().addStatus(selectedTarget, 'poisoned', item.seat);
     } else if (
       result?.action === 'kill' &&
-      selectedTarget != null &&
       result.info &&
       typeof result.info === 'object' &&
       !(result.info as Record<string, unknown>).blocked
     ) {
-      useGameStore.getState().killPlayer(selectedTarget, 'demon_kill');
+      const killInfo = result.info as Record<string, unknown>;
+
+      if (killInfo.starPass) {
+        // Star Pass：Imp 自殺 → 爪牙繼承
+        useGameStore.getState().killPlayer(item.seat, 'demon_kill');
+        if (typeof killInfo.newDemonSeat === 'number') {
+          useGameStore.getState().stateManager.replaceRole(killInfo.newDemonSeat as number, 'imp');
+          useGameStore.getState()._refresh();
+        }
+      } else if (selectedTarget != null) {
+        useGameStore.getState().killPlayer(selectedTarget, 'demon_kill');
+      }
     }
     onDone();
   };
