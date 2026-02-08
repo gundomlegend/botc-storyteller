@@ -178,10 +178,19 @@
 - [ ] Imp
 - [ ] Drunk（或以 status/placeholder 方式先落地）
 
+Imp Star Pass（自殺繼承）：
+- [ ] Imp 自殺時偵測 `target.seat === player.seat`
+- [ ] 從 `gameState.players` 尋找存活爪牙，紅唇女郎（scarletwoman）優先
+- [ ] 回傳 `info.starPass: true` + 新惡魔資訊 + 喚醒提示
+- [ ] AbilityProcessor 收到 star pass 時依序呼叫 `killPlayer` → `replaceRole`
+
 **AC**
 - [ ] handlers 可被註冊與呼叫
 - [ ] 與 GameStateManager 的狀態行為一致（poison/protect/kill/ability_used）
 - [ ] 有單元測試：每個 handler 至少 1-2 個核心情境
+- [ ] Imp 自殺時正確選擇繼承者（紅唇女郎優先）
+- [ ] Star pass 結果包含新惡魔資訊與喚醒提示
+- [ ] AbilityProcessor 正確處理 star pass 狀態變更（killPlayer + replaceRole）
 
 ---
 
