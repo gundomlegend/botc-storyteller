@@ -4,6 +4,22 @@
 
 ---
 
+## 技能驗證 (Ability Invalidation)
+
+能力失效合約：`docs/contracts/AbilityInvalidation.contract.md`
+
+**Handler 不負責 invalidation 檢查。** 所有 invalidation 由 RuleEngine 統一後處理：
+
+| 情境 | 誰負責 | Handler 要做什麼 |
+|---|---|---|
+| 中毒/醉酒導致效果型能力不落地（AC1） | RuleEngine `applyInvalidation()` 標記 `effectNullified: true` | 不用管，照常回傳結果 |
+| 中毒/醉酒導致資訊不可靠（AC1） | Handler 根據 `infoReliable` 自行調整 | 檢查 `infoReliable`，回傳調整後的資訊 |
+| 死亡跳過（AC2） | RuleEngine 前檢查 | 不用管 |
+| 角色變更撤銷持續狀態（AC3） | GameState `revokeEffectsFrom()` | 不用管 |
+| NightContext 攔截（AC4） | RuleEngine 前檢查 `blockedRoles` | 不用管 |
+
+**設計原則**：Handler 只寫純能力邏輯（happy path），不做防禦性檢查。
+
 ## 處理器介面
 
 所有角色處理器必須實作 `RoleHandler` 介面：
