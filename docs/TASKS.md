@@ -137,8 +137,8 @@
 - [x] `replaceRole` 自動撤銷舊角色持續狀態並更新角色資料
 
 **AC（測試：Contract Tests 必須通過）**
-- [ ] 新增 `src/engine/__tests__/GameState.contract.test.ts`（或合併在 GameState.test.ts 但要清楚標示 Contract）
-- [ ] Contract Tests 內容必須覆蓋 SPEC_GameState 的「State Contract」條目
+- [x] 新增 `src/engine/__tests__/GameState.contract.test.ts`（或合併在 GameState.test.ts 但要清楚標示 Contract）
+- [x] Contract Tests 內容必須覆蓋 SPEC_GameState 的「State Contract」條目
 
 ---
 
