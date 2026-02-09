@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { GameStateManager } from '../engine/GameState';
 import { RuleEngine } from '../engine/RuleEngine';
-import type { Player, NightOrderItem, NightResult, GameEvent } from '../engine/types';
+import type { Player, NightOrderItem, NightResult, GameEvent, StatusEffectType } from '../engine/types';
 
 interface GameStore {
   stateManager: GameStateManager;
@@ -21,8 +21,8 @@ interface GameStore {
   startNight: () => void;
   startDay: () => void;
   processAbility: (playerSeat: number, targetSeat: number | null) => NightResult;
-  addStatus: (seat: number, type: 'poisoned' | 'protected' | 'drunk', sourceSeat: number) => void;
-  removeStatus: (seat: number, type: 'poisoned' | 'protected') => void;
+  addStatus: (seat: number, type: StatusEffectType, sourceSeat: number) => void;
+  removeStatus: (seat: number, type: StatusEffectType) => void;
   killPlayer: (seat: number, cause: 'demon_kill' | 'execution' | 'virgin_ability' | 'other') => void;
 
   // 內部刷新

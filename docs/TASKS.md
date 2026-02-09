@@ -66,7 +66,7 @@
 - [x] `RoleData`
 - [x] `Player`
 - [x] `GameState`
-- [ ] `StatusEffect`（poisoned/protected/drunk 等）— 目前無獨立型別，狀態邏輯內嵌於 Player/GameState
+- [x] `StatusEffect`（poisoned/protected/drunk 等）— 已定義 `StatusEffectType` + `StatusEffect` interface
 - [x] `NightOrderItem`
 - [x] `GameEvent`
 - [x] `NightResult`

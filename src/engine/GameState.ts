@@ -1,4 +1,4 @@
-import type { RoleData, Player, GameState, GameEvent, NightOrderItem } from './types';
+import type { RoleData, Player, GameState, GameEvent, NightOrderItem, StatusEffect, StatusEffectType } from './types';
 import { t } from './locale';
 import rolesData from '../data/roles/trouble-brewing.json';
 
@@ -8,7 +8,7 @@ export class GameStateManager {
   private state: GameState;
   private roleRegistry: Map<string, RoleData>;
   private poisonExpiresAtNight: Map<number, number> = new Map();
-  private statusSources: Array<{ targetSeat: number; type: string; sourceSeat: number }> = [];
+  private statusSources: StatusEffect[] = [];
 
   constructor() {
     this.state = {
@@ -98,7 +98,7 @@ export class GameStateManager {
     return this.roleRegistry.get(roleId);
   }
 
-  addStatus(seat: number, type: 'poisoned' | 'protected' | 'drunk', sourceSeat: number, data?: { believesRole?: string }): void {
+  addStatus(seat: number, type: StatusEffectType, sourceSeat: number, data?: { believesRole?: string }): void {
     const player = this.state.players.get(seat);
     if (!player) return;
 
@@ -141,7 +141,7 @@ export class GameStateManager {
     }
   }
 
-  removeStatus(seat: number, type: 'poisoned' | 'protected'): void {
+  removeStatus(seat: number, type: StatusEffectType): void {
     const player = this.state.players.get(seat);
     if (!player) return;
 
@@ -155,7 +155,7 @@ export class GameStateManager {
     }
   }
 
-  hasStatus(seat: number, type: 'poisoned' | 'protected' | 'drunk'): boolean {
+  hasStatus(seat: number, type: StatusEffectType): boolean {
     const player = this.state.players.get(seat);
     if (!player) return false;
 

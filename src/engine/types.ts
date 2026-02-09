@@ -27,6 +27,18 @@ export interface Jinx {
   reason: string;
 }
 
+// ===== 狀態效果 =====
+
+/** 可施加的狀態效果類型 */
+export type StatusEffectType = 'poisoned' | 'protected' | 'drunk';
+
+/** 一筆持續性狀態效果紀錄（追蹤來源與目標） */
+export interface StatusEffect {
+  targetSeat: number;
+  type: StatusEffectType;
+  sourceSeat: number;
+}
+
 // ===== 玩家與遊戲狀態 =====
 
 export interface Player {
