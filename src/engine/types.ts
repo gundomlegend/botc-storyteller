@@ -62,7 +62,7 @@ export interface GameEvent {
   timestamp: number;
   night: number;
   day: number;
-  type: 'role_change' | 'death' | 'poison' | 'protection' | 'ability_use' | 'nomination' | 'vote' | 'phase_change' | 'init';
+  type: 'role_change' | 'death' | 'poison' | 'protection' | 'ability_use' | 'nomination' | 'vote' | 'phase_change' | 'init' | 'revoke';
   description: string;
   details: Record<string, unknown>;
 }
@@ -93,7 +93,12 @@ export interface NightResult {
   mustFollow?: boolean;
   canLie?: boolean;
   reasoning?: string;
+  effectNullified?: boolean;
   display: string;
+}
+
+export interface NightContext {
+  blockedRoles: Set<string>;
 }
 
 // ===== 處理器 =====

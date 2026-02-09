@@ -8,6 +8,7 @@ export class GameStateManager {
   private state: GameState;
   private roleRegistry: Map<string, RoleData>;
   private poisonExpiresAtNight: Map<number, number> = new Map();
+  private statusSources: Array<{ targetSeat: number; type: string; sourceSeat: number }> = [];
 
   constructor() {
     this.state = {
@@ -97,9 +98,12 @@ export class GameStateManager {
     return this.roleRegistry.get(roleId);
   }
 
-  addStatus(seat: number, type: 'poisoned' | 'protected' | 'drunk', data?: { believesRole?: string }): void {
+  addStatus(seat: number, type: 'poisoned' | 'protected' | 'drunk', sourceSeat: number, data?: { believesRole?: string }): void {
     const player = this.state.players.get(seat);
     if (!player) return;
+
+    // 已死亡玩家不可再獲得狀態
+    if (!player.isAlive) return;
 
     switch (type) {
       case 'poisoned':
@@ -107,18 +111,20 @@ export class GameStateManager {
         // 毒：持續到「下一個夜晚開始」才解除
         // 例如：N1 下毒 => expiresAtNight = 2 => N2 startNight() 一開始清掉
         this.poisonExpiresAtNight.set(seat, this.state.night + 1);
+        this.statusSources.push({ targetSeat: seat, type: 'poisoned', sourceSeat });
         this.logEvent({
           type: 'poison',
           description: `${player.seat}號 ${player.name} 被中毒`,
-          details: { seat, role: player.role },
+          details: { seat, role: player.role, sourceSeat },
         });
         break;
       case 'protected':
         player.isProtected = true;
+        this.statusSources.push({ targetSeat: seat, type: 'protected', sourceSeat });
         this.logEvent({
           type: 'protection',
           description: `${player.seat}號 ${player.name} 受到保護`,
-          details: { seat, role: player.role },
+          details: { seat, role: player.role, sourceSeat },
         });
         break;
       case 'drunk':
@@ -180,6 +186,58 @@ export class GameStateManager {
       type: 'death',
       description: `${player.seat}號 ${player.name} 死亡（${cause}）`,
       details: { seat, role: player.role, cause },
+    });
+
+    // AC2：死亡當下撤銷該玩家施加的所有持續性狀態
+    this.revokeEffectsFrom(seat, 'death');
+  }
+
+  revokeEffectsFrom(sourceSeat: number, reason: 'death' | 'role_change'): void {
+    const toRevoke = this.statusSources.filter((s) => s.sourceSeat === sourceSeat);
+    if (toRevoke.length === 0) return;
+
+    for (const record of toRevoke) {
+      const target = this.state.players.get(record.targetSeat);
+      if (!target) continue;
+
+      if (record.type === 'poisoned') {
+        target.isPoisoned = false;
+        this.poisonExpiresAtNight.delete(record.targetSeat);
+      } else if (record.type === 'protected') {
+        target.isProtected = false;
+      }
+    }
+
+    this.statusSources = this.statusSources.filter((s) => s.sourceSeat !== sourceSeat);
+
+    this.logEvent({
+      type: 'revoke',
+      description: `撤銷 ${sourceSeat}號 施加的所有持續狀態（原因：${reason}）`,
+      details: { sourceSeat, reason, revokedCount: toRevoke.length },
+    });
+  }
+
+  replaceRole(seat: number, newRole: string): void {
+    const player = this.state.players.get(seat);
+    if (!player) return;
+
+    const roleData = this.roleRegistry.get(newRole);
+    if (!roleData) {
+      throw new Error(`Unknown role: ${newRole}`);
+    }
+
+    const oldRole = player.role;
+
+    // AC3：角色替換當下撤銷舊角色施加的持續性狀態
+    this.revokeEffectsFrom(seat, 'role_change');
+
+    player.role = newRole;
+    player.team = roleData.team;
+
+    this.logEvent({
+      type: 'role_change',
+      description: `${player.seat}號 ${player.name} 角色從 ${oldRole} 變更為 ${newRole}`,
+      details: { seat, oldRole, newRole, team: roleData.team },
     });
   }
 

@@ -27,19 +27,35 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
   };
 
   const handleConfirm = () => {
+    // effectNullified: 中毒/醉酒導致效果不落地，跳過狀態變更
+    if (result?.effectNullified) {
+      onDone();
+      return;
+    }
+
     // 根據結果執行狀態變更
     if (result?.action === 'add_protection' && selectedTarget != null) {
-      useGameStore.getState().addStatus(selectedTarget, 'protected');
+      useGameStore.getState().addStatus(selectedTarget, 'protected', item.seat);
     } else if (result?.action === 'add_poison' && selectedTarget != null) {
-      useGameStore.getState().addStatus(selectedTarget, 'poisoned');
+      useGameStore.getState().addStatus(selectedTarget, 'poisoned', item.seat);
     } else if (
       result?.action === 'kill' &&
-      selectedTarget != null &&
       result.info &&
       typeof result.info === 'object' &&
       !(result.info as Record<string, unknown>).blocked
     ) {
-      useGameStore.getState().killPlayer(selectedTarget, 'demon_kill');
+      const killInfo = result.info as Record<string, unknown>;
+
+      if (killInfo.starPass) {
+        // Star Pass：Imp 自殺 → 爪牙繼承
+        useGameStore.getState().killPlayer(item.seat, 'demon_kill');
+        if (typeof killInfo.newDemonSeat === 'number') {
+          useGameStore.getState().stateManager.replaceRole(killInfo.newDemonSeat as number, 'imp');
+          useGameStore.getState()._refresh();
+        }
+      } else if (selectedTarget != null) {
+        useGameStore.getState().killPlayer(selectedTarget, 'demon_kill');
+      }
     }
     onDone();
   };
@@ -97,6 +113,10 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
 
           {result.reasoning && (
             <div className="result-reasoning">{result.reasoning}</div>
+          )}
+
+          {result.effectNullified && (
+            <div className="result-warning">效果已無效化（中毒/醉酒），不會實際生效</div>
           )}
 
           {result.mustFollow && (

@@ -19,5 +19,5 @@
     "resolveJsonModule": true,
     "esModuleInterop": true
   },
-  "include": ["src/renderer", "src/engine", "src/data", "src/store", "src/components"]
+  "include": ["src/renderer", "src/engine", "src/data", "src/store", "src/components", "src/tests"]
 }
