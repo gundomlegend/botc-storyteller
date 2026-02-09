@@ -188,7 +188,7 @@ Imp Star Pass（自殺繼承）：
 **AC**
 - [x] handlers 可被註冊與呼叫
 - [x] 與 GameStateManager 的狀態行為一致（poison/protect/kill/ability_used）
-- [ ] 有單元測試：每個 handler 至少 1-2 個核心情境
+- [x] 有單元測試：每個 handler 至少 1-2 個核心情境
 - [x] Imp 自殺時正確選擇繼承者（紅唇女郎優先）
 - [x] Star pass 結果包含新惡魔資訊與喚醒提示
 - [x] AbilityProcessor 正確處理 star pass 狀態變更（killPlayer + replaceRole）
