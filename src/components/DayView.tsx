@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import type { Player } from '../engine/types';
 import PlayerSelector from './PlayerSelector';
 
 export default function DayView() {
@@ -78,15 +79,20 @@ export default function DayView() {
             <div className="nomination-group">
               <p>提名者：</p>
               <PlayerSelector
-                onSelect={setNominatorSeat}
-                selectedSeat={nominatorSeat}
+                mode="single"
+                onlyAlive={true}
+                label="選擇提名者"
+                onSelect={(ps: Player[]) => setNominatorSeat(ps[0]?.seat ?? null)}
               />
             </div>
             <div className="nomination-group">
               <p>被提名者：</p>
               <PlayerSelector
-                onSelect={setNomineeSeat}
-                selectedSeat={nomineeSeat}
+                mode="single"
+                onlyAlive={false}
+                excludePlayers={nominatorSeat != null ? [nominatorSeat] : []}
+                label="選擇被提名者"
+                onSelect={(ps: Player[]) => setNomineeSeat(ps[0]?.seat ?? null)}
               />
             </div>
           </div>

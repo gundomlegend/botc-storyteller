@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { t } from '../engine/locale';
-import type { NightOrderItem, NightResult } from '../engine/types';
+import type { NightOrderItem, NightResult, Player } from '../engine/types';
 import PlayerSelector from './PlayerSelector';
 
 interface AbilityProcessorProps {
@@ -9,12 +9,16 @@ interface AbilityProcessorProps {
   onDone: () => void;
 }
 
+/** 需要玩家選擇目標的角色（其餘角色為資訊型，不需選擇） */
+const ROLES_NEEDING_TARGET = new Set(['fortuneteller', 'monk', 'poisoner', 'imp']);
+
 export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps) {
   const { processAbility, stateManager } = useGameStore();
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null);
   const [result, setResult] = useState<NightResult | null>(null);
 
   const roleData = stateManager.getRoleData(item.role);
+  const needsTarget = ROLES_NEEDING_TARGET.has(item.role);
 
   const handleProcess = () => {
     const r = processAbility(item.seat, selectedTarget);
@@ -78,19 +82,28 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
         {item.isProtected && <span className="status-tag protected">受保護</span>}
       </div>
 
-      {/* 還沒有結果：選擇目標 */}
+      {/* 還沒有結果：選擇目標（或直接執行） */}
       {!result && (
         <>
-          <div className="ability-target">
-            <p>選擇目標玩家：</p>
-            <PlayerSelector
-              onSelect={setSelectedTarget}
-              selectedSeat={selectedTarget}
-              excludeSeat={item.role === 'monk' ? item.seat : undefined}
-            />
-          </div>
+          {needsTarget && (
+            <div className="ability-target">
+              <p>選擇目標玩家：</p>
+              <PlayerSelector
+                mode="single"
+                canSelectSelf={item.role === 'imp' || item.role === 'poisoner'}
+                onlyAlive={true}
+                currentPlayerSeat={item.seat}
+                excludePlayers={item.role === 'monk' ? [item.seat] : []}
+                onSelect={(players: Player[]) => setSelectedTarget(players[0]?.seat ?? null)}
+              />
+            </div>
+          )}
           <div className="ability-actions">
-            <button className="btn-primary" onClick={handleProcess}>
+            <button
+              className="btn-primary"
+              onClick={handleProcess}
+              disabled={needsTarget && selectedTarget == null}
+            >
               執行能力
             </button>
             <button className="btn-secondary" onClick={onDone}>

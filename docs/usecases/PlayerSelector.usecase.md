@@ -179,57 +179,7 @@ function ImpAbility({ player }: Props) {
 
 ---
 
-### 場景 5: 共情者查看鄰居
-
-**角色**：共情者 (Empath)
-
-**規則**：
-- 自動顯示左右鄰居
-- 不需要玩家選擇
-- 只計算存活鄰居
-
-**實作**：
-```typescript
-function EmpathAbility({ player, onComplete }: Props) {
-  const [result, setResult] = useState('');
-
-  const handleNeighborsCalculated = (neighbors: Player[]) => {
-    // 自動計算邪惡鄰居數量（中毒/醉酒時由 RuleEngine 處理資訊可靠性）
-    const evilCount = neighbors.filter(n =>
-      n.team === 'minion' || n.team === 'demon'
-    ).length;
-
-    setResult(`你的鄰居中有 ${evilCount} 位邪惡玩家`);
-  };
-
-  return (
-    <div>
-      <h3>共情者 - {player.name}</h3>
-      <p>你的左右鄰居：</p>
-
-      {/* 純顯示鄰居，自動計算 */}
-      <PlayerSelector
-        mode="neighbors"
-        currentPlayerSeat={player.seat}
-        onSelect={handleNeighborsCalculated}
-      />
-
-      {result && (
-        <div className="result">
-          <p>結果：</p>
-          <p>{result}</p>
-        </div>
-      )}
-
-      <button onClick={onComplete}>確認</button>
-    </div>
-  );
-}
-```
-
----
-
-### 場景 6: 守鴉人查驗（死後能力）
+### 場景 5: 守鴉人查驗（死後能力）
 
 **角色**：守鴉人 (Ravenkeeper)
 
@@ -277,7 +227,7 @@ function RavenkeeperAbility({ player }: Props) {
 
 ## 白天流程場景
 
-### 場景 7: 發起提名
+### 場景 6: 發起提名
 
 **規則**：
 - 兩步選擇：提名者 → 被提名者
@@ -342,7 +292,7 @@ function NominationForm() {
 
 ---
 
-### 場景 8: 投票階段
+### 場景 7: 投票階段
 
 **規則**：
 - 多選模式
@@ -396,7 +346,7 @@ function VotingPhase({ nomination }: Props) {
 
 ## 第一夜特殊場景
 
-### 場景 9: 爪牙惡魔互認
+### 場景 8: 爪牙惡魔互認
 
 **規則**：
 - 只顯示，不可選擇
@@ -446,7 +396,7 @@ function MinionDemonRecognition({ onComplete }: Props) {
 
 ---
 
-### 場景 10: 惡魔虛張聲勢
+### 場景 9: 惡魔虛張聲勢
 
 **規則**：
 - 只顯示惡魔
@@ -497,7 +447,7 @@ function DemonBluffs({ onComplete }: Props) {
 
 ## 進階使用場景
 
-### 場景 11: 條件式過濾
+### 場景 10: 條件式過濾
 
 **範例**：處女被提名檢測
 ```typescript
@@ -523,7 +473,7 @@ function handleNomination(nominator: Player, target: Player) {
 
 ---
 
-### 場景 12: 動態排除玩家
+### 場景 11: 動態排除玩家
 
 **範例**：管家投票限制
 ```typescript
@@ -564,7 +514,7 @@ function ButlerVoteRestriction({ butler }: Props) {
 
 ## 組合使用範例
 
-### 場景 13: 完整的夜間流程
+### 場景 12: 完整的夜間流程
 ```typescript
 function NightProcessor({ nightOrder, currentIndex }: Props) {
   const currentItem = nightOrder[currentIndex];
@@ -611,7 +561,7 @@ function NightProcessor({ nightOrder, currentIndex }: Props) {
         );
       
       default:
-        // 簡單角色，不需要選擇
+        // 資訊型角色（如共情者）不需要選擇目標，不顯示 PlayerSelector
         return null;
     }
   };

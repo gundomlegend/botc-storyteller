@@ -10,7 +10,7 @@
 ```typescript
 interface PlayerSelectorProps {
   // ========== 選擇模式 ==========
-  mode: 'single' | 'double' | 'multiple' | 'neighbors' | 'display';
+  mode: 'single' | 'double' | 'multiple' | 'display';
   
   // ========== 基本規則 ==========
   canSelectSelf?: boolean;          // 是否可以選擇自己（默認：false）
@@ -19,7 +19,6 @@ interface PlayerSelectorProps {
   
   // ========== 當前玩家 ==========
   currentPlayerSeat?: number;       // 當前執行能力的玩家座位
-                                    // 'neighbors' 模式必需此參數
   
   // ========== 過濾條件 ==========
   excludePlayers?: number[];        // 排除的座位號列表
@@ -36,7 +35,7 @@ interface PlayerSelectorProps {
   // ========== 其他 ==========
   label?: string;                   // 選擇器標題
   readOnly?: boolean;               // 只顯示不可選（默認：false）
-                                    // 'neighbors' 和 'display' 模式自動為 true
+                                    // 'display' 模式自動為 true
   
   // ========== 回調 ==========
   onSelect: (players: Player[]) => void;  // 統一回傳 Player 陣列
@@ -45,8 +44,8 @@ interface PlayerSelectorProps {
 ```
 
 **注意**：
-- `neighbors` 模式自動設定 `readOnly=true`
 - `canSelectSelf=false`（默認）已涵蓋「排除自己」的需求，無需額外 `excludeSelf` prop
+- 資訊型角色（如共情者、廚師等）不需要選擇目標，不使用 PlayerSelector，由 AbilityProcessor 直接執行能力並顯示結果
 
 ---
 
@@ -91,32 +90,6 @@ interface PlayerSelectorProps {
 
 ---
 
-### Mode: 'neighbors' (鄰居顯示)
-
-**用途**：共情者查看鄰居
-
-**行為**：
-- 自動計算當前玩家的左右鄰居
-- 高亮顯示鄰居
-- 純顯示，不可點擊
-- 自動觸發 `onSelect` 返回鄰居資訊
-
-**返回值**：`Player[]` (兩位鄰居)
-
-**實作細節**：
-```typescript
-// 自動計算鄰居並觸發回調
-useEffect(() => {
-  if (mode === 'neighbors' && neighbors.length > 0) {
-    onSelect(neighbors);
-  }
-}, [mode, neighbors, onSelect]);
-```
-
-**注意**：此模式等同於 `mode="display"` + 自動鄰居高亮，用戶無需點擊。
-
----
-
 ### Mode: 'display' (顯示)
 
 **用途**：爪牙惡魔互認
@@ -132,7 +105,7 @@ useEffect(() => {
 
 ## 組件實作
 ```typescript
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Player } from '../engine/types';
 import { useGameStore } from '../store/gameStore';
 import './PlayerSelector.css';
@@ -175,39 +148,11 @@ export function PlayerSelector({
     });
   }, [players, onlyAlive, canSelectSelf, currentPlayerSeat, excludePlayers]);
   
-  // ========== 計算鄰居 ==========
-
-  const neighbors = useMemo(() => {
-    if (mode !== 'neighbors' || !currentPlayerSeat) return [];
-    
-    // TODO: 長期應委託 GameStateManager.getAliveNeighbors(seat)
-    // 暫時在組件內計算存活鄰居
-    const alivePlayers = players.filter(p => p.isAlive);
-    const currentIndex = alivePlayers.findIndex(p => p.seat === currentPlayerSeat);
-
-    if (currentIndex === -1) return [];
-
-    const playerCount = alivePlayers.length;
-    const leftIndex = (currentIndex - 1 + playerCount) % playerCount;
-    const rightIndex = (currentIndex + 1) % playerCount;
-
-    return [alivePlayers[leftIndex], alivePlayers[rightIndex]];
-  }, [mode, currentPlayerSeat, players]);
-
-  // ========== 自動觸發鄰居回調 ==========
-
-  useEffect(() => {
-    if (mode === 'neighbors' && neighbors.length > 0) {
-        // 鄰居模式自動觸發，不需要點擊
-        onSelect(neighbors);
-    }
-  }, [mode, neighbors, onSelect]);
-
   // ========== 處理點擊 ==========
 
   const handleClick = (player: Player) => {
-    // neighbors 和 display 模式不可點擊
-    if (mode === 'neighbors' || mode === 'display') return;
+    // display 模式不可點擊
+    if (mode === 'display') return;
     if (readOnly) return;
     
     // 檢查是否可選
@@ -274,9 +219,6 @@ export function PlayerSelector({
   };
   
   const isHighlighted = (player: Player) => {
-    if (mode === 'neighbors' && neighbors.find(n => n.seat === player.seat)) {
-      return true;
-    }
     return highlightPlayers.includes(player.seat);
   };
   

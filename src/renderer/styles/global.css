@@ -489,52 +489,116 @@ body {
 
 .player-selector {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.player-btn {
+.selector-label {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.selection-hint {
+  padding: 8px 12px;
+  background: rgba(243, 156, 18, 0.15);
+  border: 1px solid #f39c12;
+  border-radius: 4px;
+  color: #f39c12;
+  font-size: 0.85rem;
+}
+
+.vote-count {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+/* --- Player Card --- */
+
+.player-card {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
+  gap: 8px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: transparent;
   color: var(--text-secondary);
   font-size: 0.85rem;
-  cursor: pointer;
   transition: all 0.2s;
 }
 
-.player-btn:hover:not(:disabled) {
+.player-card.selectable {
+  cursor: pointer;
+}
+
+.player-card.selectable:hover {
   border-color: var(--accent);
   color: var(--text-primary);
 }
 
-.player-btn.selected {
+.player-card.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.player-card.selected {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
 }
 
-.player-btn.dead {
+.player-card.highlighted {
+  border-color: #f39c12;
+  box-shadow: 0 0 8px rgba(243, 156, 18, 0.4);
+}
+
+.player-card.dead {
   opacity: 0.4;
 }
 
-.player-btn.excluded {
-  opacity: 0.2;
-  cursor: not-allowed;
+.player-card.dead .player-name {
+  text-decoration: line-through;
 }
 
-.player-btn-seat {
+.player-seat {
   font-weight: bold;
+  min-width: 32px;
   color: inherit;
 }
 
-.player-btn-dead {
-  font-size: 0.7rem;
-  color: #aaa;
+.player-name {
+  flex: 1;
+}
+
+.player-role {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.player-card.selected .player-role {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.player-status {
+  display: flex;
+  gap: 2px;
+  font-size: 0.9rem;
+}
+
+/* --- Layouts --- */
+
+.layout-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.layout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 /* ===== DayView ===== */
