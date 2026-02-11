@@ -179,7 +179,52 @@ function ImpAbility({ player }: Props) {
 
 ---
 
-### 場景 5: 守鴉人查驗（死後能力）
+### 場景 5: 管家選主人
+
+**角色**：管家 (Butler)
+
+**規則**：
+- 每晚選擇 1 位玩家作為主人
+- 不能選擇自己
+- 只能選擇存活玩家
+- 第一夜和後續夜晚都需要選擇
+
+**實作**：
+```typescript
+function ButlerAbility({ player }: Props) {
+  const { stateManager } = useGameStore();
+
+  const handleSelect = (players: Player[]) => {
+    const master = players[0];
+    stateManager.setButlerMaster(master.seat);
+  };
+
+  const handleError = (message: string) => {
+    alert(message);
+  };
+
+  return (
+    <div>
+      <h3>管家 - {player.name}</h3>
+      <p>選擇你的主人（明天你只能在主人投票時跟著投票）</p>
+
+      <PlayerSelector
+        mode="single"
+        canSelectSelf={false}
+        onlyAlive={true}
+        currentPlayerSeat={player.seat}
+        label="選擇主人"
+        onSelect={handleSelect}
+        onError={handleError}
+      />
+    </div>
+  );
+}
+```
+
+---
+
+### 場景 6: 守鴉人查驗（死後能力）
 
 **角色**：守鴉人 (Ravenkeeper)
 
@@ -227,7 +272,7 @@ function RavenkeeperAbility({ player }: Props) {
 
 ## 白天流程場景
 
-### 場景 6: 發起提名
+### 場景 7: 發起提名
 
 **規則**：
 - 兩步選擇：提名者 → 被提名者
@@ -292,7 +337,7 @@ function NominationForm() {
 
 ---
 
-### 場景 7: 投票階段
+### 場景 8: 投票階段
 
 **規則**：
 - 多選模式
@@ -346,7 +391,7 @@ function VotingPhase({ nomination }: Props) {
 
 ## 第一夜特殊場景
 
-### 場景 8: 爪牙惡魔互認
+### 場景 9: 爪牙惡魔互認
 
 **規則**：
 - 只顯示，不可選擇
@@ -396,7 +441,7 @@ function MinionDemonRecognition({ onComplete }: Props) {
 
 ---
 
-### 場景 9: 惡魔虛張聲勢
+### 場景 10: 惡魔虛張聲勢
 
 **規則**：
 - 只顯示惡魔
@@ -447,7 +492,7 @@ function DemonBluffs({ onComplete }: Props) {
 
 ## 組合使用範例
 
-### 場景 10: 完整的夜間流程
+### 場景 11: 完整的夜間流程
 ```typescript
 function NightProcessor({ nightOrder, currentIndex }: Props) {
   const currentItem = nightOrder[currentIndex];
@@ -492,7 +537,18 @@ function NightProcessor({ nightOrder, currentIndex }: Props) {
             onlyAlive={true}
           />
         );
-      
+
+      case 'butler':
+        return (
+          <PlayerSelector
+            mode="single"
+            canSelectSelf={false}
+            onlyAlive={true}
+            currentPlayerSeat={currentItem.seat}
+            label="管家選擇主人"
+          />
+        );
+
       default:
         // 資訊型角色（如共情者）不需要選擇目標，不顯示 PlayerSelector
         return null;

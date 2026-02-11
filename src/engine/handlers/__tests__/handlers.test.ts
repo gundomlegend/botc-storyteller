@@ -11,6 +11,7 @@ import { MonkHandler } from '../MonkHandler';
 import { PoisonerHandler } from '../PoisonerHandler';
 import { ImpHandler } from '../ImpHandler';
 import { DrunkHandler } from '../DrunkHandler';
+import { ButlerHandler } from '../ButlerHandler';
 
 // ============================================================
 // 輔助
@@ -46,6 +47,7 @@ function makePlayer(overrides: Partial<Player> & { seat: number }): Player {
     isDrunk: false,
     isProtected: false,
     believesRole: null,
+    masterSeat: null,
     abilityUsed: false,
     deathCause: null,
     deathNight: null,
@@ -310,5 +312,38 @@ describe('DrunkHandler', () => {
     const result = handler.process(makeContext({}));
     expect(result.skip).toBe(true);
     expect(result.skipReason).toContain('酒鬼');
+  });
+});
+
+// ============================================================
+// ButlerHandler
+// ============================================================
+
+describe('ButlerHandler', () => {
+  const handler = new ButlerHandler();
+
+  const butler = makePlayer({ seat: 4, role: 'butler', team: 'outsider' });
+
+  it('無目標時要求輸入', () => {
+    const result = handler.process(makeContext({ player: butler, target: null }));
+    expect(result.needInput).toBe(true);
+    expect(result.inputType).toBe('select_player');
+  });
+
+  it('選擇其他玩家作為主人 → set_master', () => {
+    const master = makePlayer({ seat: 2, role: 'monk' });
+    const result = handler.process(makeContext({ player: butler, target: master }));
+
+    expect(result.action).toBe('set_master');
+    expect((result.info as any).masterSeat).toBe(2);
+    expect((result.info as any).masterName).toBe('Player2');
+  });
+
+  it('不能選擇自己作為主人 → skip', () => {
+    const target = makePlayer({ seat: 4, role: 'butler', team: 'outsider' });
+    const result = handler.process(makeContext({ player: butler, target }));
+
+    expect(result.skip).toBe(true);
+    expect(result.skipReason).toContain('不能選擇自己');
   });
 });

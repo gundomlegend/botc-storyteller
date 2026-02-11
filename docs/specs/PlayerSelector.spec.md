@@ -502,6 +502,37 @@ describe('PlayerSelector - 基本功能', () => {
     );
     expect(onSelect.mock.calls[0][0]).toHaveLength(2);
   });
+
+  test('管家選主人：不能選自己，只能選存活玩家', () => {
+    const onSelect = vi.fn();
+    const onError = vi.fn();
+    const butlerSeat = 4;
+
+    render(
+      <PlayerSelector
+        mode="single"
+        canSelectSelf={false}
+        onlyAlive={true}
+        currentPlayerSeat={butlerSeat}
+        label="管家選擇主人"
+        onSelect={onSelect}
+        onError={onError}
+      />
+    );
+
+    // 點擊自己 → 應觸發 onError
+    fireEvent.click(screen.getByText(`${butlerSeat}號`));
+    expect(onError).toHaveBeenCalledWith('不能選擇自己');
+    expect(onSelect).not.toHaveBeenCalled();
+
+    // 點擊存活的其他玩家 → 應成功
+    fireEvent.click(screen.getByText('1號'));
+    expect(onSelect).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ seat: 1 })
+      ])
+    );
+  });
 });
 ```
 

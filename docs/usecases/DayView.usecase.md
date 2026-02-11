@@ -103,24 +103,29 @@ const toggleVote = (seat: number) => {
 **規則**：
 - BotC 規則：管家只能在主人投票時跟著投票
 - 系統**不阻擋**管家投票，票數照算
-- 管家投票時顯示警告，提醒說書人確認主人是否也已投票
+- 管家投票時，自動偵測主人是否也已投票
+- 若主人未投票則顯示警告
+- **管家中毒時，能力失效，可自由投票，不顯示警告**
 - 投票是否有效由**說書人裁量**
 
 **實作**：
 ```typescript
-// 偵測管家是否投票
+const { stateManager } = useGameStore();
+
+// 偵測管家投票與主人狀態
 const butler = players.find((p) => p.role === 'butler' && p.isAlive);
 const butlerVoted = butler != null && votes.has(butler.seat);
+const butlerPoisoned = butler != null && butler.isPoisoned;
+const masterSeat = stateManager.getButlerMaster();
+const masterVoted = masterSeat != null && votes.has(masterSeat);
 
-// 投票區域顯示警告
-{butlerVoted && (
+// 投票區域顯示警告（中毒時不顯示）
+{butlerVoted && !masterVoted && !butlerPoisoned && (
   <div className="voting-warning">
-    注意：管家（{butler!.name}）已投票，請確認其主人是否也已投票，否則此票可能無效
+    注意：管家（{butler!.name}）已投票，但主人（{masterSeat}號）尚未投票，此票可能無效
   </div>
 )}
 ```
-
-> **TODO**：等 Butler handler 實作後，從 `GameStateManager` 取得主人座位，精確判斷主人是否投票。
 
 ---
 

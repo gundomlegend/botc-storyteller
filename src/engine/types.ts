@@ -51,6 +51,7 @@ export interface Player {
   isDrunk: boolean;
   isProtected: boolean;
   believesRole: string | null;
+  masterSeat: number | null;
   abilityUsed: boolean;
   deathCause: 'demon_kill' | 'execution' | 'virgin_ability' | 'other' | null;
   deathNight: number | null;
@@ -74,7 +75,7 @@ export interface GameEvent {
   timestamp: number;
   night: number;
   day: number;
-  type: 'role_change' | 'death' | 'poison' | 'protection' | 'ability_use' | 'nomination' | 'vote' | 'phase_change' | 'init' | 'revoke';
+  type: 'role_change' | 'death' | 'poison' | 'protection' | 'ability_use' | 'nomination' | 'vote' | 'phase_change' | 'init' | 'revoke' | 'butler_master';
   description: string;
   details: Record<string, unknown>;
 }
@@ -94,7 +95,7 @@ export interface NightOrderItem {
 }
 
 export interface NightResult {
-  action?: 'show_info' | 'tell_alignment' | 'add_protection' | 'add_poison' | 'kill';
+  action?: 'show_info' | 'tell_alignment' | 'add_protection' | 'add_poison' | 'kill' | 'set_master';
   skip?: boolean;
   skipReason?: string;
   needInput?: boolean;

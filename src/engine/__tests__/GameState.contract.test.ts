@@ -456,3 +456,74 @@ describe('邊界情境', () => {
     expect(m.getAlignment(imp)).toBe('evil');
   });
 });
+
+// ============================================================
+// Butler Master 管理
+// ============================================================
+
+describe('Butler Master 管理', () => {
+  function createButlerManager() {
+    const m = new GameStateManager();
+    m.initializePlayers([
+      { seat: 1, name: 'A', role: 'butler' },
+      { seat: 2, name: 'B', role: 'monk' },
+      { seat: 3, name: 'C', role: 'fortuneteller' },
+    ]);
+    return m;
+  }
+
+  it('setButlerMaster 記錄主人', () => {
+    const m = createButlerManager();
+    m.startNight();
+    m.setButlerMaster(2);
+    expect(m.getButlerMaster()).toBe(2);
+  });
+
+  it('getButlerMaster 初始為 null', () => {
+    const m = createButlerManager();
+    expect(m.getButlerMaster()).toBeNull();
+  });
+
+  it('setButlerMaster 可更換主人', () => {
+    const m = createButlerManager();
+    m.startNight();
+    m.setButlerMaster(2);
+    expect(m.getButlerMaster()).toBe(2);
+
+    m.setButlerMaster(3);
+    expect(m.getButlerMaster()).toBe(3);
+  });
+
+  it('不能選自己為主人', () => {
+    const m = createButlerManager();
+    m.startNight();
+    m.setButlerMaster(1); // butler 自己的座位
+    expect(m.getButlerMaster()).toBeNull();
+  });
+
+  it('不能選死亡玩家為主人', () => {
+    const m = createButlerManager();
+    m.startNight();
+    m.killPlayer(2, 'demon_kill');
+    m.setButlerMaster(2);
+    expect(m.getButlerMaster()).toBeNull();
+  });
+
+  it('無管家時 getButlerMaster 回傳 null', () => {
+    const m = new GameStateManager();
+    m.initializePlayers([
+      { seat: 1, name: 'A', role: 'monk' },
+      { seat: 2, name: 'B', role: 'imp' },
+    ]);
+    expect(m.getButlerMaster()).toBeNull();
+  });
+
+  it('setButlerMaster 記錄事件', () => {
+    const m = createButlerManager();
+    m.startNight();
+    const before = m.getHistory().length;
+    m.setButlerMaster(2);
+    expect(m.getHistory().length).toBe(before + 1);
+    expect(m.getHistory()[m.getHistory().length - 1].type).toBe('butler_master');
+  });
+});

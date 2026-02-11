@@ -50,6 +50,7 @@ export class GameStateManager {
         isDrunk: p.role === 'drunk',
         isProtected: false,
         believesRole: null,
+        masterSeat: null,
         abilityUsed: false,
         deathCause: null,
         deathNight: null,
@@ -251,6 +252,30 @@ export class GameStateManager {
       description: `${player.seat}號 ${player.name} 已使用能力`,
       details: { seat, role: player.role },
     });
+  }
+
+  setButlerMaster(masterSeat: number): void {
+    const butler = this.getAllPlayers().find((p) => p.role === 'butler' && p.isAlive);
+    if (!butler) return;
+
+    if (masterSeat === butler.seat) return;
+
+    const master = this.state.players.get(masterSeat);
+    if (!master || !master.isAlive) return;
+
+    butler.masterSeat = masterSeat;
+
+    this.logEvent({
+      type: 'butler_master',
+      description: `管家（${butler.seat}號 ${butler.name}）選擇 ${master.seat}號 ${master.name} 作為主人`,
+      details: { butlerSeat: butler.seat, masterSeat },
+    });
+  }
+
+  getButlerMaster(): number | null {
+    const butler = this.getAllPlayers().find((p) => p.role === 'butler');
+    if (!butler) return null;
+    return butler.masterSeat;
   }
 
   startNight(): void {

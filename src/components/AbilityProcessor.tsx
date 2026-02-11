@@ -10,7 +10,7 @@ interface AbilityProcessorProps {
 }
 
 /** 需要玩家選擇目標的角色（其餘角色為資訊型，不需選擇） */
-const ROLES_NEEDING_TARGET = new Set(['fortuneteller', 'monk', 'poisoner', 'imp']);
+const ROLES_NEEDING_TARGET = new Set(['fortuneteller', 'monk', 'poisoner', 'imp', 'butler']);
 
 export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps) {
   const { processAbility, stateManager } = useGameStore();
@@ -38,7 +38,9 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
     }
 
     // 根據結果執行狀態變更
-    if (result?.action === 'add_protection' && selectedTarget != null) {
+    if (result?.action === 'set_master' && selectedTarget != null) {
+      useGameStore.getState().setButlerMaster(selectedTarget);
+    } else if (result?.action === 'add_protection' && selectedTarget != null) {
       useGameStore.getState().addStatus(selectedTarget, 'protected', item.seat);
     } else if (result?.action === 'add_poison' && selectedTarget != null) {
       useGameStore.getState().addStatus(selectedTarget, 'poisoned', item.seat);
@@ -93,7 +95,7 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
                 canSelectSelf={item.role === 'imp' || item.role === 'poisoner'}
                 onlyAlive={true}
                 currentPlayerSeat={item.seat}
-                excludePlayers={item.role === 'monk' ? [item.seat] : []}
+                excludePlayers={item.role === 'monk' || item.role === 'butler' ? [item.seat] : []}
                 onSelect={(players: Player[]) => setSelectedTarget(players[0]?.seat ?? null)}
               />
             </div>
