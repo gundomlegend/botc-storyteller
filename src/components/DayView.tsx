@@ -16,6 +16,12 @@ export default function DayView() {
   const voteCount = votes.size;
   const votePassed = voteCount >= voteThreshold;
 
+  // 管家投票警告：票數照算，但提醒說書人確認主人是否投票
+  const butler = players.find((p) => p.role === 'butler' && p.isAlive);
+  const butlerVoted = butler != null && votes.has(butler.seat);
+  // TODO: 等 Butler handler 實作後，改從 GameStateManager 取得主人座位
+  // 目前僅提醒說書人手動確認
+
   const handleNominate = () => {
     if (nominatorSeat != null && nomineeSeat != null) {
       setShowVoting(true);
@@ -134,6 +140,12 @@ export default function DayView() {
             </span>
             {votePassed && <span className="vote-passed">通過</span>}
           </div>
+
+          {butlerVoted && (
+            <div className="voting-warning">
+              注意：管家（{butler!.name}）已投票，請確認其主人是否也已投票，否則此票可能無效
+            </div>
+          )}
 
           <div className="voting-actions">
             {votePassed && (

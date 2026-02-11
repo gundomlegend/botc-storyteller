@@ -740,6 +740,17 @@ body {
   font-weight: bold;
 }
 
+.voting-warning {
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: rgba(243, 156, 18, 0.15);
+  border: 1px solid #f39c12;
+  border-radius: 4px;
+  color: #f39c12;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
 .voting-actions {
   display: flex;
   gap: 8px;
