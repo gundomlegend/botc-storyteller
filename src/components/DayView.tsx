@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import type { Player } from '../engine/types';
 import PlayerSelector from './PlayerSelector';
 
 export default function DayView() {
@@ -14,6 +15,12 @@ export default function DayView() {
   const voteThreshold = Math.ceil(alivePlayers.length / 2);
   const voteCount = votes.size;
   const votePassed = voteCount >= voteThreshold;
+
+  // 管家投票警告：票數照算，但提醒說書人確認主人是否投票
+  const butler = players.find((p) => p.role === 'butler' && p.isAlive);
+  const butlerVoted = butler != null && votes.has(butler.seat);
+  // TODO: 等 Butler handler 實作後，改從 GameStateManager 取得主人座位
+  // 目前僅提醒說書人手動確認
 
   const handleNominate = () => {
     if (nominatorSeat != null && nomineeSeat != null) {
@@ -78,15 +85,20 @@ export default function DayView() {
             <div className="nomination-group">
               <p>提名者：</p>
               <PlayerSelector
-                onSelect={setNominatorSeat}
-                selectedSeat={nominatorSeat}
+                mode="single"
+                onlyAlive={true}
+                label="選擇提名者"
+                onSelect={(ps: Player[]) => setNominatorSeat(ps[0]?.seat ?? null)}
               />
             </div>
             <div className="nomination-group">
               <p>被提名者：</p>
               <PlayerSelector
-                onSelect={setNomineeSeat}
-                selectedSeat={nomineeSeat}
+                mode="single"
+                onlyAlive={false}
+                excludePlayers={nominatorSeat != null ? [nominatorSeat] : []}
+                label="選擇被提名者"
+                onSelect={(ps: Player[]) => setNomineeSeat(ps[0]?.seat ?? null)}
               />
             </div>
           </div>
@@ -128,6 +140,12 @@ export default function DayView() {
             </span>
             {votePassed && <span className="vote-passed">通過</span>}
           </div>
+
+          {butlerVoted && (
+            <div className="voting-warning">
+              注意：管家（{butler!.name}）已投票，請確認其主人是否也已投票，否則此票可能無效
+            </div>
+          )}
 
           <div className="voting-actions">
             {votePassed && (
