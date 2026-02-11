@@ -445,79 +445,9 @@ function DemonBluffs({ onComplete }: Props) {
 
 ---
 
-## 進階使用場景
-
-### 場景 10: 條件式過濾
-
-**範例**：處女被提名檢測
-```typescript
-function handleNomination(nominator: Player, target: Player) {
-  const { killPlayer, stateManager } = useGameStore.getState();
-
-  // 檢查目標是否為處女
-  if (target.role === 'virgin' && !target.abilityUsed) {
-    // 檢查提名者是否為鎮民
-    if (nominator.team === 'townsfolk') {
-      // 處女能力觸發
-      showAlert('處女能力觸發！提名者立即死亡！');
-      killPlayer(nominator.seat, 'virgin_ability');
-      stateManager.markAbilityUsed(target.seat);
-      return; // 不進入投票
-    }
-  }
-
-  // 正常進入投票
-  startVoting(nominator, target);
-}
-```
-
----
-
-### 場景 11: 管家投票提醒
-
-**規則**：
-- BotC 規則：管家只能在主人投票時跟著投票
-- 但投票流程不阻擋管家——票數照算，由說書人自行判斷是否有效
-- 系統在管家投票且主人未投票時，顯示警告提醒說書人
-
-**設計決策**：
-管家的投票限制屬於「說書人裁量」而非「系統強制」。PlayerSelector 不負責此邏輯，
-投票結算時檢查並提醒即可。
-
-**實作**：
-```typescript
-function checkButlerVoteWarning(
-  voters: Player[],
-  players: Player[],
-  stateManager: GameStateManager
-): string | null {
-  // 找出管家
-  const butler = players.find(p => p.role === 'butler' && p.isAlive);
-  if (!butler) return null;
-
-  const butlerVoted = voters.some(v => v.seat === butler.seat);
-  if (!butlerVoted) return null;
-
-  // 檢查主人是否也投票了
-  // TODO: masterSeat 需要額外狀態追蹤（管家每夜選擇主人）
-  const masterSeat = stateManager.getButlerMaster?.(butler.seat);
-  if (masterSeat == null) return null;
-
-  const masterVoted = voters.some(v => v.seat === masterSeat);
-  if (!masterVoted) {
-    const master = stateManager.getPlayer(masterSeat);
-    return `警告：管家（${butler.name}）投票了，但主人（${master?.name}）未投票，依 BotC 規則此票可能無效`;
-  }
-
-  return null;
-}
-```
-
----
-
 ## 組合使用範例
 
-### 場景 12: 完整的夜間流程
+### 場景 10: 完整的夜間流程
 ```typescript
 function NightProcessor({ nightOrder, currentIndex }: Props) {
   const currentItem = nightOrder[currentIndex];
