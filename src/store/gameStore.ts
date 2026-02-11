@@ -24,6 +24,7 @@ interface GameStore {
   addStatus: (seat: number, type: StatusEffectType, sourceSeat: number) => void;
   removeStatus: (seat: number, type: StatusEffectType) => void;
   killPlayer: (seat: number, cause: 'demon_kill' | 'execution' | 'virgin_ability' | 'other') => void;
+  setButlerMaster: (masterSeat: number) => void;
 
   // 內部刷新
   _refresh: () => void;
@@ -112,6 +113,11 @@ export const useGameStore = create<GameStore>((set) => {
 
     killPlayer: (seat, cause) => {
       stateManager.killPlayer(seat, cause);
+      refresh();
+    },
+
+    setButlerMaster: (masterSeat) => {
+      stateManager.setButlerMaster(masterSeat);
       refresh();
     },
 

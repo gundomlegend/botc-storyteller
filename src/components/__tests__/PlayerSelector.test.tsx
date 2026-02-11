@@ -28,6 +28,7 @@ function makeTestPlayer(overrides: Partial<Player> & { seat: number }): Player {
     isDrunk: false,
     isProtected: false,
     believesRole: null,
+    masterSeat: null,
     abilityUsed: false,
     deathCause: null,
     deathNight: null,

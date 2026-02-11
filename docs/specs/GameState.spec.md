@@ -36,6 +36,10 @@ export class GameStateManager {
   hasStatus(seat: number, type: 'poisoned' | 'protected' | 'drunk'): boolean;
   killPlayer(seat: number, cause: 'demon_kill' | 'execution' | 'virgin_ability' | 'other'): void;
   markAbilityUsed(seat: number): void;
+
+  // 管家主人
+  setButlerMaster(masterSeat: number): void;
+  getButlerMaster(): number | null;
   
   // 階段控制
   startNight(): void;
@@ -119,7 +123,7 @@ players: Array<{
 1. 清空現有玩家列表
 2. 為每個玩家建立 `Player` 物件
 3. 從角色註冊表獲取角色資料
-4. 設定初始狀態（存活、無中毒等）
+4. 設定初始狀態（存活、無中毒等、`masterSeat = null`）
 5. 更新玩家總數
 6. 標記設置完成
 7. 記錄初始化事件
@@ -308,6 +312,46 @@ console.log(`第 ${manager.getState().night} 夜`);
 
 ---
 
+### setButlerMaster()
+
+**功能**: 設定管家的主人
+
+**輸入**: `masterSeat: number` - 主人的座位號碼
+
+**行為**:
+1. 找到角色為 `butler` 的存活玩家
+2. 設定該玩家的 `masterSeat` 為指定座位
+3. 記錄事件
+
+**限制**:
+- 管家不存在或已死亡 → 忽略
+- `masterSeat` 不可為管家自己的座位
+- `masterSeat` 必須是存活玩家的座位
+
+**範例**:
+```typescript
+manager.setButlerMaster(3);
+// 管家的主人設為 3 號玩家
+```
+
+---
+
+### getButlerMaster()
+
+**功能**: 取得管家目前的主人座位
+
+**輸出**: `number | null` — 主人座位號碼，若管家不存在或尚未選主人則回傳 `null`
+
+**範例**:
+```typescript
+const masterSeat = manager.getButlerMaster();
+if (masterSeat != null) {
+  console.log(`管家的主人是 ${masterSeat} 號`);
+}
+```
+
+---
+
 ### startDay()
 **限制**
 - 不可在 day 狀態重複呼叫
@@ -397,7 +441,7 @@ order.forEach(item => {
 **輸入**:
 ```typescript
 event: {
-  type: 'role_change' | 'death' | 'poison' | 'protection' | 'ability_use' | 'nomination' | 'vote';
+  type: 'role_change' | 'death' | 'poison' | 'protection' | 'ability_use' | 'nomination' | 'vote' | 'butler_master';
   description: string;
   details: any;
 }

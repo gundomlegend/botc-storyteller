@@ -4,7 +4,7 @@ import type { Player } from '../engine/types';
 import PlayerSelector from './PlayerSelector';
 
 export default function DayView() {
-  const { day, players, alivePlayers, killPlayer, startNight, ruleEngine } = useGameStore();
+  const { day, players, alivePlayers, killPlayer, startNight, ruleEngine, stateManager } = useGameStore();
 
   const [nominatorSeat, setNominatorSeat] = useState<number | null>(null);
   const [nomineeSeat, setNomineeSeat] = useState<number | null>(null);
@@ -16,11 +16,13 @@ export default function DayView() {
   const voteCount = votes.size;
   const votePassed = voteCount >= voteThreshold;
 
-  // 管家投票警告：票數照算，但提醒說書人確認主人是否投票
+  // 管家投票警告：票數照算，但提醒說書人主人是否投票
+  // 中毒時能力失效，可自由投票，不顯示警告
   const butler = players.find((p) => p.role === 'butler' && p.isAlive);
   const butlerVoted = butler != null && votes.has(butler.seat);
-  // TODO: 等 Butler handler 實作後，改從 GameStateManager 取得主人座位
-  // 目前僅提醒說書人手動確認
+  const butlerPoisoned = butler != null && butler.isPoisoned;
+  const masterSeat = stateManager.getButlerMaster();
+  const masterVoted = masterSeat != null && votes.has(masterSeat);
 
   const handleNominate = () => {
     if (nominatorSeat != null && nomineeSeat != null) {
@@ -141,9 +143,9 @@ export default function DayView() {
             {votePassed && <span className="vote-passed">通過</span>}
           </div>
 
-          {butlerVoted && (
+          {butlerVoted && !masterVoted && !butlerPoisoned && (
             <div className="voting-warning">
-              注意：管家（{butler!.name}）已投票，請確認其主人是否也已投票，否則此票可能無效
+              注意：管家（{butler!.name}）已投票，但主人（{masterSeat}號）尚未投票，此票可能無效
             </div>
           )}
 
