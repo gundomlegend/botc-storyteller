@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import type { NightOrderItem } from '../../engine/types';
 import FortunetellerProcessor from './FortunetellerProcessor';
+import ChefProcessor from './ChefProcessor';
 
 export interface RoleProcessorProps {
   item: NightOrderItem;
@@ -14,4 +15,5 @@ export interface RoleProcessorProps {
  */
 export const ROLE_PROCESSORS: Record<string, ComponentType<RoleProcessorProps>> = {
   fortuneteller: FortunetellerProcessor,
+  chef: ChefProcessor,
 };

@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import type { HandlerContext, Player, GameState, RoleData } from '../../types';
 import { FortunetellerHandler } from '../FortunetellerHandler';
+import { ChefHandler } from '../ChefHandler';
 import { MonkHandler } from '../MonkHandler';
 import { PoisonerHandler } from '../PoisonerHandler';
 import { ImpHandler } from '../ImpHandler';
@@ -191,6 +192,164 @@ describe('FortunetellerHandler', () => {
 
     // 中毒不反轉，回傳實際結果
     expect((result.info as any).rawDetection).toBe(true);
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+});
+
+// ============================================================
+// ChefHandler
+// ============================================================
+
+describe('ChefHandler', () => {
+  const handler = new ChefHandler();
+
+  it('第一晚之後跳過', () => {
+    const players = [makePlayer({ seat: 1, role: 'chef', team: 'townsfolk' })];
+    const gs = makeGameState(players);
+    gs.night = 2;
+    const result = handler.process(makeContext({ gameState: gs }));
+    expect(result.skip).toBe(true);
+  });
+
+  it('沒有邪惡玩家 → actualPairCount: 0', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'chef', team: 'townsfolk' }),
+      makePlayer({ seat: 3, role: 'empath', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+    expect((result.info as any).actualPairCount).toBe(0);
+  });
+
+  it('單獨邪惡玩家不形成配對 → actualPairCount: 0', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'empath', team: 'townsfolk' }),
+      makePlayer({ seat: 4, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 5, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+    expect((result.info as any).actualPairCount).toBe(0);
+  });
+
+  it('兩個相鄰邪惡玩家 → actualPairCount: 1', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+    expect((result.info as any).actualPairCount).toBe(1);
+    expect((result.info as any).pairDetails).toEqual(['2-3']);
+  });
+
+  it('三個相鄰邪惡玩家 → actualPairCount: 2', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'baron', team: 'minion' }),
+      makePlayer({ seat: 5, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+    expect((result.info as any).actualPairCount).toBe(2);
+    expect((result.info as any).pairDetails).toEqual(['2-3', '3-4']);
+  });
+
+  it('環形相鄰：首尾相接 → 正確計算', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 2, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 3, role: 'empath', team: 'townsfolk' }),
+      makePlayer({ seat: 4, role: 'poisoner', team: 'minion' }),
+    ];
+    const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+    expect((result.info as any).actualPairCount).toBe(1); // [4-1] 環形
+    expect((result.info as any).segments).toEqual([[4, 1]]);
+  });
+
+  it('間諜不被視為邪惡 → 不計入配對', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'spy', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+    expect((result.info as any).actualPairCount).toBe(0);
+    expect((result.info as any).spySeats).toEqual([2]);
+    expect((result.info as any).evilSeats).toEqual([3]);
+  });
+
+  it('間諜打斷連續區塊', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 2, role: 'spy', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'baron', team: 'minion' }),
+      makePlayer({ seat: 5, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+    expect((result.info as any).actualPairCount).toBe(1);
+    expect((result.info as any).segments).toEqual([[1], [3, 4]]);
+    expect((result.info as any).pairDetails).toEqual(['3-4']);
+  });
+
+  it('陌客被視為邪惡 → 計入配對', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'recluse', team: 'outsider' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+    expect((result.info as any).actualPairCount).toBe(1);
+    expect((result.info as any).recluseSeats).toEqual([2]);
+    expect((result.info as any).evilSeats).toEqual([2, 3]);
+    expect((result.info as any).pairDetails).toEqual(['2-3']);
+  });
+
+  it('間諜中毒 → 被視為邪惡', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 2, role: 'spy', team: 'minion', isPoisoned: true }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+    expect((result.info as any).actualPairCount).toBe(2);
+    expect((result.info as any).evilSeats).toEqual([1, 2, 3]);
+    expect((result.info as any).pairDetails).toEqual(['1-2', '2-3']);
+  });
+
+  it('陌客中毒 → 不被視為邪惡', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'recluse', team: 'outsider', isPoisoned: true }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+    expect((result.info as any).actualPairCount).toBe(0);
+    expect((result.info as any).evilSeats).toEqual([3]);
+  });
+
+  it('廚師中毒時仍回傳實際計算結果', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'chef', team: 'townsfolk', isPoisoned: true }),
+      makePlayer({ seat: 2, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+    ];
+    const result = handler.process(makeContext({
+      gameState: makeGameState(players),
+      infoReliable: false,
+      statusReason: '中毒',
+    }));
+    expect((result.info as any).actualPairCount).toBe(1);
+    expect((result.info as any).toldPairCount).toBeUndefined();
     expect(result.mustFollow).toBe(false);
     expect(result.canLie).toBe(true);
   });

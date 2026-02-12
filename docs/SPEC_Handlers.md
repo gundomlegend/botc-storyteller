@@ -151,7 +151,913 @@ describe('FortunetellerHandler', () => {
 
 ---
 
-## 2. 僧侶處理器 (MonkHandler)
+## 2. 廚師處理器 (ChefHandler)
+
+### 檔案位置
+`src/engine/handlers/ChefHandler.ts`
+
+### 角色能力
+遊戲開始時，你會得知有多少組相鄰且存活的邪惡玩家。
+
+### 設計原則
+- **第一夜限定**：只在第一晚執行，其他夜晚跳過
+- **自動計算**：不需要選擇目標，自動掃描所有玩家
+- **Handler 回傳實際數字**：中毒/醉酒由 UI 層提示說書人可自行決定
+
+### 相鄰配對計算邏輯
+
+座位視為**環形**（seat 1 與最後一位相鄰）。
+
+#### 邪惡玩家判定規則
+
+```
+isEvilForChef(player):
+  // 特例 1：間諜
+  if (player.role === 'spy') {
+    // 間諜中毒/醉酒：能力失效，被視為邪惡
+    if (player.isPoisoned || player.isDrunk) return true;
+    // 間諜正常：不被視為邪惡
+    return false;
+  }
+
+  // 特例 2：陌客
+  if (player.role === 'recluse') {
+    // 陌客中毒/醉酒：能力失效，不被視為邪惡
+    if (player.isPoisoned || player.isDrunk) return false;
+    // 陌客正常：被視為邪惡（說書人決定）
+    return true;  // 說書人決定
+  }
+
+  // 一般規則：爪牙和惡魔
+  return player.team === 'minion' || player.team === 'demon';
+```
+
+**特殊角色處理**：
+- **間諜（Spy）**：
+  - **正常狀態**：雖然是爪牙，但**不會**被廚師偵測為邪惡
+  - **中毒/醉酒**：能力失效，**會**被廚師偵測為邪惡
+- **陌客（Recluse）**：
+  - **正常狀態**：雖然是外來者（善良），但**可能**被廚師偵測為邪惡（說書人決定）
+  - **中毒/醉酒**：能力失效，**不會**被廚師偵測為邪惡
+
+#### 計算方法
+
+```
+定義：
+  - evil(player) = isEvilForChef(player)  // 使用上述判定規則
+  - 相鄰：座位號碼連續（考慮環形）
+
+計算方法：
+  1. 找出所有「被視為邪惡」的玩家座位號
+  2. 找出所有連續邪惡玩家的區塊（segments）
+  3. 對每個區塊：N 個連續邪惡玩家 = N-1 組配對
+  4. 總配對數 = Σ(每個區塊的配對數)
+```
+
+#### 範例
+
+**範例 1：分散的邪惡玩家**
+```
+座位: 1   2   3   4   5   6
+陣營: 善  惡  善  惡  善  善
+
+連續區塊：
+  - [2]：1 個邪惡 → 0 組配對
+  - [4]：1 個邪惡 → 0 組配對
+
+總配對數 = 0
+```
+
+**範例 2：兩個相鄰的邪惡玩家**
+```
+座位: 1   2   3   4   5   6
+陣營: 善  惡  惡  善  善  善
+
+連續區塊：
+  - [2, 3]：2 個邪惡 → 1 組配對 (2-3)
+
+總配對數 = 1
+```
+
+**範例 3：三個相鄰的邪惡玩家**
+```
+座位: 1   2   3   4   5   6
+陣營: 善  惡  惡  惡  善  善
+
+連續區塊：
+  - [2, 3, 4]：3 個邪惡 → 2 組配對 (2-3, 3-4)
+
+總配對數 = 2
+```
+
+**範例 4：多個分離區塊**
+```
+座位: 1   2   3   4   5   6   7   8
+陣營: 善  惡  惡  善  善  惡  惡  惡
+
+連續區塊：
+  - [2, 3]：2 個邪惡 → 1 組配對
+  - [6, 7, 8]：3 個邪惡 → 2 組配對
+
+總配對數 = 3
+```
+
+**範例 5：環形相鄰（跨越邊界）**
+```
+座位: 1   2   3   4   5   6
+陣營: 惡  善  善  善  善  惡
+
+連續區塊（環形）：
+  - [6, 1]：2 個邪惡 → 1 組配對 (6-1 環形相鄰)
+
+總配對數 = 1
+```
+
+**範例 6：全邪惡（理論情況）**
+```
+座位: 1   2   3   4   5   6
+陣營: 惡  惡  惡  惡  惡  惡
+
+連續區塊（環形）：
+  - [1, 2, 3, 4, 5, 6]：6 個邪惡 → 5 組配對
+
+總配對數 = 5
+```
+
+**範例 7：包含間諜（不計入邪惡）**
+```
+座位: 1      2      3      4      5      6
+角色: Monk   Spy    Imp    Monk   Poisoner Chef
+陣營: 善     爪牙*   惡魔   善     爪牙    善
+
+*間諜不被視為邪惡
+
+連續區塊：
+  - [3]：1 個邪惡 (Imp) → 0 組配對
+  - [5]：1 個邪惡 (Poisoner) → 0 組配對
+
+注意：雖然 2-3 座位相鄰，但 Spy 不算邪惡，所以 Imp 是孤立的
+
+總配對數 = 0
+```
+
+**範例 8：包含陌客（被視為邪惡）**
+```
+座位: 1        2      3      4      5
+角色: Recluse  Monk   Imp    Monk   Poisoner
+陣營: 外來者*   善     惡魔   善     爪牙
+
+*陌客被視為邪惡（說書人選擇）
+
+連續區塊：
+  - [1]：1 個邪惡 (Recluse) → 0 組配對
+  - [3]：1 個邪惡 (Imp) → 0 組配對
+  - [5, 1]：2 個邪惡 (環形) → 1 組配對 (5-1)
+
+總配對數 = 1
+```
+
+**範例 9：間諜打斷連續區塊**
+```
+座位: 1        2      3      4      5      6
+角色: Poisoner Spy    Imp    Baron  Monk   Chef
+陣營: 爪牙     爪牙*   惡魔   爪牙   善     善
+
+*間諜不被視為邪惡
+
+連續區塊：
+  - [1]：1 個邪惡 (Poisoner) → 0 組配對
+  - [3, 4]：2 個邪惡 (Imp, Baron) → 1 組配對 (3-4)
+
+注意：Spy 打斷了 Poisoner 和 Imp 的連續性
+
+總配對數 = 1
+```
+
+**範例 10：間諜中毒（被視為邪惡）**
+```
+座位: 1        2         3      4      5
+角色: Poisoner Spy(中毒) Imp    Monk   Chef
+陣營: 爪牙     爪牙*     惡魔   善     善
+
+*間諜中毒，能力失效，被視為邪惡
+
+連續區塊：
+  - [1, 2, 3]：3 個邪惡 → 2 組配對 (1-2, 2-3)
+
+注意：中毒的間諜被視為邪惡，與相鄰的 Poisoner 和 Imp 形成連續區塊
+
+總配對數 = 2
+```
+
+**範例 11：陌客醉酒（不被視為邪惡）**
+```
+座位: 1            2      3      4
+角色: Recluse(醉酒) Monk   Imp    Chef
+陣營: 外來者*       善     惡魔   善
+
+*陌客醉酒，能力失效，不被視為邪惡
+
+連續區塊：
+  - [3]：1 個邪惡 (Imp) → 0 組配對
+
+注意：醉酒的陌客不被視為邪惡
+
+總配對數 = 0
+```
+
+**範例 12：間諜醉酒 + 陌客中毒（雙重反轉）**
+```
+座位: 1            2         3      4      5
+角色: Recluse(中毒) Spy(醉酒) Imp    Monk   Chef
+陣營: 外來者*       爪牙*     惡魔   善     善
+
+*陌客中毒：不被視為邪惡
+*間諜醉酒：被視為邪惡
+
+連續區塊：
+  - [2, 3]：2 個邪惡 (Spy 醉酒, Imp) → 1 組配對 (2-3)
+
+總配對數 = 1
+```
+
+### 中毒/醉酒處理
+
+**設計原則**：提供正確答案，但讓說書人決定要告訴玩家什麼數字。
+
+- Handler 仍回傳實際計算結果（`actualPairCount`）
+- UI 層根據 `item.isPoisoned / item.isDrunk` 顯示警告提示
+- **正常狀態**：
+  - 數字選擇器**預填**實際計算結果
+  - 說書人可直接確認，也可修改（撒謊）
+- **中毒/醉酒狀態**：
+  - 顯示提示：「⚠️ 廚師中毒/醉酒，你可以告訴玩家任意數字」
+  - 顯示實際正確數字：「相鄰的邪惡客人：X 組」
+  - 數字選擇器**不預填**，說書人必須自行輸入
+  - 記錄說書人實際告訴玩家的數字（可能與正確答案不同）
+
+**UI 建議範圍**：
+```
+告訴廚師的數字 (建議範圍: 0-{邪惡玩家數-1})：
+```
+
+- 顯示動態範圍提示
+- 輸入框限制：`min="0"`, `max={邪惡玩家數-1}`
+- 理論依據：
+  - **最小值 0**：所有邪惡玩家分散（無相鄰）
+  - **最大值 N-1**：所有 N 個邪惡玩家連續坐（形成 N-1 組配對）
+- 範例：
+  - 3 個邪惡玩家 → 建議範圍 0-2
+  - 5 個邪惡玩家 → 建議範圍 0-4
+
+**記錄內容**：
+```typescript
+historyEntry = {
+  actualPairCount: number,      // 實際配對數（永遠正確）
+  toldPairCount: number,        // 說書人告訴玩家的數字
+  isPoisoned: boolean,
+  isDrunk: boolean,
+  storytellerOverride: boolean, // toldPairCount !== actualPairCount
+  segments: number[][],         // 連續區塊
+  pairDetails: string[],        // 配對明細
+  recluseSeats: number[],       // 陌客座位
+  spySeats: number[],           // 間諜座位
+}
+
+### 處理流程
+```
+1. 檢查夜晚數
+   ├─ night > 1 → 返回 skip（僅第一晚）
+   └─ night === 1 → 繼續
+   ↓
+2. 掃描所有存活玩家
+   └─ 篩選出邪惡陣營玩家（minion / demon）
+   ↓
+3. 計算相鄰配對數
+   ├─ 找出所有連續邪惡玩家區塊（考慮環形）
+   └─ 每個區塊 N 個玩家 → N-1 組配對
+   ↓
+4. 回傳結果
+   └─ info.pairCount、詳細配對清單、reasoning
+```
+
+### 回傳格式
+```typescript
+{
+  action: 'tell_number',
+  info: {
+    actualPairCount: number,     // 實際配對總數（永遠正確）
+    toldPairCount?: number,      // 說書人告訴玩家的數字（UI 填入後更新）
+    evilSeats: number[],         // 所有「被視為邪惡」的玩家座位
+    segments: number[][],        // 連續區塊 [[2,3], [6,7,8]]
+    pairDetails: string[],       // 配對詳情 ["2-3", "6-7", "7-8"]
+    recluseSeats: number[],      // 陌客座位（若有）
+    spySeats: number[],          // 間諜座位（若有，不計入邪惡）
+  },
+  mustFollow: false,
+  canLie: true,
+  reasoning: string,             // 計算說明
+  display: string,               // 完整顯示文字
+}
+```
+
+**UI 處理流程**：
+1. Handler 回傳 `actualPairCount`
+2. UI 根據 `isPoisoned/isDrunk` 決定是否預填
+3. 說書人輸入/確認數字後，更新 `toldPairCount`
+4. 記錄到歷史時包含兩個數字
+
+### 演算法實作
+```typescript
+private isEvilForChef(player: Player): boolean {
+  // 特例 1：間諜
+  if (player.role === 'spy') {
+    // 間諜中毒/醉酒：能力失效，被視為邪惡
+    if (player.isPoisoned || player.isDrunk) return true;
+    // 間諜正常：不被視為邪惡
+    return false;
+  }
+
+  // 特例 2：陌客
+  if (player.role === 'recluse') {
+    // 陌客中毒/醉酒：能力失效，不被視為邪惡
+    if (player.isPoisoned || player.isDrunk) return false;
+    // 陌客正常：被視為邪惡（說書人決定，預設為 true）
+    return true;
+  }
+
+  // 一般規則：爪牙和惡魔
+  return player.team === 'minion' || player.team === 'demon';
+}
+
+private findAdjacentPairs(gameState: GameState): {
+  actualPairCount: number;
+  segments: number[][];
+  pairDetails: string[];
+  evilSeats: number[];
+  recluseSeats: number[];
+  spySeats: number[];
+} {
+  const players = Array.from(gameState.players.values())
+    .filter(p => p.isAlive)
+    .sort((a, b) => a.seat - b.seat);
+
+  // 篩選被視為邪惡的玩家
+  const evilSeats = players
+    .filter(p => this.isEvilForChef(p))
+    .map(p => p.seat);
+
+  // 記錄特殊角色
+  const recluseSeats = players
+    .filter(p => p.role === 'recluse')
+    .map(p => p.seat);
+
+  const spySeats = players
+    .filter(p => p.role === 'spy')
+    .map(p => p.seat);
+
+  if (evilSeats.length === 0) {
+    return {
+      actualPairCount: 0,
+      segments: [],
+      pairDetails: [],
+      evilSeats: [],
+      recluseSeats,
+      spySeats,
+    };
+  }
+
+  // 找連續區塊（考慮環形）
+  const segments: number[][] = [];
+  const visited = new Set<number>();
+
+  for (const seat of evilSeats) {
+    if (visited.has(seat)) continue;
+
+    const segment: number[] = [seat];
+    visited.add(seat);
+
+    // 向右擴展
+    let next = this.getNextSeat(seat, players.length);
+    while (evilSeats.includes(next) && !visited.has(next)) {
+      segment.push(next);
+      visited.add(next);
+      next = this.getNextSeat(next, players.length);
+    }
+
+    // 向左擴展
+    let prev = this.getPrevSeat(seat, players.length);
+    while (evilSeats.includes(prev) && !visited.has(prev)) {
+      segment.unshift(prev);
+      visited.add(prev);
+      prev = this.getPrevSeat(prev, players.length);
+    }
+
+    segments.push(segment);
+  }
+
+  // 計算配對
+  let actualPairCount = 0;
+  const pairDetails: string[] = [];
+
+  for (const segment of segments) {
+    const pairs = segment.length - 1;
+    actualPairCount += pairs;
+
+    for (let i = 0; i < segment.length - 1; i++) {
+      pairDetails.push(`${segment[i]}-${segment[i + 1]}`);
+    }
+  }
+
+  return {
+    actualPairCount,
+    segments,
+    pairDetails,
+    evilSeats,
+    recluseSeats,
+    spySeats,
+  };
+}
+
+private getNextSeat(seat: number, totalPlayers: number): number {
+  return seat === totalPlayers ? 1 : seat + 1;
+}
+
+private getPrevSeat(seat: number, totalPlayers: number): number {
+  return seat === 1 ? totalPlayers : seat - 1;
+}
+```
+
+### 程式碼實作
+```typescript
+export class ChefHandler implements RoleHandler {
+  process(context: HandlerContext): NightResult {
+    const { gameState, getRoleName } = context;
+
+    // 步驟 1: 僅第一晚執行
+    if (gameState.night > 1) {
+      return {
+        skip: true,
+        skipReason: '廚師僅在第一晚獲得資訊',
+        display: '廚師僅在第一晚行動',
+      };
+    }
+
+    // 步驟 2-3: 計算相鄰配對
+    const result = this.findAdjacentPairs(gameState);
+    const { actualPairCount, segments, pairDetails, evilSeats, recluseSeats, spySeats } = result;
+
+    // 步驟 4: 回傳結果
+    const reasoning = this.buildReasoning(
+      actualPairCount,
+      segments,
+      recluseSeats,
+      spySeats,
+      gameState,
+      getRoleName
+    );
+
+    return {
+      action: 'tell_number',
+      info: {
+        actualPairCount,
+        toldPairCount: undefined,  // UI 層填入
+        evilSeats,
+        segments,
+        pairDetails,
+        recluseSeats,
+        spySeats,
+      },
+      mustFollow: false,
+      canLie: true,
+      reasoning,
+      display: this.formatDisplay(
+        actualPairCount,
+        segments,
+        pairDetails,
+        recluseSeats,
+        spySeats,
+        gameState,
+        getRoleName
+      ),
+    };
+  }
+
+  private buildReasoning(
+    actualPairCount: number,
+    segments: number[][],
+    recluseSeats: number[],
+    spySeats: number[],
+    gameState: GameState,
+    getRoleName: (roleId: string) => string
+  ): string {
+    const notes: string[] = [];
+
+    if (recluseSeats.length > 0) {
+      const recluseList = recluseSeats.map(s => `${s}號`).join('、');
+      notes.push(`陌客 ${recluseList} 被視為邪惡`);
+    }
+
+    if (spySeats.length > 0) {
+      const spyList = spySeats.map(s => `${s}號`).join('、');
+      notes.push(`間諜 ${spyList} 不被視為邪惡`);
+    }
+
+    if (actualPairCount === 0) {
+      const noteStr = notes.length > 0 ? `（${notes.join('；')}）` : '';
+      return `沒有相鄰的邪惡玩家${noteStr}`;
+    }
+
+    const parts: string[] = [];
+    for (const segment of segments) {
+      const roles = segment.map(seat => {
+        const player = gameState.players.get(seat)!;
+        return `${seat}號(${getRoleName(player.role)})`;
+      }).join('、');
+
+      const pairs = segment.length - 1;
+      parts.push(`${roles} 形成 ${pairs} 組配對`);
+    }
+
+    if (notes.length > 0) {
+      parts.push(`註：${notes.join('；')}`);
+    }
+
+    return parts.join('；');
+  }
+
+  private formatDisplay(
+    actualPairCount: number,
+    segments: number[][],
+    pairDetails: string[],
+    recluseSeats: number[],
+    spySeats: number[],
+    gameState: GameState,
+    getRoleName: (roleId: string) => string
+  ): string {
+    const specialNotes: string[] = [];
+
+    if (recluseSeats.length > 0) {
+      specialNotes.push(`⚠️ 陌客 ${recluseSeats.join('、')}號 被視為邪惡`);
+    }
+
+    if (spySeats.length > 0) {
+      specialNotes.push(`ℹ️ 間諜 ${spySeats.join('、')}號 不被視為邪惡`);
+    }
+
+    const specialNotesStr = specialNotes.length > 0
+      ? `\n\n${specialNotes.join('\n')}`
+      : '';
+
+    if (actualPairCount === 0) {
+      return `廚師資訊：0 組相鄰邪惡玩家配對
+
+沒有邪惡玩家相鄰而坐${specialNotesStr}`;
+    }
+
+    const segmentInfo = segments.map(seg => {
+      const players = seg.map(seat => {
+        const player = gameState.players.get(seat)!;
+        const role = getRoleName(player.role);
+        return `${seat}號 ${player.name}(${role})`;
+      }).join(' - ');
+      return `  • ${players}`;
+    }).join('\n');
+
+    return `廚師資訊：${actualPairCount} 組相鄰邪惡玩家配對
+
+連續邪惡玩家區塊：
+${segmentInfo}
+
+配對明細：${pairDetails.join(', ')}${specialNotesStr}`;
+  }
+
+  // findAdjacentPairs, getNextSeat, getPrevSeat 如上所示
+}
+```
+
+### 測試案例
+```typescript
+describe('ChefHandler', () => {
+  test('第一晚之後跳過', () => {
+    const gs = makeGameState([...], 2); // night = 2
+    const result = handler.process({ gameState: gs });
+    expect(result.skip).toBe(true);
+  });
+
+  test('沒有邪惡玩家 → pairCount: 0', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'chef', team: 'townsfolk' }),
+      makePlayer({ seat: 3, role: 'empath', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+    expect(result.info.actualPairCount).toBe(0);
+  });
+
+  test('單獨邪惡玩家不形成配對 → pairCount: 0', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'empath', team: 'townsfolk' }),
+      makePlayer({ seat: 4, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 5, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+    expect(result.info.actualPairCount).toBe(0);
+  });
+
+  test('兩個相鄰邪惡玩家 → pairCount: 1', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+    expect(result.info.actualPairCount).toBe(1);
+    expect(result.info.pairDetails).toEqual(['2-3']);
+  });
+
+  test('三個相鄰邪惡玩家 → pairCount: 2', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'spy', team: 'minion' }),
+      makePlayer({ seat: 5, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+    expect(result.info.actualPairCount).toBe(2);
+    expect(result.info.pairDetails).toEqual(['2-3', '3-4']);
+  });
+
+  test('兩個分離區塊 → pairCount: 總和', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'spy', team: 'minion' }),
+      makePlayer({ seat: 4, role: 'empath', team: 'townsfolk' }),
+      makePlayer({ seat: 5, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 6, role: 'scarletwoman', team: 'minion' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+    expect(result.info.actualPairCount).toBe(2); // [2-3] + [5-6]
+  });
+
+  test('環形相鄰：首尾相接 → 正確計算', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 2, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 3, role: 'empath', team: 'townsfolk' }),
+      makePlayer({ seat: 4, role: 'poisoner', team: 'minion' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+    expect(result.info.actualPairCount).toBe(1); // [4-1] 環形
+    expect(result.info.segments).toEqual([[4, 1]]);
+  });
+
+  test('中毒時仍回傳實際計算結果', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'chef', team: 'townsfolk', isPoisoned: true }),
+      makePlayer({ seat: 2, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+    ];
+    const result = handler.process({
+      gameState: makeGameState(players),
+      infoReliable: false,
+      statusReason: '中毒',
+    });
+
+    // 仍回傳實際結果，UI 層提示說書人
+    expect(result.info.actualPairCount).toBe(1);
+    expect(result.info.toldPairCount).toBeUndefined(); // UI 填入
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+
+  test('間諜不被視為邪惡 → 不計入配對', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'spy', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+
+    // 雖然 2-3 相鄰，但 Spy 不算邪惡，所以 Imp 是孤立的
+    expect(result.info.actualPairCount).toBe(0);
+    expect(result.info.spySeats).toEqual([2]);
+    expect(result.info.evilSeats).toEqual([3]); // 只有 Imp
+  });
+
+  test('間諜打斷連續區塊', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 2, role: 'spy', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'baron', team: 'minion' }),
+      makePlayer({ seat: 5, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+
+    // Spy 打斷連續性：[1], [3, 4]
+    expect(result.info.actualPairCount).toBe(1); // 只有 3-4
+    expect(result.info.segments).toEqual([[1], [3, 4]]);
+    expect(result.info.pairDetails).toEqual(['3-4']);
+  });
+
+  test('陌客被視為邪惡 → 計入配對', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'recluse', team: 'outsider' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+
+    // 陌客被視為邪惡，2-3 形成配對
+    expect(result.info.actualPairCount).toBe(1);
+    expect(result.info.recluseSeats).toEqual([2]);
+    expect(result.info.evilSeats).toEqual([2, 3]);
+    expect(result.info.pairDetails).toEqual(['2-3']);
+  });
+
+  test('陌客在環形邊界形成配對', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'recluse', team: 'outsider' }),
+      makePlayer({ seat: 2, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 3, role: 'empath', team: 'townsfolk' }),
+      makePlayer({ seat: 4, role: 'poisoner', team: 'minion' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+
+    // 環形：4-1 形成配對
+    expect(result.info.actualPairCount).toBe(1);
+    expect(result.info.segments).toEqual([[4, 1]]);
+  });
+
+  test('陌客和間諜同時存在', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'recluse', team: 'outsider' }),
+      makePlayer({ seat: 2, role: 'spy', team: 'minion' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'monk', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+
+    // Recluse 算邪惡，Spy 不算：[1], [3] → 兩個孤立
+    expect(result.info.actualPairCount).toBe(0);
+    expect(result.info.recluseSeats).toEqual([1]);
+    expect(result.info.spySeats).toEqual([2]);
+    expect(result.info.evilSeats).toEqual([1, 3]);
+  });
+
+  test('間諜中毒 → 被視為邪惡，形成連續區塊', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 2, role: 'spy', team: 'minion', isPoisoned: true }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+
+    // 中毒的 Spy 被視為邪惡：[1, 2, 3] → 2 組配對
+    expect(result.info.actualPairCount).toBe(2);
+    expect(result.info.evilSeats).toEqual([1, 2, 3]);
+    expect(result.info.pairDetails).toEqual(['1-2', '2-3']);
+    expect(result.info.spySeats).toEqual([2]); // 記錄有間諜
+  });
+
+  test('間諜醉酒 → 被視為邪惡', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'spy', team: 'minion', isDrunk: true }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+
+    // 醉酒的 Spy 被視為邪惡：[2, 3] → 1 組配對
+    expect(result.info.actualPairCount).toBe(1);
+    expect(result.info.evilSeats).toEqual([2, 3]);
+    expect(result.info.pairDetails).toEqual(['2-3']);
+  });
+
+  test('陌客中毒 → 不被視為邪惡', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'recluse', team: 'outsider', isPoisoned: true }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+
+    // 中毒的 Recluse 不被視為邪惡：[3] → 0 組配對
+    expect(result.info.actualPairCount).toBe(0);
+    expect(result.info.evilSeats).toEqual([3]); // 只有 Imp
+    expect(result.info.recluseSeats).toEqual([2]); // 記錄有陌客
+  });
+
+  test('陌客醉酒 → 不被視為邪惡', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'recluse', team: 'outsider', isDrunk: true }),
+      makePlayer({ seat: 2, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+
+    // 醉酒的 Recluse 不被視為邪惡：[3] → 0 組配對
+    expect(result.info.actualPairCount).toBe(0);
+    expect(result.info.evilSeats).toEqual([3]);
+  });
+
+  test('間諜醉酒 + 陌客中毒（雙重反轉）', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'recluse', team: 'outsider', isPoisoned: true }),
+      makePlayer({ seat: 2, role: 'spy', team: 'minion', isDrunk: true }),
+      makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+      makePlayer({ seat: 4, role: 'monk', team: 'townsfolk' }),
+    ];
+    const result = handler.process({ gameState: makeGameState(players) });
+
+    // 中毒的 Recluse 不算邪惡，醉酒的 Spy 算邪惡：[2, 3] → 1 組配對
+    expect(result.info.actualPairCount).toBe(1);
+    expect(result.info.evilSeats).toEqual([2, 3]);
+    expect(result.info.pairDetails).toEqual(['2-3']);
+    expect(result.info.recluseSeats).toEqual([1]);
+    expect(result.info.spySeats).toEqual([2]);
+  });
+});
+```
+
+### UI 處理器（ChefProcessor）
+
+廚師使用專屬 UI 處理器 `ChefProcessor`（`src/components/roleProcessors/ChefProcessor.tsx`），
+透過 `ROLE_PROCESSORS` 註冊表由 `AbilityProcessor` 自動路由。
+
+#### UI 流程
+
+```
+1. 自動執行能力
+   └─ useEffect 自動調用 processAbility(item.seat, null)
+   ↓
+2. 顯示計算結果
+   ├─ 完整偵測資訊（區塊、配對明細）
+   ├─ 特殊角色標記（陌客/間諜）
+   └─ 實際配對數
+   ↓
+3. 根據狀態顯示提示
+   ├─ 正常：「ℹ️ 相鄰的邪惡客人：X 組（你可以選擇撒謊）」
+   └─ 中毒/醉酒：「⚠️ 廚師中毒/醉酒，你可以告訴玩家任意數字」
+   ↓
+4. 說書人輸入數字
+   ├─ 顯示建議範圍：「告訴廚師的數字 (建議範圍: 0-{maxPossiblePairs})」
+   ├─ 正常：預填實際數字
+   └─ 中毒/醉酒：不預填
+   ↓
+5. 撒謊警告（若數字 ≠ 實際）
+   └─ 「⚠️ 注意：你將告訴廚師不同於實際的數字（撒謊）」
+   ↓
+6. 確認 → 記錄到歷史
+```
+
+#### 實作細節
+
+```typescript
+// 計算建議範圍
+const evilSeats = (info?.evilSeats as number[]) ?? [];
+const maxPossiblePairs = Math.max(0, evilSeats.length - 1);
+
+// 數字輸入
+<input
+  type="number"
+  min="0"
+  max={maxPossiblePairs}
+  value={toldPairCount}
+  placeholder={isPoisonedOrDrunk ? '請輸入數字' : String(actualPairCount)}
+/>
+
+// 記錄歷史
+stateManager.logEvent({
+  type: 'ability_use',
+  description: `廚師資訊：說書人告知 ${toldNumber} 組相鄰邪惡配對${storytellerOverride ? ` (實際: ${actualPairCount})` : ''}`,
+  details: {
+    actualPairCount,
+    toldPairCount: toldNumber,
+    storytellerOverride,
+    // ... 其他詳細資訊
+  },
+});
+```
+
+---
+
+## 3. 僧侶處理器 (MonkHandler)
+
+### 檔案位置
+`src/engine/handlers/MonkHandler.ts`
 
 ### 角色能力
 每個夜晚（第一夜除外），選擇一位玩家（不能是你自己）：今晚他不會死於惡魔。
@@ -239,7 +1145,7 @@ describe('MonkHandler', () => {
 
 ---
 
-## 3. 投毒者處理器 (PoisonerHandler)
+## 4. 投毒者處理器 (PoisonerHandler)
 
 ### 角色能力
 每個夜晚，選擇一位玩家：他今晚和明天白天中毒。
@@ -306,7 +1212,7 @@ describe('PoisonerHandler', () => {
 
 ---
 
-## 4. 小惡魔處理器 (ImpHandler)
+## 5. 小惡魔處理器 (ImpHandler)
 
 ### 角色能力
 每個夜晚（第一夜除外），選擇一位玩家：他死亡。如果你殺死自己，一位爪牙變成小惡魔。
@@ -536,7 +1442,7 @@ describe('ImpHandler', () => {
 
 ---
 
-## 5. 酒鬼處理器 (DrunkHandler)
+## 6. 酒鬼處理器 (DrunkHandler)
 
 ### 角色能力
 你不知道你是酒鬼。你以為你是一個鎮民角色，但你不是。
