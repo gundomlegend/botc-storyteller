@@ -17,7 +17,7 @@ export class MonkHandler implements RoleHandler {
       return {
         skip: true,
         skipReason: '僧侶不能保護自己',
-        display: '僧侶不能保護自己，請重新選擇',
+        display: '🚫 僧侶不能保護自己，請重新選擇',
       };
     }
 

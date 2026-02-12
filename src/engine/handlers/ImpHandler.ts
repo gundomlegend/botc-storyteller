@@ -15,6 +15,20 @@ export class ImpHandler implements RoleHandler {
 
     // Star Pass：自殺時爪牙繼承
     if (target.seat === player.seat) {
+      // 檢查惡魔自己是否受保護
+      if (player.isProtected) {
+        return {
+          action: 'kill',
+          info: {
+            targetSeat: player.seat,
+            targetName: player.name,
+            blocked: true,
+            reason: '惡魔受到僧侶保護',
+          },
+          display: `小惡魔選擇自殺\n惡魔受到僧侶保護，自殺失敗！`,
+          gesture: 'none',
+        };
+      }
       return this.handleStarPass(player, gameState, getRoleName);
     }
 

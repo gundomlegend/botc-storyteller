@@ -1091,6 +1091,21 @@ stateManager.logEvent({
 ### 角色能力
 每個夜晚（第一夜除外），選擇一位玩家（不能是你自己）：今晚他不會死於惡魔。
 
+### 能力機制
+
+**保護效果**：
+- **正常狀態**：保護生效，目標玩家不會被惡魔擊殺（包含惡魔自殺也會失敗）
+- **中毒/醉酒**：保護失效，惡魔擊殺正常執行
+
+**invalidation 處理**：
+- Handler 照常回傳 `add_protection` 結果
+- RuleEngine 的 `applyInvalidation()` 會標記 `effectNullified: true`
+- 效果層（Imp 擊殺檢查時）不會套用失效的保護
+
+**夜晚順序控制**：
+- 僧侶只在第二晚起行動（`firstNight: 0`, `otherNight: 12`）
+- 夜晚順序由 NightOrder 系統控制，Handler 不檢查夜晚數
+
 ### 實作規格
 
 #### 處理流程
@@ -1131,7 +1146,7 @@ export class MonkHandler implements RoleHandler {
         display: '🚫 僧侶不能保護自己，請重新選擇'
       };
     }
-    
+
     // 步驟 3: 返回保護結果
     return {
       action: 'add_protection',
@@ -1139,8 +1154,7 @@ export class MonkHandler implements RoleHandler {
         targetSeat: target.seat,
         targetName: target.name
       },
-      display: `僧侶保護 ${target.seat}號 (${target.name})
-今晚該玩家不會被惡魔擊殺`,
+      display: `僧侶保護 ${target.seat}號 (${target.name})\n今晚該玩家不會被惡魔擊殺`,
       gesture: 'none'
     };
   }
@@ -1255,13 +1269,15 @@ describe('PoisonerHandler', () => {
    └─ 已選擇 → 繼續
    ↓
 2. 檢查是否自殺（Star Pass）
-   ├─ target.seat === player.seat → 進入 Star Pass 流程
-   │   ├─ 尋找存活爪牙
-   │   │   ├─ 無存活爪牙 → 純自殺（無繼承）
-   │   │   └─ 有存活爪牙 → 選擇繼承者
-   │   │       ├─ 紅唇女郎（scarletwoman）存活 → 優先選她
-   │   │       └─ 否則 → 隨機選一位存活爪牙
-   │   └─ 回傳 star pass 結果（含新惡魔資訊 + 喚醒提示）
+   ├─ target.seat === player.seat → 檢查惡魔是否受保護
+   │   ├─ 惡魔受保護 → 自殺失敗（保護阻擋）
+   │   └─ 惡魔未受保護 → 進入 Star Pass 流程
+   │       ├─ 尋找存活爪牙
+   │       │   ├─ 無存活爪牙 → 純自殺（無繼承）
+   │       │   └─ 有存活爪牙 → 選擇繼承者
+   │       │       ├─ 紅唇女郎（scarletwoman）存活 → 優先選她
+   │       │       └─ 否則 → 隨機選一位存活爪牙
+   │       └─ 回傳 star pass 結果（含新惡魔資訊 + 喚醒提示）
    └─ 否 → 繼續一般擊殺流程
    ↓
 3. 檢查保護狀態
