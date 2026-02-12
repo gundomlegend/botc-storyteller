@@ -157,7 +157,7 @@ describe('FortunetellerHandler', () => {
     expect((result.info as any).target1.isRedHerring).toBe(true);
   });
 
-  it('陌客被選中（無干擾項） → rawDetection: true', () => {
+  it('陌客正常狀態被選中 → rawDetection: true', () => {
     const target = makePlayer({ seat: 2, role: 'recluse', team: 'outsider' });
     const secondTarget = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
     const gs = makeGameState([target, secondTarget], null);
@@ -167,6 +167,30 @@ describe('FortunetellerHandler', () => {
 
     expect((result.info as any).rawDetection).toBe(true);
     expect((result.info as any).target1.isRecluse).toBe(true);
+  });
+
+  it('陌客中毒被選中 → rawDetection: false (能力失效)', () => {
+    const target = makePlayer({ seat: 2, role: 'recluse', team: 'outsider', isPoisoned: true });
+    const secondTarget = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const gs = makeGameState([target, secondTarget], null);
+    const result = handler.process(makeContext({
+      target, secondTarget, infoReliable: true, gameState: gs,
+    }));
+
+    expect((result.info as any).rawDetection).toBe(false);
+    expect((result.info as any).target1.isRecluse).toBe(false);
+  });
+
+  it('陌客醉酒被選中 → rawDetection: false (能力失效)', () => {
+    const target = makePlayer({ seat: 2, role: 'recluse', team: 'outsider', isDrunk: true });
+    const secondTarget = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const gs = makeGameState([target, secondTarget], null);
+    const result = handler.process(makeContext({
+      target, secondTarget, infoReliable: true, gameState: gs,
+    }));
+
+    expect((result.info as any).rawDetection).toBe(false);
+    expect((result.info as any).target1.isRecluse).toBe(false);
   });
 
   it('陌客帶干擾項（冗餘） → rawDetection: true', () => {

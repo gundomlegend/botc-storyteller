@@ -226,7 +226,7 @@ export class ChefHandler implements RoleHandler {
     const specialNotes: string[] = [];
 
     if (recluseSeats.length > 0) {
-      specialNotes.push(`⚠️ 陌客 ${recluseSeats.join('、')}號 被視為邪惡`);
+      specialNotes.push(`ℹ️ 陌客 ${recluseSeats.join('、')}號 被視為邪惡`);
     }
 
     if (spySeats.length > 0) {

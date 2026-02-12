@@ -40,7 +40,8 @@ export class FortunetellerHandler implements RoleHandler {
     redHerringSeat: number | null
   ): { triggers: boolean; isDemon: boolean; isRecluse: boolean; isRedHerring: boolean } {
     const isDemon = target.team === 'demon';
-    const isRecluse = target.role === 'recluse';
+    // 陌客中毒/醉酒時能力失效，不觸發偵測（與廚師邏輯一致）
+    const isRecluse = target.role === 'recluse' && !target.isPoisoned && !target.isDrunk;
     const isRedHerring = target.seat === redHerringSeat;
     return {
       triggers: isDemon || isRecluse || isRedHerring,
@@ -61,8 +62,8 @@ export class FortunetellerHandler implements RoleHandler {
 
     if (t1.isDemon) parts.push(`${target.seat}號是惡魔（${getRoleName(target.role)}）`);
     if (t2.isDemon) parts.push(`${secondTarget.seat}號是惡魔（${getRoleName(secondTarget.role)}）`);
-    if (t1.isRecluse) parts.push(`${target.seat}號是陌客（永遠觸發偵測）`);
-    if (t2.isRecluse) parts.push(`${secondTarget.seat}號是陌客（永遠觸發偵測）`);
+    if (t1.isRecluse) parts.push(`${target.seat}號是陌客（正常狀態觸發偵測）`);
+    if (t2.isRecluse) parts.push(`${secondTarget.seat}號是陌客（正常狀態觸發偵測）`);
     if (t1.isRedHerring && !t1.isRecluse) parts.push(`${target.seat}號是干擾項`);
     if (t2.isRedHerring && !t2.isRecluse) parts.push(`${secondTarget.seat}號是干擾項`);
 
