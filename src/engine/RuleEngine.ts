@@ -32,7 +32,8 @@ export class RuleEngine {
     player: Player,
     target: Player | null,
     gameState: GameState,
-    stateManager: GameStateManager
+    stateManager: GameStateManager,
+    secondTarget?: Player | null
   ): NightResult {
     // 1. 獲取角色資料
     const roleData = this.roleRegistry.get(player.role);
@@ -92,6 +93,7 @@ export class RuleEngine {
         roleData,
         player,
         target,
+        secondTarget: secondTarget ?? undefined,
         gameState,
         infoReliable,
         statusReason,

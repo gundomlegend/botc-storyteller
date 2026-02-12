@@ -79,9 +79,9 @@ export default function NightView() {
               {!isSpecialPhase(item.role) && (
                 <span className="order-seat">{item.seat}號</span>
               )}
-              {item.isPoisoned && <span className="order-tag poisoned">毒</span>}
-              {item.isDrunk && <span className="order-tag drunk">醉</span>}
-              {item.isDead && <span className="order-tag dead">死</span>}
+              {item.isPoisoned && <span className="order-tag poisoned">中毒</span>}
+              {item.isDrunk && <span className="order-tag drunk">醉酒</span>}
+              {item.isDead && <span className="order-tag dead">死亡</span>}
             </button>
           ))}
         </div>

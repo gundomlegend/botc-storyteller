@@ -144,10 +144,13 @@ function NightView() {
     }
     
     // 正常角色處理
+    // AbilityProcessor 內部查詢 ROLE_PROCESSORS 註冊表：
+    // - 占卜師等複雜角色 → 路由至專屬 UI 處理器（如 FortunetellerProcessor）
+    // - 其他角色 → 走 AbilityProcessor 通用流程
     return (
-      <AbilityProcessor 
-        player={currentItem}
-        onComplete={() => setCurrentIndex(currentIndex + 1)}
+      <AbilityProcessor
+        item={currentItem}
+        onDone={() => setCurrentIndex(currentIndex + 1)}
       />
     );
   };

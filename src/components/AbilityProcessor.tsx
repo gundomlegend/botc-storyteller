@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { t } from '../engine/locale';
 import type { NightOrderItem, NightResult, Player } from '../engine/types';
+import { ROLE_PROCESSORS } from './roleProcessors';
 import PlayerSelector from './PlayerSelector';
 
 interface AbilityProcessorProps {
@@ -10,15 +11,29 @@ interface AbilityProcessorProps {
 }
 
 /** 需要玩家選擇目標的角色（其餘角色為資訊型，不需選擇） */
-const ROLES_NEEDING_TARGET = new Set(['fortuneteller', 'monk', 'poisoner', 'imp', 'butler']);
+const ROLES_NEEDING_TARGET = new Set(['monk', 'poisoner', 'imp', 'butler']);
 
 export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps) {
+  // 註冊表路由：有專屬處理器的角色委託給該處理器
+  const CustomProcessor = ROLE_PROCESSORS[item.role];
+  if (CustomProcessor) {
+    return <CustomProcessor item={item} onDone={onDone} />;
+  }
+
+  // ─── 以下為通用流程 ───
   const { processAbility, stateManager } = useGameStore();
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null);
   const [result, setResult] = useState<NightResult | null>(null);
 
   const roleData = stateManager.getRoleData(item.role);
   const needsTarget = ROLES_NEEDING_TARGET.has(item.role);
+
+  // 從 stateManager 讀即時狀態（item 是夜晚開始時的快照，不會反映夜間中毒等變化）
+  const currentPlayer = stateManager.getPlayer(item.seat);
+  const isPoisoned = currentPlayer?.isPoisoned ?? item.isPoisoned;
+  const isDrunk = currentPlayer?.isDrunk ?? item.isDrunk;
+  const isProtected = currentPlayer?.isProtected ?? item.isProtected;
+  const isDead = currentPlayer ? !currentPlayer.isAlive : item.isDead;
 
   const handleProcess = () => {
     const r = processAbility(item.seat, selectedTarget);
@@ -66,6 +81,8 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
     onDone();
   };
 
+  const isTargetReady = !needsTarget || selectedTarget != null;
+
   return (
     <div className="ability-processor">
       <div className="ability-header">
@@ -76,12 +93,12 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
         <p className="ability-reminder">{item.reminder}</p>
       </div>
 
-      {/* 狀態警告 */}
+      {/* 狀態警告（即時狀態） */}
       <div className="ability-status">
-        {item.isDead && <span className="status-tag dead">已死亡</span>}
-        {item.isPoisoned && <span className="status-tag poisoned">中毒</span>}
-        {item.isDrunk && <span className="status-tag drunk">醉酒</span>}
-        {item.isProtected && <span className="status-tag protected">受保護</span>}
+        {isDead && <span className="status-tag dead">已死亡</span>}
+        {isPoisoned && <span className="status-tag poisoned">中毒</span>}
+        {isDrunk && <span className="status-tag drunk">醉酒</span>}
+        {isProtected && <span className="status-tag protected">受保護</span>}
       </div>
 
       {/* 還沒有結果：選擇目標（或直接執行） */}
@@ -104,7 +121,7 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
             <button
               className="btn-primary"
               onClick={handleProcess}
-              disabled={needsTarget && selectedTarget == null}
+              disabled={!isTargetReady}
             >
               執行能力
             </button>

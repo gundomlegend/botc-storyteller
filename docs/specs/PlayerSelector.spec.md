@@ -251,7 +251,7 @@ export function PlayerSelector({
         {showStatus && (
           <div className="player-status">
             {!player.isAlive && <span className="icon-dead">💀</span>}
-            {player.isPoisoned && <span className="icon-poisoned">⚠️</span>}
+            {player.isPoisoned && <span className="icon-poisoned">🧪</span>}
             {player.isProtected && <span className="icon-protected">🛡️</span>}
           </div>
         )}

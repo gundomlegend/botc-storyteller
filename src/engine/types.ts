@@ -68,6 +68,7 @@ export interface GameState {
   setupComplete: boolean;
   selectedRoles: string[];
   demonBluffs: string[];
+  redHerringSeat: number | null;
 }
 
 export interface GameEvent {
@@ -99,7 +100,7 @@ export interface NightResult {
   skip?: boolean;
   skipReason?: string;
   needInput?: boolean;
-  inputType?: 'select_player';
+  inputType?: 'select_player' | 'select_two_players';
   inputPrompt?: string;
   info?: string | Record<string, unknown>;
   gesture?: 'nod' | 'shake' | 'none';

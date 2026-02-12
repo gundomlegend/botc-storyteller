@@ -120,7 +120,7 @@
     "affectedByPoison": true,
     "affectedByDrunk": true,
     "worksWhenDead": false,
-    "ability_cn": "每晚，選擇兩名玩家：你會得知其中是否有惡魔。場上有一名好人會被你視為惡魔。",
+    "ability_cn": "每晚，選擇兩名玩家：你會得知他們當中是否會有惡魔。而場上會有一名好人始終被你誤認為惡魔。",
     "firstNightReminder_cn": "占卜師指向兩名玩家，以點頭或搖頭表示其中是否有惡魔。",
     "otherNightReminder_cn": "占卜師指向兩名玩家，以點頭（是）或搖頭（否）表示其中是否有惡魔。"
   },

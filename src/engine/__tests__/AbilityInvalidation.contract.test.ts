@@ -83,7 +83,7 @@ describe('Ability Invalidation — RuleEngine 層', () => {
       expect(result.skip).toBe(true);
     });
 
-    it('中毒的 FortuneTeller 資訊可能被反轉', () => {
+    it('中毒的 FortuneTeller 仍回傳實際偵測結果（不反轉）', () => {
       m.initializePlayers([
         { seat: 1, name: 'A', role: 'fortuneteller' },
         { seat: 2, name: 'B', role: 'poisoner' },
@@ -95,17 +95,18 @@ describe('Ability Invalidation — RuleEngine 層', () => {
       m.addStatus(1, 'poisoned', 2);
 
       const ft = m.getPlayer(1)!;
-      const target = m.getPlayer(3)!; // Imp = demon = evil
+      const target = m.getPlayer(3)!; // Imp = demon
+      const secondTarget = m.getPlayer(2)!; // Poisoner = minion
 
       engine.startNightResolution();
-      const result = engine.processNightAbility(ft, target, m.getState(), m);
+      const result = engine.processNightAbility(ft, target, m.getState(), m, secondTarget);
 
-      // 中毒的 FT 對 demon 查詢，結果被反轉（handler 回傳 tell_alignment）
-      // handler 根據 infoReliable=false 給出反轉資訊（demon 顯示為 good）
+      // 中毒的 FT 不再自動反轉，回傳實際偵測結果
       expect(result.action).toBe('tell_alignment');
-      expect(result.info).toBe('good'); // demon 實際是 evil，但中毒後反轉為 good
-      expect(result.mustFollow).toBe(true); // 中毒時必須給錯誤資訊
-      // 資訊型 action 不走 effect invalidation，不應有 effectNullified
+      const info = result.info as Record<string, unknown>;
+      expect(info.rawDetection).toBe(true); // Imp 是惡魔，偵測到
+      expect(result.mustFollow).toBe(false); // 說書人自行決定
+      // 資訊型 action 不走 effect invalidation
       expect(result.effectNullified).toBeFalsy();
     });
   });

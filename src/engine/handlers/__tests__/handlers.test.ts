@@ -56,7 +56,7 @@ function makePlayer(overrides: Partial<Player> & { seat: number }): Player {
   };
 }
 
-function makeGameState(players: Player[]): GameState {
+function makeGameState(players: Player[], redHerringSeat: number | null = null): GameState {
   const map = new Map<number, Player>();
   for (const p of players) map.set(p.seat, p);
   return {
@@ -69,6 +69,7 @@ function makeGameState(players: Player[]): GameState {
     setupComplete: true,
     selectedRoles: players.map(p => p.role),
     demonBluffs: [],
+    redHerringSeat,
   };
 }
 
@@ -92,57 +93,106 @@ function makeContext(overrides: Partial<HandlerContext>): HandlerContext {
 describe('FortunetellerHandler', () => {
   const handler = new FortunetellerHandler();
 
-  it('無目標時要求輸入', () => {
+  it('無目標時要求輸入 (select_two_players)', () => {
     const result = handler.process(makeContext({ target: null }));
     expect(result.needInput).toBe(true);
-    expect(result.inputType).toBe('select_player');
+    expect(result.inputType).toBe('select_two_players');
   });
 
-  it('查驗邪惡目標 → info=evil, gesture=shake', () => {
-    const target = makePlayer({ seat: 2, role: 'imp', team: 'demon' });
-    const result = handler.process(makeContext({ target, infoReliable: true }));
+  it('只有一個目標時仍要求輸入', () => {
+    const target = makePlayer({ seat: 2, role: 'monk', team: 'townsfolk' });
+    const result = handler.process(makeContext({ target, secondTarget: undefined }));
+    expect(result.needInput).toBe(true);
+    expect(result.inputType).toBe('select_two_players');
+  });
+
+  it('雙善良、無干擾項 → rawDetection: false', () => {
+    const target = makePlayer({ seat: 2, role: 'monk', team: 'townsfolk' });
+    const secondTarget = makePlayer({ seat: 3, role: 'empath', team: 'townsfolk' });
+    const gs = makeGameState([target, secondTarget], null);
+    const result = handler.process(makeContext({
+      target, secondTarget, infoReliable: true, gameState: gs,
+    }));
 
     expect(result.action).toBe('tell_alignment');
-    expect(result.info).toBe('evil');
-    expect(result.gesture).toBe('shake');
+    expect((result.info as any).rawDetection).toBe(false);
     expect(result.mustFollow).toBe(false);
     expect(result.canLie).toBe(true);
   });
 
-  it('查驗善良目標 → info=good, gesture=nod', () => {
-    const target = makePlayer({ seat: 2, role: 'monk', team: 'townsfolk' });
-    const result = handler.process(makeContext({ target, infoReliable: true }));
+  it('其中一個是惡魔 → rawDetection: true', () => {
+    const target = makePlayer({ seat: 2, role: 'imp', team: 'demon' });
+    const secondTarget = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const gs = makeGameState([target, secondTarget], null);
+    const result = handler.process(makeContext({
+      target, secondTarget, infoReliable: true, gameState: gs,
+    }));
 
     expect(result.action).toBe('tell_alignment');
-    expect(result.info).toBe('good');
-    expect(result.gesture).toBe('nod');
+    expect((result.info as any).rawDetection).toBe(true);
+    expect((result.info as any).target1.isDemon).toBe(true);
   });
 
-  it('中毒時資訊反轉 → 邪惡目標顯示 good, mustFollow=true', () => {
-    const target = makePlayer({ seat: 2, role: 'imp', team: 'demon' });
+  it('爪牙不觸發偵測 → rawDetection: false', () => {
+    const target = makePlayer({ seat: 2, role: 'poisoner', team: 'minion' });
+    const secondTarget = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const gs = makeGameState([target, secondTarget], null);
     const result = handler.process(makeContext({
-      target,
-      infoReliable: false,
-      statusReason: '中毒',
+      target, secondTarget, infoReliable: true, gameState: gs,
     }));
 
-    expect(result.info).toBe('good'); // 反轉
-    expect(result.gesture).toBe('nod'); // 反轉
-    expect(result.mustFollow).toBe(true);
-    expect(result.canLie).toBe(false);
+    expect((result.info as any).rawDetection).toBe(false);
   });
 
-  it('中毒時善良目標顯示 evil', () => {
+  it('干擾項玩家被選中 → rawDetection: true', () => {
     const target = makePlayer({ seat: 2, role: 'monk', team: 'townsfolk' });
+    const secondTarget = makePlayer({ seat: 3, role: 'empath', team: 'townsfolk' });
+    const gs = makeGameState([target, secondTarget], 2); // seat 2 = 干擾項
     const result = handler.process(makeContext({
-      target,
-      infoReliable: false,
-      statusReason: '中毒',
+      target, secondTarget, infoReliable: true, gameState: gs,
     }));
 
-    expect(result.info).toBe('evil'); // 反轉
-    expect(result.gesture).toBe('shake');
-    expect(result.mustFollow).toBe(true);
+    expect((result.info as any).rawDetection).toBe(true);
+    expect((result.info as any).target1.isRedHerring).toBe(true);
+  });
+
+  it('陌客被選中（無干擾項） → rawDetection: true', () => {
+    const target = makePlayer({ seat: 2, role: 'recluse', team: 'outsider' });
+    const secondTarget = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const gs = makeGameState([target, secondTarget], null);
+    const result = handler.process(makeContext({
+      target, secondTarget, infoReliable: true, gameState: gs,
+    }));
+
+    expect((result.info as any).rawDetection).toBe(true);
+    expect((result.info as any).target1.isRecluse).toBe(true);
+  });
+
+  it('陌客帶干擾項（冗餘） → rawDetection: true', () => {
+    const target = makePlayer({ seat: 2, role: 'recluse', team: 'outsider' });
+    const secondTarget = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const gs = makeGameState([target, secondTarget], 2); // 陌客同時是干擾項
+    const result = handler.process(makeContext({
+      target, secondTarget, infoReliable: true, gameState: gs,
+    }));
+
+    expect((result.info as any).rawDetection).toBe(true);
+    expect((result.info as any).target1.isRecluse).toBe(true);
+    expect((result.info as any).target1.isRedHerring).toBe(true);
+  });
+
+  it('中毒時仍回傳實際偵測結果，mustFollow: false', () => {
+    const target = makePlayer({ seat: 2, role: 'imp', team: 'demon' });
+    const secondTarget = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const gs = makeGameState([target, secondTarget], null);
+    const result = handler.process(makeContext({
+      target, secondTarget, infoReliable: false, statusReason: '中毒', gameState: gs,
+    }));
+
+    // 中毒不反轉，回傳實際結果
+    expect((result.info as any).rawDetection).toBe(true);
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
   });
 });
 

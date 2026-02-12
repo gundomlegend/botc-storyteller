@@ -13,7 +13,7 @@
 | 情境 | 誰負責 | Handler 要做什麼 |
 |---|---|---|
 | 中毒/醉酒導致效果型能力不落地（AC1） | RuleEngine `applyInvalidation()` 標記 `effectNullified: true` | 不用管，照常回傳結果 |
-| 中毒/醉酒導致資訊不可靠（AC1） | Handler 根據 `infoReliable` 自行調整 | 檢查 `infoReliable`，回傳調整後的資訊 |
+| 中毒/醉酒導致資訊不可靠（AC1） | UI 層提示說書人可自行決定 | 回傳實際偵測結果，不反轉；UI 根據 `item.isPoisoned/isDrunk` 提示 |
 | 死亡跳過（AC2） | RuleEngine 前檢查 | 不用管 |
 | 角色變更撤銷持續狀態（AC3） | GameState `revokeEffectsFrom()` | 不用管 |
 | NightContext 攔截（AC4） | RuleEngine 前檢查 `blockedRoles` | 不用管 |
@@ -47,131 +47,105 @@ interface HandlerContext {
 `src/engine/handlers/FortunetellerHandler.ts`
 
 ### 角色能力
-每個夜晚，選擇兩位玩家：你得知他們其中是否有惡魔。有一位善良玩家會對你顯示為惡魔。
+每個夜晚，選擇兩位玩家：你得知他們其中是否有惡魔。有一位善良玩家（干擾項）會對你顯示為惡魔。
 
-### 實作規格
+### 設計原則
+- **Handler 回傳實際偵測結果，不反轉**
+- 中毒/醉酒時由 UI 層提示說書人可給任意答案
+- 說書人永遠做最終決定（有惡魔/無惡魔）
 
-#### 處理流程
+### 干擾項（Red Herring）
+
+第一晚占卜師階段開始前，說書人從善良陣營（townsfolk / outsider）選擇一位玩家標記為干擾項。
+
+- **≤ 6 人局**：可選占卜師自己
+- **> 6 人局**：不可選占卜師自己
+- 干擾項設定後在整場遊戲中持續有效，存於 `gameState.redHerringSeat`
+
+### 偵測判定邏輯
+
 ```
-1. 檢查是否選擇目標
-   ├─ 未選擇 → 返回需要輸入
-   └─ 已選擇 → 繼續
-   ↓
-2. 獲取目標真實陣營
-   └─ isEvil = (target.team === 'minion' || target.team === 'demon')
-   ↓
-3. 檢查資訊可靠性
-   ├─ 不可靠（中毒/醉酒/Jinx） → 反轉資訊，強制遵守
-   └─ 可靠 → 給真實資訊，說書人可選擇撒謊
-   ↓
-4. 返回結果
+targetTriggersDetection(target) =
+  target.team === 'demon'           // 惡魔
+  || target.role === 'recluse'      // 陌客（永遠觸發偵測）
+  || target.seat === redHerringSeat  // 干擾項
+
+rawDetection = triggers(target1) || triggers(target2)
 ```
 
-#### 程式碼實作
+> 陌客帶干擾項 → 無額外效果（本來就會觸發偵測）
+> 爪牙（minion）不觸發偵測
+
+### 中毒/醉酒處理
+- Handler 仍回傳實際偵測結果（`rawDetection`）
+- UI 層根據 `item.isPoisoned / item.isDrunk` 顯示警告
+- 中毒/醉酒時：回答選項**不預選**，說書人必須自行選擇
+- 正常狀態時：回答選項**預選**實際偵測結果
+
+### 處理流程
+```
+1. 檢查雙目標
+   ├─ target 或 secondTarget 為空 → 返回 needInput (select_two_players)
+   └─ 兩者皆有 → 繼續
+   ↓
+2. 偵測判定
+   ├─ target1: 是惡魔 / 陌客 / 干擾項？
+   └─ target2: 是惡魔 / 陌客 / 干擾項？
+   ↓
+3. 計算 rawDetection = t1Triggers || t2Triggers
+   ↓
+4. 回傳結果
+   └─ info.rawDetection、各目標偵測細節、reasoning
+```
+
+### 回傳格式
 ```typescript
-export class FortunetellerHandler implements RoleHandler {
-  process(context: HandlerContext): NightResult {
-    const { player, target, infoReliable, statusReason } = context;
-    
-    // 步驟 1: 檢查目標
-    if (!target) {
-      return {
-        needInput: true,
-        inputType: 'select_player',
-        inputPrompt: '占卜師選擇要查驗的玩家',
-        display: '等待占卜師選擇目標...'
-      };
-    }
-    
-    // 步驟 2: 獲取真實陣營
-    const isEvil = target.team === 'minion' || target.team === 'demon';
-    
-    // 步驟 3: 根據可靠性決定資訊
-    let finalInfo: boolean;
-    let reasoning: string;
-    let mustFollow: boolean;
-    
-    if (!infoReliable) {
-      // 中毒/醉酒/Jinx - 給錯誤資訊
-      finalInfo = !isEvil;
-      reasoning = `占卜師${statusReason}，必須給錯誤資訊`;
-      mustFollow = true;
-    } else {
-      // 正常狀態 - 給真實資訊
-      finalInfo = isEvil;
-      reasoning = '占卜師狀態正常，建議給真實資訊（說書人可選擇撒謊）';
-      mustFollow = false;
-    }
-    
-    // 步驟 4: 返回結果
-    return {
-      action: 'tell_alignment',
-      info: finalInfo ? 'evil' : 'good',
-      gesture: finalInfo ? 'shake' : 'nod',
-      mustFollow: mustFollow,
-      canLie: !mustFollow,
-      reasoning: reasoning,
-      display: this.formatDisplay(target, isEvil, finalInfo, reasoning)
-    };
-  }
-  
-  private formatDisplay(
-    target: Player,
-    actualAlignment: boolean,
-    suggestedInfo: boolean,
-    reasoning: string
-  ): string {
-    return `查驗 ${target.seat}號 (${target.name})
-真實身份：${target.role} (${actualAlignment ? '邪惡' : '善良'})
-
-${reasoning}
-
-建議手勢：${suggestedInfo ? '搖頭（邪惡）' : '點頭（善良）'}`;
-  }
+{
+  action: 'tell_alignment',
+  info: {
+    rawDetection: boolean,
+    target1: { seat: number, isDemon: boolean, isRecluse: boolean, isRedHerring: boolean },
+    target2: { seat: number, isDemon: boolean, isRecluse: boolean, isRedHerring: boolean },
+  },
+  mustFollow: false,
+  canLie: true,
+  reasoning: string,   // 偵測原因說明
+  display: string,      // 完整顯示文字
 }
 ```
 
-#### 測試案例
+### UI 流程（FortunetellerProcessor）
+
+占卜師使用專屬 UI 處理器 `FortunetellerProcessor`（`src/components/roleProcessors/FortunetellerProcessor.tsx`），
+透過 `ROLE_PROCESSORS` 註冊表由 `AbilityProcessor` 自動路由。
+
+```
+第一晚：
+  1. 干擾項選擇（善良陣營角色清單，≤6人可選自己，>6人排除自己）
+  2. 第一位目標選擇（PlayerSelector mode=single）
+  3. 第二位目標選擇（PlayerSelector mode=single，排除已選目標）
+  4. 執行能力 → 顯示偵測結果
+  5. 說書人選擇回答：
+     ├─ 正常：預選 rawDetection 對應選項
+     └─ 中毒/醉酒：不預選 + 警告提示
+  6. 確認 → 記錄到歷史
+
+第二晚起：
+  跳過步驟 1，其餘相同
+```
+
+### 測試案例
 ```typescript
 describe('FortunetellerHandler', () => {
-  test('正常狀態查驗惡魔', () => {
-    const result = handler.process({
-      player: fortuneteller,
-      target: imp,
-      infoReliable: true,
-      statusReason: ''
-    });
-    
-    expect(result.info).toBe('evil');
-    expect(result.gesture).toBe('shake');
-    expect(result.mustFollow).toBe(false);
-    expect(result.canLie).toBe(true);
-  });
-  
-  test('中毒狀態查驗惡魔', () => {
-    const result = handler.process({
-      player: fortuneteller,
-      target: imp,
-      infoReliable: false,
-      statusReason: '中毒'
-    });
-    
-    expect(result.info).toBe('good'); // 反轉
-    expect(result.mustFollow).toBe(true);
-    expect(result.reasoning).toContain('中毒');
-  });
-  
-  test('查驗善良玩家', () => {
-    const result = handler.process({
-      player: fortuneteller,
-      target: washerwoman,
-      infoReliable: true,
-      statusReason: ''
-    });
-    
-    expect(result.info).toBe('good');
-    expect(result.gesture).toBe('nod');
-  });
+  test('無目標 → needInput, select_two_players');
+  test('只有一個目標 → needInput');
+  test('雙善良、無干擾項 → rawDetection: false');
+  test('其中一個是惡魔 → rawDetection: true');
+  test('爪牙不觸發偵測 → rawDetection: false');
+  test('干擾項玩家被選中 → rawDetection: true');
+  test('陌客被選中（無干擾項） → rawDetection: true');
+  test('陌客帶干擾項（冗餘） → rawDetection: true');
+  test('中毒時仍回傳實際偵測結果，mustFollow: false');
 });
 ```
 
@@ -219,7 +193,7 @@ export class MonkHandler implements RoleHandler {
       return {
         skip: true,
         skipReason: '僧侶不能保護自己',
-        display: '⚠️ 僧侶不能保護自己，請重新選擇'
+        display: '🚫 僧侶不能保護自己，請重新選擇'
       };
     }
     
@@ -621,6 +595,38 @@ export const handlers = new Map<string, RoleHandler>([
 
 ---
 
+## UI 處理器註冊（roleProcessors）
+
+部分角色的 UI 互動邏輯較複雜（例如占卜師需要干擾項選擇、雙目標、說書人回答），
+從 `AbilityProcessor` 抽取至專屬 UI 處理器。
+
+### 檔案：`src/components/roleProcessors/index.ts`
+```typescript
+import type { ComponentType } from 'react';
+import type { NightOrderItem } from '../../engine/types';
+
+export interface RoleProcessorProps {
+  item: NightOrderItem;
+  onDone: () => void;
+}
+
+export const ROLE_PROCESSORS: Record<string, ComponentType<RoleProcessorProps>> = {
+  fortuneteller: FortunetellerProcessor,
+};
+```
+
+`AbilityProcessor` 在入口處查詢 `ROLE_PROCESSORS[item.role]`：
+- 有對應處理器 → 路由至該處理器
+- 無對應處理器 → 走通用流程（單目標選擇 + 通用結果顯示）
+
+### 新增 UI 處理器
+
+1. 在 `src/components/roleProcessors/` 建立新檔案（如 `EmpathProcessor.tsx`）
+2. 實作 `RoleProcessorProps` 介面
+3. 在 `index.ts` 的 `ROLE_PROCESSORS` 中註冊
+
+---
+
 ## 新增處理器指南
 
 ### 步驟 1: 建立處理器檔案
@@ -670,15 +676,18 @@ if (!target) {
 }
 ```
 
-### 模式 2: 檢查狀態影響
+### 模式 2: 資訊型角色回傳實際結果
 ```typescript
-if (!infoReliable) {
-  // 給錯誤資訊
-  return { mustFollow: true, ... };
-} else {
-  // 給真實資訊
-  return { canLie: true, ... };
-}
+// 資訊型 handler 回傳實際偵測結果，不根據 infoReliable 反轉。
+// 中毒/醉酒由 UI 層提示說書人可自行決定。
+return {
+  action: 'tell_alignment',
+  info: { rawDetection },
+  mustFollow: false,
+  canLie: true,
+  reasoning: '...',
+  display: '...',
+};
 ```
 
 ### 模式 3: 檢查特殊條件
