@@ -104,17 +104,11 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
               <div className="result-warning">
                 ⚠️ 廚師已{isPoisoned && isDrunk ? '中毒且醉酒' : isPoisoned ? '中毒' : '醉酒'}，你可以告訴玩家任意數字。
                 <br />
-                <strong>相鄰的邪惡客人：{actualPairCount} 組</strong>
+                <strong>🍽 相鄰的邪惡客人：{actualPairCount} 組（你可以選擇撒謊）</strong>
               </div>
             )}
 
-            {!isPoisonedOrDrunk && (
-              <div className="result-info">
-                ℹ️ 相鄰的邪惡客人：{actualPairCount} 組（你可以選擇撒謊）
-              </div>
-            )}
-
-            <div style={{ marginTop: '1rem' }}>
+            {isPoisonedOrDrunk && <div style={{ marginTop: '1rem' }}>
               <label htmlFor="chef-number">
                 <strong>告訴廚師的數字 (建議範圍: 0-{maxPossiblePairs})：</strong>
               </label>
@@ -134,7 +128,7 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
                 }}
               />
               <span style={{ marginLeft: '0.5rem' }}>組</span>
-            </div>
+            </div>}
 
             {toldPairCount !== '' && parseInt(toldPairCount, 10) !== actualPairCount && (
               <div className="result-warning" style={{ marginTop: '1rem' }}>
