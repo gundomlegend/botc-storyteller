@@ -66,15 +66,24 @@ interface HandlerContext {
 
 ```
 targetTriggersDetection(target) =
-  target.team === 'demon'           // 惡魔
-  || target.role === 'recluse'      // 陌客（永遠觸發偵測）
-  || target.seat === redHerringSeat  // 干擾項
+  target.team === 'demon'                                           // 惡魔
+  || (target.role === 'recluse' && !target.isPoisoned && !target.isDrunk)  // 陌客（正常時觸發）
+  || target.seat === redHerringSeat                                 // 干擾項
 
 rawDetection = triggers(target1) || triggers(target2)
 ```
 
+**陌客檢測規則**：
+- **陌客正常狀態**：觸發偵測（說書人決定）
+- **陌客中毒/醉酒**：能力失效，**不觸發偵測**
+
 > 陌客帶干擾項 → 無額外效果（本來就會觸發偵測）
 > 爪牙（minion）不觸發偵測
+
+**與廚師邏輯一致性**：
+- 廚師：陌客中毒/醉酒 → 不被視為邪惡
+- 占卜師：陌客中毒/醉酒 → 不觸發偵測
+- 兩者行為一致，符合「能力失效」規則
 
 ### 中毒/醉酒處理
 - Handler 仍回傳實際偵測結果（`rawDetection`）
@@ -143,9 +152,11 @@ describe('FortunetellerHandler', () => {
   test('其中一個是惡魔 → rawDetection: true');
   test('爪牙不觸發偵測 → rawDetection: false');
   test('干擾項玩家被選中 → rawDetection: true');
-  test('陌客被選中（無干擾項） → rawDetection: true');
+  test('陌客正常狀態被選中 → rawDetection: true');
+  test('陌客中毒被選中 → rawDetection: false');
+  test('陌客醉酒被選中 → rawDetection: false');
   test('陌客帶干擾項（冗餘） → rawDetection: true');
-  test('中毒時仍回傳實際偵測結果，mustFollow: false');
+  test('占卜師中毒時仍回傳實際偵測結果，mustFollow: false');
 });
 ```
 
