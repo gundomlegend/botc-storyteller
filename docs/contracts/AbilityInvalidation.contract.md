@@ -53,7 +53,7 @@
 
 - 若 `!infoReliable` 且結果的 `action` 為效果型（`add_protection` / `add_poison` / `kill`），
   在結果上標記 `effectNullified: true`，保留 `display` 供說書人參考。
-- 資訊型 handler（如占卜師）自行根據 `infoReliable` 調整回傳資訊，RuleEngine 不介入。
+- 資訊型 handler（如占卜師）回傳實際偵測結果（不根據 `infoReliable` 調整），RuleEngine 不介入。UI 層根據 `item.isPoisoned / isDrunk` 提示說書人可自行決定回答。
 - AC4 攔截：透過 `NightContext.blockedRoles` 追蹤已生效的攔截，後續角色結算前檢查。
 
 ### 層 2：GameState API（負責 AC2、AC3）
@@ -68,7 +68,7 @@
 ### 層 3：Handler（不負責 invalidation）
 
 - Handler 只寫純能力邏輯（happy path）。
-- Handler 接收 `infoReliable` 和 `statusReason`，資訊型 handler 可用來調整回傳資訊。
+- Handler 接收 `infoReliable` 和 `statusReason`（供 reasoning 使用），但資訊型 handler 不根據 `infoReliable` 調整偵測結果。
 - Handler **不做**中毒 / 醉酒 / 死亡 / 角色變更等 invalidation 檢查。
 
 ---
@@ -76,7 +76,7 @@
 ## Contract Tests（概念驗證，必須可測）
 
 - T1：poisoned 的 Monk 保護 → RuleEngine 回傳 `effectNullified: true`，不產生狀態變更
-- T2：drunk 的資訊型技能回傳不保證正確（handler 根據 `infoReliable` 處理）
+- T2：drunk / poisoned 的資訊型技能仍回傳實際偵測結果（handler 不反轉），UI 提示說書人可自行決定
 - T3：`killPlayer()` 當下自動呼叫 `revokeEffectsFrom()`，撤銷該玩家造成的持續性狀態
 - T4：`replaceRole()` 當下自動呼叫 `revokeEffectsFrom()`，撤銷舊角色造成的持續性狀態
 - T5：Exorcist 先於 Demon 行動時，`NightContext.blockedRoles` 阻止 Demon，kill 結果為 null

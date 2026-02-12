@@ -128,7 +128,7 @@ constructor() {
    ↓
 7. 統一後處理 applyInvalidation()（AC1）
    ├─ !infoReliable 且 action 為效果型 → 標記 effectNullified: true
-   └─ 資訊型結果 → 不介入（handler 已自行處理）
+   └─ 資訊型結果 → 不介入（handler 回傳實際結果，由 UI 層提示說書人）
    ↓
 8. 返回結果
 ```
@@ -138,17 +138,18 @@ constructor() {
 const engine = new RuleEngine();
 const manager = new GameStateManager();
 
-// 占卜師查驗小惡魔
+// 占卜師查驗小惡魔（需要雙目標）
 const result = engine.processNightAbility(
   fortunetellerPlayer,  // 占卜師
-  impPlayer,            // 小惡魔
+  impPlayer,            // 目標 1：小惡魔
   manager.getState(),
-  manager
+  manager,
+  goodPlayer            // 目標 2：善良玩家
 );
 
-console.log(result.info);        // 'evil'
-console.log(result.gesture);     // 'shake'
-console.log(result.reasoning);   // '占卜師狀態正常...'
+console.log((result.info as any).rawDetection);  // true（偵測到惡魔）
+console.log(result.mustFollow);                   // false
+console.log(result.canLie);                       // true
 ```
 
 ---
@@ -292,14 +293,14 @@ private applyInvalidation(
     };
   }
 
-  // 資訊型 → handler 已自行處理，不介入
+  // 資訊型 → handler 回傳實際結果，不介入
   return result;
 }
 ```
 
 **行為說明**:
 - 中毒的僧侶：handler 回傳 `action: 'add_protection'` → 後處理標記 `effectNullified: true` → UI 不執行 `addStatus`
-- 中毒的占卜師：handler 已根據 `infoReliable` 回傳反轉資訊 → 後處理不介入
+- 中毒的占卜師：handler 回傳實際偵測結果（`rawDetection`），`tell_alignment` 不是效果型 action → 後處理不介入 → UI 層根據 `item.isPoisoned/isDrunk` 提示說書人可自行選擇回答
 - 正常的僧侶：`infoReliable === true` → 後處理不介入
 
 ---
@@ -309,69 +310,50 @@ private applyInvalidation(
 ### 案例 1: 占卜師查驗（正常狀態）
 ```typescript
 // 設定
-const ftPlayer = {
-  seat: 1,
-  role: 'fortuneteller',
-  isPoisoned: false,
-  isDrunk: false,
-  isAlive: true
-};
+const ftPlayer = { seat: 1, role: 'fortuneteller', isPoisoned: false, isDrunk: false, isAlive: true };
+const impPlayer = { seat: 7, role: 'imp', team: 'demon' };
+const goodPlayer = { seat: 3, role: 'monk', team: 'townsfolk' };
 
-const impPlayer = {
-  seat: 7,
-  role: 'imp',
-  team: 'demon'
-};
-
-// 處理
-const result = engine.processNightAbility(
-  ftPlayer,
-  impPlayer,
-  gameState,
-  manager
-);
+// 處理（占卜師需要雙目標）
+const result = engine.processNightAbility(ftPlayer, impPlayer, gameState, manager, goodPlayer);
 
 // 結果
 {
   action: 'tell_alignment',
-  info: 'evil',                    // 真實資訊
-  gesture: 'shake',                 // 搖頭（邪惡）
-  mustFollow: false,                // 不強制
-  canLie: true,                     // 說書人可以選擇撒謊
-  reasoning: '占卜師狀態正常，建議給真實資訊',
-  display: '查驗 7號\n真實身份：小惡魔 (邪惡)\n建議手勢：搖頭'
+  info: {
+    rawDetection: true,            // 偵測到惡魔
+    target1: { seat: 7, isDemon: true, isRecluse: false, isRedHerring: false },
+    target2: { seat: 3, isDemon: false, isRecluse: false, isRedHerring: false },
+  },
+  mustFollow: false,                // 說書人可自行決定
+  canLie: true,                     // 說書人可給不同答案
+  reasoning: '7號是惡魔（小惡魔）',
+  display: '查驗目標：\n  1. 7號 — 小惡魔 [惡魔]\n  2. 3號 — 僧侶\n\n偵測結果：偵測到惡魔'
 }
 ```
 
 ### 案例 2: 占卜師查驗（中毒狀態）
 ```typescript
 // 設定
-const ftPlayer = {
-  seat: 1,
-  role: 'fortuneteller',
-  isPoisoned: true,              // 中毒！
-  isDrunk: false,
-  isAlive: true
-};
+const ftPlayer = { seat: 1, role: 'fortuneteller', isPoisoned: true, isDrunk: false, isAlive: true };
 
 // 處理
-const result = engine.processNightAbility(
-  ftPlayer,
-  impPlayer,
-  gameState,
-  manager
-);
+const result = engine.processNightAbility(ftPlayer, impPlayer, gameState, manager, goodPlayer);
 
-// 結果
+// 結果（中毒的占卜師仍回傳實際偵測結果）
 {
   action: 'tell_alignment',
-  info: 'good',                    // 錯誤資訊（反轉）
-  gesture: 'nod',                   // 點頭（善良）
-  mustFollow: true,                 // 強制遵守
-  canLie: false,                    // 不能撒謊
-  reasoning: '占卜師中毒，必須給錯誤資訊',
+  info: {
+    rawDetection: true,            // 實際偵測結果（不反轉）
+    target1: { seat: 7, isDemon: true, isRecluse: false, isRedHerring: false },
+    target2: { seat: 3, isDemon: false, isRecluse: false, isRedHerring: false },
+  },
+  mustFollow: false,                // 說書人自行決定
+  canLie: true,                     // 說書人可給不同答案
+  reasoning: '7號是惡魔（小惡魔）',
   display: '...'
 }
+// UI 層：因 item.isPoisoned === true，不預選答案，顯示警告
 ```
 
 ### 案例 3: 占卜師 + 寡婦 Jinx
@@ -380,28 +362,28 @@ const result = engine.processNightAbility(
 manager.initializePlayers([
   { seat: 1, role: 'fortuneteller' },
   { seat: 2, role: 'widow' },      // 寡婦存活
+  { seat: 3, role: 'monk' },
   { seat: 7, role: 'imp' }
 ]);
 
 const ftPlayer = manager.getPlayer(1);
 const impPlayer = manager.getPlayer(7);
+const monkPlayer = manager.getPlayer(3);
 
 // 處理
-const result = engine.processNightAbility(
-  ftPlayer,
-  impPlayer,
-  manager.getState(),
-  manager
-);
+const result = engine.processNightAbility(ftPlayer, impPlayer, manager.getState(), manager, monkPlayer);
 
-// 結果
+// 結果（Jinx 使 infoReliable=false，但 handler 仍回傳實際結果）
 {
   action: 'tell_alignment',
-  info: 'good',                    // 錯誤資訊（Jinx）
-  gesture: 'nod',
-  mustFollow: true,                 // 強制遵守
-  canLie: false,
-  reasoning: '寡婦 Jinx：占卜師永遠得到錯誤資訊',
+  info: {
+    rawDetection: true,            // 實際偵測結果（不反轉）
+    target1: { seat: 7, isDemon: true, isRecluse: false, isRedHerring: false },
+    target2: { seat: 3, isDemon: false, isRecluse: false, isRedHerring: false },
+  },
+  mustFollow: false,                // 說書人自行決定
+  canLie: true,
+  reasoning: '7號是惡魔（小惡魔）',
   display: '...'
 }
 ```
@@ -447,33 +429,36 @@ const manager = new GameStateManager();
 
 manager.initializePlayers([
   { seat: 1, role: 'fortuneteller' },
-  { seat: 2, role: 'imp' }
+  { seat: 2, role: 'imp' },
+  { seat: 3, role: 'monk' }
 ]);
 
 const ft = manager.getPlayer(1);
 const imp = manager.getPlayer(2);
+const monk = manager.getPlayer(3);
 
 const result = engine.processNightAbility(
-  ft, imp, manager.getState(), manager
+  ft, imp, manager.getState(), manager, monk
 );
 
-assert(result.info === 'evil');
-assert(result.gesture === 'shake');
+assert((result.info as any).rawDetection === true);
 assert(result.canLie === true);
 assert(result.mustFollow === false);
 ```
 
 ### 測試 2: 中毒狀態處理
 ```typescript
-manager.addStatus(1, 'poisoned');
+manager.addStatus(1, 'poisoned', 99);
 
 const result = engine.processNightAbility(
-  ft, imp, manager.getState(), manager
+  ft, imp, manager.getState(), manager, monk
 );
 
-assert(result.info === 'good');     // 反轉
-assert(result.mustFollow === true);  // 強制
-assert(result.reasoning.includes('中毒'));
+// 中毒不反轉，仍回傳實際偵測結果
+assert((result.info as any).rawDetection === true);
+assert(result.mustFollow === false);
+assert(result.canLie === true);
+// UI 層根據 item.isPoisoned 提示說書人可自行決定
 ```
 
 ### 測試 3: Jinx 檢測

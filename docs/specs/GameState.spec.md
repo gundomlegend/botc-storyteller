@@ -423,7 +423,7 @@ manager.startNight();
 const order = manager.generateNightOrder(false); // 其他夜晚
 order.forEach(item => {
   console.log(`${item.seat}號 - ${item.roleName}`);
-  if (item.isPoisoned) console.log('  ⚠️ 中毒');
+  if (item.isPoisoned) console.log('  🧪 中毒');
   if (item.isDead) console.log('  💀 死亡');
 });
 ```

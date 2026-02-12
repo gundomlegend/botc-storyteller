@@ -20,11 +20,12 @@ interface GameStore {
   initGame: (players: Array<{ seat: number; name: string; role: string }>) => void;
   startNight: () => void;
   startDay: () => void;
-  processAbility: (playerSeat: number, targetSeat: number | null) => NightResult;
+  processAbility: (playerSeat: number, targetSeat: number | null, secondTargetSeat?: number | null) => NightResult;
   addStatus: (seat: number, type: StatusEffectType, sourceSeat: number) => void;
   removeStatus: (seat: number, type: StatusEffectType) => void;
   killPlayer: (seat: number, cause: 'demon_kill' | 'execution' | 'virgin_ability' | 'other') => void;
   setButlerMaster: (masterSeat: number) => void;
+  setRedHerring: (seat: number) => void;
 
   // 內部刷新
   _refresh: () => void;
@@ -78,9 +79,10 @@ export const useGameStore = create<GameStore>((set) => {
       refresh();
     },
 
-    processAbility: (playerSeat, targetSeat) => {
+    processAbility: (playerSeat, targetSeat, secondTargetSeat) => {
       const player = stateManager.getPlayer(playerSeat);
       const target = targetSeat != null ? stateManager.getPlayer(targetSeat) ?? null : null;
+      const secondTarget = secondTargetSeat != null ? stateManager.getPlayer(secondTargetSeat) ?? null : null;
 
       if (!player) {
         return {
@@ -94,7 +96,8 @@ export const useGameStore = create<GameStore>((set) => {
         player,
         target,
         stateManager.getState(),
-        stateManager
+        stateManager,
+        secondTarget
       );
 
       refresh();
@@ -118,6 +121,11 @@ export const useGameStore = create<GameStore>((set) => {
 
     setButlerMaster: (masterSeat) => {
       stateManager.setButlerMaster(masterSeat);
+      refresh();
+    },
+
+    setRedHerring: (seat) => {
+      stateManager.setRedHerring(seat);
       refresh();
     },
 

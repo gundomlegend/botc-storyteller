@@ -2,57 +2,99 @@ import type { RoleHandler, HandlerContext, NightResult, Player } from '../types'
 
 export class FortunetellerHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { player, target, infoReliable, statusReason, getRoleName } = context;
+    const { target, secondTarget, gameState, getRoleName } = context;
 
-    if (!target) {
+    if (!target || !secondTarget) {
       return {
         needInput: true,
-        inputType: 'select_player',
-        inputPrompt: '占卜師選擇要查驗的玩家',
-        display: '等待占卜師選擇目標...',
+        inputType: 'select_two_players',
+        inputPrompt: '占卜師選擇兩位玩家查驗',
+        display: '等待占卜師選擇兩位目標...',
       };
     }
 
-    const isEvil = target.team === 'minion' || target.team === 'demon';
+    const redHerringSeat = gameState.redHerringSeat;
 
-    let finalInfo: boolean;
-    let reasoning: string;
-    let mustFollow: boolean;
+    const t1 = this.analyzeTarget(target, redHerringSeat);
+    const t2 = this.analyzeTarget(secondTarget, redHerringSeat);
+    const rawDetection = t1.triggers || t2.triggers;
 
-    if (!infoReliable) {
-      finalInfo = !isEvil;
-      reasoning = `占卜師${statusReason}，必須給錯誤資訊`;
-      mustFollow = true;
-    } else {
-      finalInfo = isEvil;
-      reasoning = '占卜師狀態正常，建議給真實資訊（說書人可選擇撒謊）';
-      mustFollow = false;
-    }
+    const reasoning = this.buildReasoning(target, secondTarget, t1, t2, getRoleName);
 
     return {
       action: 'tell_alignment',
-      info: finalInfo ? 'evil' : 'good',
-      gesture: finalInfo ? 'shake' : 'nod',
-      mustFollow,
-      canLie: !mustFollow,
+      info: {
+        rawDetection,
+        target1: { seat: target.seat, isDemon: t1.isDemon, isRecluse: t1.isRecluse, isRedHerring: t1.isRedHerring },
+        target2: { seat: secondTarget.seat, isDemon: t2.isDemon, isRecluse: t2.isRecluse, isRedHerring: t2.isRedHerring },
+      },
+      mustFollow: false,
+      canLie: true,
       reasoning,
-      display: this.formatDisplay(player, target, isEvil, finalInfo, reasoning, getRoleName),
+      display: this.formatDisplay(target, secondTarget, t1, t2, rawDetection, reasoning, getRoleName),
     };
   }
 
-  private formatDisplay(
-    _player: Player,
+  private analyzeTarget(
     target: Player,
-    actualEvil: boolean,
-    suggestedEvil: boolean,
+    redHerringSeat: number | null
+  ): { triggers: boolean; isDemon: boolean; isRecluse: boolean; isRedHerring: boolean } {
+    const isDemon = target.team === 'demon';
+    const isRecluse = target.role === 'recluse';
+    const isRedHerring = target.seat === redHerringSeat;
+    return {
+      triggers: isDemon || isRecluse || isRedHerring,
+      isDemon,
+      isRecluse,
+      isRedHerring,
+    };
+  }
+
+  private buildReasoning(
+    target: Player,
+    secondTarget: Player,
+    t1: { isDemon: boolean; isRecluse: boolean; isRedHerring: boolean },
+    t2: { isDemon: boolean; isRecluse: boolean; isRedHerring: boolean },
+    getRoleName: (roleId: string) => string
+  ): string {
+    const parts: string[] = [];
+
+    if (t1.isDemon) parts.push(`${target.seat}號是惡魔（${getRoleName(target.role)}）`);
+    if (t2.isDemon) parts.push(`${secondTarget.seat}號是惡魔（${getRoleName(secondTarget.role)}）`);
+    if (t1.isRecluse) parts.push(`${target.seat}號是陌客（永遠觸發偵測）`);
+    if (t2.isRecluse) parts.push(`${secondTarget.seat}號是陌客（永遠觸發偵測）`);
+    if (t1.isRedHerring && !t1.isRecluse) parts.push(`${target.seat}號是干擾項`);
+    if (t2.isRedHerring && !t2.isRecluse) parts.push(`${secondTarget.seat}號是干擾項`);
+
+    if (parts.length > 0) {
+      return parts.join('；');
+    }
+    return '兩位目標皆非惡魔、陌客或干擾項';
+  }
+
+  private formatDisplay(
+    target: Player,
+    secondTarget: Player,
+    t1: { triggers: boolean; isDemon: boolean; isRecluse: boolean; isRedHerring: boolean },
+    t2: { triggers: boolean; isDemon: boolean; isRecluse: boolean; isRedHerring: boolean },
+    rawDetection: boolean,
     reasoning: string,
     getRoleName: (roleId: string) => string
   ): string {
-    return `查驗 ${target.seat}號 (${target.name})
-真實身份：${getRoleName(target.role)} (${actualEvil ? '邪惡' : '善良'})
+    const tag = (a: { isDemon: boolean; isRecluse: boolean; isRedHerring: boolean }) => {
+      const tags: string[] = [];
+      if (a.isDemon) tags.push('惡魔');
+      if (a.isRecluse) tags.push('陌客');
+      if (a.isRedHerring && !a.isRecluse) tags.push('干擾項');
+      return tags.length > 0 ? ` [${tags.join(', ')}]` : '';
+    };
 
-${reasoning}
+    return `查驗目標：
+  1. ${target.seat}號 (${target.name}) — ${getRoleName(target.role)}${tag(t1)}
+  2. ${secondTarget.seat}號 (${secondTarget.name}) — ${getRoleName(secondTarget.role)}${tag(t2)}
 
-建議手勢：${suggestedEvil ? '搖頭（邪惡）' : '點頭（善良）'}`;
+偵測結果：${rawDetection ? '偵測到惡魔' : '未偵測到惡魔'}
+
+${reasoning}`;
   }
 }

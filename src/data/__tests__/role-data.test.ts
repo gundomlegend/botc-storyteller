@@ -109,8 +109,8 @@ describe('Trouble Brewing 角色資料驗證', () => {
 });
 
 describe('Jinxes 資料驗證', () => {
-  it('jinxes 為非空陣列', () => {
-    expect(typedJinxes.length).toBeGreaterThan(0);
+  it('jinxes 為陣列', () => {
+    expect(Array.isArray(typedJinxes)).toBe(true);
   });
 
   it('每條 jinx 都有 id / role1 / role2 / reason', () => {

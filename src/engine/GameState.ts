@@ -21,6 +21,7 @@ export class GameStateManager {
       setupComplete: false,
       selectedRoles: [],
       demonBluffs: [],
+      redHerringSeat: null,
     };
 
     this.roleRegistry = new Map();
@@ -276,6 +277,22 @@ export class GameStateManager {
     const butler = this.getAllPlayers().find((p) => p.role === 'butler');
     if (!butler) return null;
     return butler.masterSeat;
+  }
+
+  setRedHerring(seat: number): void {
+    const player = this.state.players.get(seat);
+    if (!player) return;
+    if (this.getAlignment(player) !== 'good') return;
+    this.state.redHerringSeat = seat;
+    this.logEvent({
+      type: 'init',
+      description: `${seat}號 ${player.name} 被設為占卜師的干擾項`,
+      details: { seat, role: player.role },
+    });
+  }
+
+  getRedHerring(): number | null {
+    return this.state.redHerringSeat;
   }
 
   startNight(): void {
