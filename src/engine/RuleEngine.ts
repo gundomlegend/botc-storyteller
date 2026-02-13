@@ -120,6 +120,9 @@ export class RuleEngine {
           const rd = this.roleRegistry.get(roleId);
           return rd ? t(rd, 'name') : roleId;
         },
+        getPlayerRoleName: (player: Player) => {
+          return this.getPlayerRoleName(player);
+        },
       });
     } else {
       result = this.defaultHandler(roleData, player, infoReliable, statusReason);
@@ -270,5 +273,18 @@ export class RuleEngine {
   getRoleName(roleId: string): string {
     const rd = this.roleRegistry.get(roleId);
     return rd ? t(rd, 'name') : roleId;
+  }
+
+  /**
+   * 取得玩家的角色顯示名稱（考慮 believesRole）
+   * 如果玩家有 believesRole（如酒鬼），顯示為「假角色名(真實角色名)」
+   */
+  getPlayerRoleName(player: Player): string {
+    if (player.believesRole) {
+      const believesRoleName = this.getRoleName(player.believesRole);
+      const actualRoleName = this.getRoleName(player.role);
+      return `${believesRoleName}(${actualRoleName})`;
+    }
+    return this.getRoleName(player.role);
   }
 }

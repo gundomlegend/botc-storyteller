@@ -7,11 +7,13 @@ import { PoisonerHandler } from './PoisonerHandler';
 import { ImpHandler } from './ImpHandler';
 import { DrunkHandler } from './DrunkHandler';
 import { ButlerHandler } from './ButlerHandler';
+import { InvestigatorHandler } from './InvestigatorHandler';
 
 export const handlers = new Map<string, RoleHandler>([
   ['fortuneteller', new FortunetellerHandler()],
   ['chef', new ChefHandler()],
   ['empath', new EmpathHandler()],
+  ['investigator', new InvestigatorHandler()],
   ['monk', new MonkHandler()],
   ['poisoner', new PoisonerHandler()],
   ['imp', new ImpHandler()],

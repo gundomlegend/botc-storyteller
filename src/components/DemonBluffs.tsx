@@ -24,7 +24,7 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
         {demon && (
           <p className="special-step">
             讓 {demon.seat}號 {demon.name}（
-            {ruleEngine.getRoleName(demon.role)}）睜眼
+            {ruleEngine.getPlayerRoleName(demon)}）睜眼
           </p>
         )}
 

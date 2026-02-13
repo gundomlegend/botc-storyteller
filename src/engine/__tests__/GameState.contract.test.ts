@@ -527,3 +527,85 @@ describe('Butler Master 管理', () => {
     expect(m.getHistory()[m.getHistory().length - 1].type).toBe('butler_master');
   });
 });
+
+// ============================================================
+// Demon Bluffs Tests
+// ============================================================
+
+describe('Demon Bluffs', () => {
+  it('酒鬼本身不應出現在惡魔虛張聲勢中', () => {
+    const m = new GameStateManager();
+    m.initializePlayers([
+      { seat: 1, name: 'Alice', role: 'monk' },
+      { seat: 2, name: 'Bob', role: 'fortuneteller' },
+      { seat: 3, name: 'Charlie', role: 'empath' },
+      { seat: 4, name: 'David', role: 'drunk' }, // 酒鬼
+      { seat: 5, name: 'Eve', role: 'poisoner' },
+      { seat: 6, name: 'Frank', role: 'imp' },
+    ]);
+
+    const bluffs = m.generateDemonBluffs();
+    
+    console.log('[TEST] Generated bluffs:', bluffs);
+    console.log('[TEST] All players:', m.getAllPlayers().map(p => ({ seat: p.seat, role: p.role })));
+    
+    expect(bluffs).toHaveLength(3);
+    expect(bluffs).not.toContain('drunk'); // 酒鬼不應在虛張聲勢中
+  });
+
+  it('酒鬼的假角色不應出現在惡魔虛張聲勢中', () => {
+    const m = new GameStateManager();
+    m.initializePlayers([
+      { seat: 1, name: 'Alice', role: 'monk' },
+      { seat: 2, name: 'Bob', role: 'fortuneteller' },
+      { seat: 3, name: 'Charlie', role: 'empath' },
+      { seat: 4, name: 'David', role: 'drunk' }, // 酒鬼，以為自己是調查員
+      { seat: 5, name: 'Eve', role: 'poisoner' },
+      { seat: 6, name: 'Frank', role: 'imp' },
+    ]);
+
+    // 設定酒鬼的假角色
+    const drunkPlayer = m.getPlayer(4);
+    if (drunkPlayer) {
+      drunkPlayer.believesRole = 'investigator';
+    }
+
+    const bluffs = m.generateDemonBluffs();
+    
+    console.log('[TEST] Generated bluffs:', bluffs);
+    console.log('[TEST] Drunk believesRole:', drunkPlayer?.believesRole);
+    
+    expect(bluffs).toHaveLength(3);
+    expect(bluffs).not.toContain('drunk'); // 酒鬼本身不應在虛張聲勢中
+    expect(bluffs).not.toContain('investigator'); // 酒鬼的假角色也不應在虛張聲勢中
+  });
+
+  it('酒鬼不在場時，仍然不應出現在惡魔虛張聲勢中', () => {
+    const m = new GameStateManager();
+    // 15人局，沒有酒鬼
+    m.initializePlayers([
+      { seat: 1, name: 'A', role: 'fortuneteller' },
+      { seat: 2, name: 'B', role: 'imp' },
+      { seat: 3, name: 'C', role: 'spy' },
+      { seat: 4, name: 'D', role: 'virgin' },
+      { seat: 5, name: 'E', role: 'poisoner' },
+      { seat: 6, name: 'F', role: 'monk' },
+      { seat: 7, name: 'G', role: 'empath' },
+      { seat: 8, name: 'H', role: 'ravenkeeper' },
+      { seat: 9, name: 'I', role: 'recluse' },
+      { seat: 10, name: 'J', role: 'mayor' },
+      { seat: 11, name: 'K', role: 'investigator' },
+      { seat: 12, name: 'L', role: 'scarletwoman' },
+      { seat: 13, name: 'M', role: 'undertaker' },
+      { seat: 14, name: 'N', role: 'slayer' },
+      { seat: 15, name: 'O', role: 'butler' },
+    ]);
+
+    const bluffs = m.generateDemonBluffs();
+
+    console.log('[TEST] Generated bluffs (no drunk in game):', bluffs);
+
+    expect(bluffs).toHaveLength(3);
+    expect(bluffs).not.toContain('drunk'); // 即使酒鬼不在場，仍不應出現在虛張聲勢中
+  });
+});

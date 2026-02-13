@@ -395,6 +395,97 @@ if (masterSeat != null) {
 
 ---
 
+### generateDemonBluffs()
+
+**功能**: 生成惡魔虛張聲勢角色（三個不在場的善良角色）
+
+**輸出**: `string[]` — 三個角色 ID 的陣列
+
+**演算法**:
+```
+1. 建立 assignedRoles 集合，包含所有在場角色（this.state.selectedRoles）
+2. 永久排除酒鬼標記（drunk）
+   - 原因：酒鬼標記只有說書人可見，不應被惡魔看到
+   - 無論酒鬼是否在場，都必須排除
+3. 如果場上有酒鬼玩家，排除其假角色（believesRole）
+   - 原因：如果假角色出現在虛張聲勢中，惡魔會知道跳出該角色的玩家是酒鬼
+   - 這違反了遊戲平衡，酒鬼應該被保護不被輕易識別
+4. 從角色資料中篩選出善良陣營角色（townsfolk 和 outsider）
+5. 排除所有在 assignedRoles 中的角色
+6. 隨機洗牌並選取 3 個角色
+7. 將結果存入 this.state.demonBluffs
+8. 返回角色 ID 陣列
+```
+
+**排除規則**:
+- ✅ **必須排除**: 所有在場角色（selectedRoles）
+- ✅ **必須排除**: 酒鬼標記（drunk）— 無論是否在場
+- ✅ **必須排除**: 酒鬼的假角色（believesRole）— 如果酒鬼在場
+- ❌ **不排除**: 其他未在場的善良角色
+
+**範例**:
+```typescript
+// 場景：7人局，無酒鬼
+manager.initializePlayers([
+  { seat: 1, name: 'A', role: 'fortuneteller' },
+  { seat: 2, name: 'B', role: 'empath' },
+  { seat: 3, name: 'C', role: 'monk' },
+  { seat: 4, name: 'D', role: 'virgin' },
+  { seat: 5, name: 'E', role: 'recluse' },
+  { seat: 6, name: 'F', role: 'poisoner' },
+  { seat: 7, name: 'G', role: 'imp' }
+]);
+
+const bluffs = manager.generateDemonBluffs();
+// 可能結果: ['washerwoman', 'librarian', 'chef']
+// 絕對不會包含: 'fortuneteller', 'empath', 'monk', 'virgin', 'recluse', 'drunk'
+```
+
+**範例 2: 酒鬼在場**:
+```typescript
+// 場景：7人局，有酒鬼（以為自己是調查員）
+manager.initializePlayers([
+  { seat: 1, name: 'A', role: 'fortuneteller' },
+  { seat: 2, name: 'B', role: 'empath' },
+  { seat: 3, name: 'C', role: 'monk' },
+  { seat: 4, name: 'D', role: 'drunk' }, // 酒鬼
+  { seat: 5, name: 'E', role: 'poisoner' },
+  { seat: 6, name: 'F', role: 'imp' }
+]);
+
+// 設定酒鬼的假角色
+const drunkPlayer = manager.getPlayer(4);
+drunkPlayer.believesRole = 'investigator';
+
+const bluffs = manager.generateDemonBluffs();
+// 可能結果: ['washerwoman', 'librarian', 'chef']
+// 絕對不會包含: 'fortuneteller', 'empath', 'monk', 'drunk', 'investigator'
+//                                                      ^^^^^^  ^^^^^^^^^^^^
+//                                                      酒鬼本身  酒鬼假角色
+```
+
+**注意事項**:
+1. 此方法會將結果儲存在 `state.demonBluffs` 中
+2. 重複呼叫會重新隨機生成新的虛張聲勢
+3. 如果善良角色不足 3 個，會返回所有可用角色（少於 3 個）
+4. 酒鬼標記（drunk）是唯一一個無論是否在場都必須排除的角色
+
+---
+
+### getDemonBluffs()
+
+**功能**: 獲取已生成的惡魔虛張聲勢角色
+
+**輸出**: `string[]` — 角色 ID 陣列（可能為空）
+
+**範例**:
+```typescript
+const bluffs = manager.getDemonBluffs();
+console.log(`虛張聲勢角色：${bluffs.join(', ')}`);
+```
+
+---
+
 ### startDay()
 **限制**
 - 不可在 day 狀態重複呼叫

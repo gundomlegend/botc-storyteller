@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
-import { t } from '../../engine/locale';
 import type { NightResult, Player } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import PlayerSelector from '../PlayerSelector';
@@ -9,7 +8,7 @@ import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
 
 export default function FortunetellerProcessor({ item, onDone }: RoleProcessorProps) {
-  const { processAbility, stateManager } = useGameStore();
+  const { processAbility, stateManager, ruleEngine } = useGameStore();
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null);
   const [selectedSecondTarget, setSelectedSecondTarget] = useState<number | null>(null);
   const [result, setResult] = useState<NightResult | null>(null);
@@ -98,19 +97,15 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
                   if (stateManager.getState().playerCount > 6 && p.seat === item.seat) return false;
                   return true;
                 })
-                .map((p) => {
-                  const rd = stateManager.getRoleData(p.role);
-                  const roleName = rd ? t(rd, 'name') : p.role;
-                  return (
-                    <div
-                      key={p.seat}
-                      className="player-card selectable"
-                      onClick={() => handleRedHerringSelect(p)}
-                    >
-                      <span style={{ fontWeight: 'bold' }}>{roleName}</span>
-                    </div>
-                  );
-                })}
+                .map((p) => (
+                  <div
+                    key={p.seat}
+                    className="player-card selectable"
+                    onClick={() => handleRedHerringSelect(p)}
+                  >
+                    <span style={{ fontWeight: 'bold' }}>{ruleEngine.getPlayerRoleName(p)}</span>
+                  </div>
+                ))}
             </div>
           </div>
         </div>

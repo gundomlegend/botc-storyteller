@@ -2,7 +2,7 @@ import type { RoleHandler, HandlerContext, NightResult, Player, GameState } from
 
 export class ImpHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { player, target, gameState, getRoleName } = context;
+    const { player, target, gameState, getPlayerRoleName } = context;
 
     if (!target) {
       return {
@@ -29,7 +29,7 @@ export class ImpHandler implements RoleHandler {
           gesture: 'none',
         };
       }
-      return this.handleStarPass(player, gameState, getRoleName);
+      return this.handleStarPass(player, gameState, getPlayerRoleName);
     }
 
     if (target.isProtected) {
@@ -48,7 +48,7 @@ export class ImpHandler implements RoleHandler {
 
     // 鎮長轉移機制
     if (target.role === 'mayor' && !target.isPoisoned && !target.isDrunk) {
-      return this.handleMayorBounce(target, gameState, getRoleName);
+      return this.handleMayorBounce(target, gameState, getPlayerRoleName);
     }
 
     if (target.role === 'soldier' && !target.isPoisoned && !target.isDrunk) {
@@ -80,7 +80,7 @@ export class ImpHandler implements RoleHandler {
   private handleMayorBounce(
     mayor: Player,
     gameState: GameState,
-    getRoleName: (roleId: string) => string
+    getPlayerRoleName: (player: Player) => string
   ): NightResult {
     const availableTargets = Array.from(gameState.players.values()).filter(
       (p) => p.seat !== mayor.seat && p.team !== 'demon' && p.isAlive
@@ -95,7 +95,7 @@ export class ImpHandler implements RoleHandler {
           seat: p.seat,
           name: p.name,
           role: p.role,
-          roleName: getRoleName(p.role),
+          roleName: getPlayerRoleName(p),
           team: p.team,
         })),
       },
@@ -123,7 +123,7 @@ export class ImpHandler implements RoleHandler {
   private handleStarPass(
     player: Player,
     gameState: GameState,
-    getRoleName: (roleId: string) => string
+    getPlayerRoleName: (player: Player) => string
   ): NightResult {
     const aliveMinions = Array.from(gameState.players.values()).filter(
       (p) => p.team === 'minion' && p.isAlive
@@ -159,7 +159,7 @@ export class ImpHandler implements RoleHandler {
         newDemonName: newDemon.name,
         newDemonOldRole: newDemon.role,
       },
-      display: `小惡魔自殺！\n${newDemon.seat}號 ${newDemon.name}（${getRoleName(newDemon.role)}）成為新的小惡魔\n\n請喚醒該玩家並告知其成為新的惡魔`,
+      display: `小惡魔自殺！\n${newDemon.seat}號 ${newDemon.name}（${getPlayerRoleName(newDemon)}）成為新的小惡魔\n\n請喚醒該玩家並告知其成為新的惡魔`,
       gesture: 'none',
     };
   }

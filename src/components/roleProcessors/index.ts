@@ -3,6 +3,7 @@ import type { NightOrderItem } from '../../engine/types';
 import FortunetellerProcessor from './FortunetellerProcessor';
 import ChefProcessor from './ChefProcessor';
 import EmpathProcessor from './EmpathProcessor';
+import InvestigatorProcessor from './InvestigatorProcessor';
 
 export interface RoleProcessorProps {
   item: NightOrderItem;
@@ -18,4 +19,5 @@ export const ROLE_PROCESSORS: Record<string, ComponentType<RoleProcessorProps>> 
   fortuneteller: FortunetellerProcessor,
   chef: ChefProcessor,
   empath: EmpathProcessor,
+  investigator: InvestigatorProcessor,
 };

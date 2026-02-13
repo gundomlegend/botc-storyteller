@@ -13,6 +13,7 @@ import { PoisonerHandler } from '../PoisonerHandler';
 import { ImpHandler } from '../ImpHandler';
 import { DrunkHandler } from '../DrunkHandler';
 import { ButlerHandler } from '../ButlerHandler';
+import { InvestigatorHandler } from '../InvestigatorHandler';
 
 // ============================================================
 // 輔助
@@ -83,6 +84,7 @@ function makeContext(overrides: Partial<HandlerContext>): HandlerContext {
     infoReliable: true,
     statusReason: '',
     getRoleName: (id: string) => id,
+    getPlayerRoleName: (player: Player) => player.role,
     ...overrides,
   };
 }
@@ -578,5 +580,150 @@ describe('ButlerHandler', () => {
 
     expect(result.skip).toBe(true);
     expect(result.skipReason).toContain('不能選擇自己');
+  });
+});
+
+// ============================================================
+// InvestigatorHandler
+// ============================================================
+
+describe('InvestigatorHandler', () => {
+  const handler = new InvestigatorHandler();
+
+  it('第一晚之後跳過', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'investigator', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'poisoner', team: 'minion' }),
+    ];
+    const gs = makeGameState(players);
+    gs.night = 2;
+    const result = handler.process(makeContext({ gameState: gs }));
+    expect(result.skip).toBe(true);
+    expect(result.skipReason).toContain('第一晚');
+  });
+
+  it('正常情況：返回爪牙列表供 UI 選擇', () => {
+    const investigator = makePlayer({ seat: 1, role: 'investigator', team: 'townsfolk' });
+    const poisoner = makePlayer({ seat: 2, role: 'poisoner', team: 'minion' });
+    const monk = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const imp = makePlayer({ seat: 4, role: 'imp', team: 'demon' });
+    const players = [investigator, poisoner, monk, imp];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: investigator,
+      gameState: gs,
+      getRoleName: (id) => id,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).minions).toHaveLength(1);
+    expect((result.info as any).minions[0].seat).toBe(2);
+    expect((result.info as any).minions[0].role).toBe('poisoner');
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+
+  it('只有間諜情況：告知無爪牙', () => {
+    const investigator = makePlayer({ seat: 1, role: 'investigator', team: 'townsfolk' });
+    const spy = makePlayer({ seat: 2, role: 'spy', team: 'minion' });
+    const imp = makePlayer({ seat: 3, role: 'imp', team: 'demon' });
+    const players = [investigator, spy, imp];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: investigator,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).onlySpyInGame).toBe(true);
+    expect((result.info as any).noMinionToShow).toBe(true);
+    expect(result.mustFollow).toBe(true);
+    expect(result.canLie).toBe(false);
+  });
+
+  it('無爪牙情況：返回特殊處理', () => {
+    const investigator = makePlayer({ seat: 1, role: 'investigator', team: 'townsfolk' });
+    const monk = makePlayer({ seat: 2, role: 'monk', team: 'townsfolk' });
+    const imp = makePlayer({ seat: 3, role: 'imp', team: 'demon' });
+    const players = [investigator, monk, imp];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: investigator,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).noMinionInGame).toBe(true);
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+
+  it('有陌客情況：返回陌客資訊', () => {
+    const investigator = makePlayer({ seat: 1, role: 'investigator', team: 'townsfolk' });
+    const poisoner = makePlayer({ seat: 2, role: 'poisoner', team: 'minion' });
+    const recluse = makePlayer({ seat: 3, role: 'recluse', team: 'outsider' });
+    const imp = makePlayer({ seat: 4, role: 'imp', team: 'demon' });
+    const players = [investigator, poisoner, recluse, imp];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: investigator,
+      gameState: gs,
+      getRoleName: (id) => id,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).hasRecluse).toBe(true);
+    expect((result.info as any).recluseSeat).toBe(3);
+    expect((result.info as any).minions).toHaveLength(1);
+    expect((result.info as any).minions[0].role).toBe('poisoner');
+  });
+
+  it('調查員中毒時仍回傳實際爪牙列表', () => {
+    const investigator = makePlayer({ seat: 1, role: 'investigator', team: 'townsfolk', isPoisoned: true });
+    const poisoner = makePlayer({ seat: 2, role: 'poisoner', team: 'minion' });
+    const monk = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const imp = makePlayer({ seat: 4, role: 'imp', team: 'demon' });
+    const players = [investigator, poisoner, monk, imp];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: investigator,
+      gameState: gs,
+      infoReliable: false,
+      statusReason: '中毒',
+      getRoleName: (id) => id,
+    }));
+
+    // 中毒不反轉，回傳實際爪牙列表
+    expect((result.info as any).minions).toHaveLength(1);
+    expect((result.info as any).minions[0].role).toBe('poisoner');
+    expect((result.info as any).reliable).toBe(false);
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+
+  it('多個爪牙：返回所有爪牙列表', () => {
+    const investigator = makePlayer({ seat: 1, role: 'investigator', team: 'townsfolk' });
+    const poisoner = makePlayer({ seat: 2, role: 'poisoner', team: 'minion' });
+    const baron = makePlayer({ seat: 3, role: 'baron', team: 'minion' });
+    const imp = makePlayer({ seat: 4, role: 'imp', team: 'demon' });
+    const players = [investigator, poisoner, baron, imp];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: investigator,
+      gameState: gs,
+      getRoleName: (id) => id,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).minions).toHaveLength(2);
+    const minionRoles = (result.info as any).minions.map((m: any) => m.role);
+    expect(minionRoles).toContain('poisoner');
+    expect(minionRoles).toContain('baron');
   });
 });
