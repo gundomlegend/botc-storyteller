@@ -2034,47 +2034,137 @@ if (target.role === 'mayor' && !target.isPoisoned && !target.isDrunk) {
 
 ### UI 流程
 
-#### MayorBounceProcessor（未來實作）
+#### 模組化設計：MayorBounceUI 元件
+
+**檔案結構**：
+```
+src/components/mayorBounce/
+  ├── MayorBounceUI.tsx       // UI 元件
+  ├── useMayorBounce.ts       // 狀態管理 hook
+  └── index.ts                // 導出
+```
+
+**觸發時機**：
+- 小惡魔使用 AbilityProcessor 選擇攻擊目標
+- ImpHandler 檢測到目標是鎮長，返回 `mayor_bounce` 結果
+- AbilityProcessor 檢測到 `result.action === 'mayor_bounce'`，渲染 MayorBounceUI 元件
+
+**在 AbilityProcessor 中的使用**：
 
 ```typescript
-export default function MayorBounceProcessor({ item, onDone }: RoleProcessorProps) {
-  const [shouldBounce, setShouldBounce] = useState<boolean | null>(null);
-  const [bounceTarget, setBounceTarget] = useState<number | null>(null);
+// src/components/AbilityProcessor.tsx
+import { MayorBounceUI } from './mayorBounce';
 
-  // 階段 1：決定是否轉移
-  if (shouldBounce === null) {
-    return (
-      <BounceDecisionUI
-        suggestion={result.info.suggestion}
-        reason={result.info.reason}
-        onDecide={setShouldBounce}
-      />
-    );
-  }
+// ... 其他代碼 ...
 
-  // 階段 2：不轉移 → 直接擊殺鎮長
-  if (shouldBounce === false) {
-    killPlayer(mayorSeat);
-    logEvent('鎮長被擊殺（說書人選擇不轉移）');
-    onDone();
-  }
+{result && result.action === 'mayor_bounce' && (
+  <MayorBounceUI result={result} item={item} onDone={onDone} />
+)}
+```
 
-  // 階段 3：轉移 → 選擇目標
-  if (bounceTarget === null) {
-    return (
-      <TargetSelectionUI
-        availableTargets={result.info.availableTargets}
-        onSelect={setBounceTarget}
-      />
-    );
-  }
+#### MayorBounceUI 元件
 
-  // 階段 4：執行轉移擊殺
-  killPlayer(bounceTarget);
-  logEvent(`鎮長轉移死亡：${bounceTarget}號被擊殺`);
-  onDone();
+**檔案位置**：`src/components/mayorBounce/MayorBounceUI.tsx`
+
+**Props 介面**：
+
+```typescript
+interface MayorBounceUIProps {
+  result: NightResult;  // 包含 mayor_bounce 資訊的結果
+  item: NightOrderItem; // 當前夜間項目（小惡魔）
+  onDone: () => void;   // 完成回調
 }
 ```
+
+**處理流程**：
+
+1. **顯示建議表格**：顯示轉移建議參考表格（由 ImpHandler 生成）
+2. **說書人選擇**：
+   - 使用 PlayerSelector 選擇轉移目標（showRoles=true 顯示角色名稱，排除惡魔和鎮長本人）
+   - 或點選「不轉移 - 鎮長死亡」按鈕
+3. **確認階段**：
+   - 顯示選擇結果摘要
+   - 確認後執行 `killPlayer()` 和 `logEvent()`
+   - 提供「重選」按鈕允許重新決策
+4. **完成**：呼叫 `onDone()` 進入下一個夜間能力
+
+#### useMayorBounce Hook
+
+**檔案位置**：`src/components/mayorBounce/useMayorBounce.ts`
+
+**功能**：封裝鎮長轉移的狀態管理和業務邏輯
+
+```typescript
+export function useMayorBounce(
+  result: NightResult,
+  onDone: () => void
+) {
+  const stateManager = useGameStore((s) => s.stateManager);
+
+  // 狀態：null = 未選擇，-1 = 不轉移，其他數字 = 轉移目標座位號
+  const [target, setTarget] = useState<number | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+
+  // 處理目標選擇
+  const handleTargetSelect = (players: Player[]) => {
+    setTarget(players[0]?.seat ?? null);
+  };
+
+  // 處理不轉移
+  const handleNoTransfer = () => {
+    setTarget(-1);
+    setConfirmed(true);
+  };
+
+  // 處理確認轉移
+  const handleConfirmTransfer = () => {
+    if (target !== null && target !== -1) {
+      setConfirmed(true);
+    }
+  };
+
+  // 處理重選
+  const handleReset = () => {
+    setTarget(null);
+    setConfirmed(false);
+  };
+
+  // 執行擊殺並完成
+  const handleExecute = (targetSeat: number, logDescription: string, logDetails: Record<string, unknown>) => {
+    useGameStore.getState().killPlayer(targetSeat, 'demon_kill');
+    stateManager.logEvent({
+      type: 'ability_use',
+      description: logDescription,
+      details: logDetails,
+    });
+    onDone();
+  };
+
+  return {
+    target,
+    confirmed,
+    handleTargetSelect,
+    handleNoTransfer,
+    handleConfirmTransfer,
+    handleReset,
+    handleExecute,
+  };
+}
+```
+
+**設計優勢**：
+- **關注點分離**：UI 元件和業務邏輯分離，易於維護
+- **可測試性**：hook 可獨立測試狀態邏輯
+- **可重用性**：未來若有類似的死亡轉移機制可重用
+- **保持 AbilityProcessor 簡潔**：避免內嵌過多特殊邏輯
+- **模組化**：鎮長相關代碼集中在 mayorBounce 目錄，便於管理
+
+**設計理由**：
+- 鎮長沒有主動的夜間能力，不是獨立的夜間順序項目
+- mayor_bounce 是小惡魔能力的特殊結果，應在小惡魔的 AbilityProcessor 中觸發
+- 使用獨立元件封裝複雜 UI 邏輯，避免 AbilityProcessor 過度膨脹
+- 使用 `showUsers={false}` 和 `showRoles={true}` 讓說書人根據角色名稱選擇，而非玩家名稱
+- 自動排除惡魔和鎮長本人作為轉移目標
 
 ### NightResult 擴展
 
@@ -2161,11 +2251,11 @@ describe('MayorHandler - Death Bounce', () => {
 - ✅ 撰寫規格文件
 - ✅ 修改 ImpHandler 偵測鎮長並返回 mayor_bounce
 - ✅ 提供精簡建議參考表格（不做動態判斷）
-- ✅ UI：使用 AbilityProcessor 內嵌處理 mayor_bounce
+- ✅ UI：建立模組化的 MayorBounceUI 元件和 useMayorBounce hook
+- ✅ 在 AbilityProcessor 中整合 MayorBounceUI 元件
 
 #### Phase 2（未來優化）
 - ⬜ 實作三人勝利條件（白天階段）
-- ⬜ 改善 UI 呈現（更清晰的表格樣式）
 
 ### 注意事項
 
