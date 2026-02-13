@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { Player } from '../engine/types';
 import { useGameStore } from '../store/gameStore';
+import { useRoleHelpers } from '../hooks/useRoleHelpers';
 
 interface PlayerSelectorProps {
   mode?: 'single' | 'double' | 'multiple' | 'display';
@@ -13,6 +14,7 @@ interface PlayerSelectorProps {
   showRoles?: boolean;
   showStatus?: boolean;
   showVoteCount?: boolean;
+  showUsers?: boolean;
   layout?: 'grid' | 'list';
   label?: string;
   readOnly?: boolean;
@@ -31,6 +33,7 @@ export function PlayerSelector({
   showRoles = false,
   showStatus = true,
   showVoteCount = false,
+  showUsers = true,
   layout = 'grid',
   label,
   readOnly = false,
@@ -38,6 +41,7 @@ export function PlayerSelector({
   onError,
 }: PlayerSelectorProps) {
   const players = useGameStore((s) => s.players);
+  const { getRoleDisplayName } = useRoleHelpers();
   const [selected, setSelected] = useState<number[]>([]);
 
   const selectablePlayers = useMemo(() => {
@@ -150,11 +154,11 @@ export function PlayerSelector({
                 .join(' ')}
               onClick={() => handleClick(player)}
             >
-              <div className="player-seat">{player.seat}號</div>
-              <div className="player-name">{player.name}</div>
+              {showUsers && <div className="player-seat">{player.seat}號</div>}
+              {showUsers && <div className="player-name">{player.name}</div>}
 
               {showRoles && (
-                <div className="player-role">{player.role}</div>
+                <div className="player-role">{getRoleDisplayName(player.role)}</div>
               )}
 
               {showStatus && (
