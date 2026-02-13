@@ -84,6 +84,7 @@ function makeContext(overrides: Partial<HandlerContext>): HandlerContext {
     infoReliable: true,
     statusReason: '',
     getRoleName: (id: string) => id,
+    getPlayerRoleName: (player: Player) => player.role,
     ...overrides,
   };
 }
