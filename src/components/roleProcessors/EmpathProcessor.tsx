@@ -4,14 +4,14 @@ import { t } from '../../engine/locale';
 import type { NightResult } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 
-export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
+export default function EmpathProcessor({ item, onDone }: RoleProcessorProps) {
   const { processAbility, stateManager } = useGameStore();
   const [result, setResult] = useState<NightResult | null>(null);
-  const [toldPairCount, setToldPairCount] = useState<string>('');
+  const [toldEvilCount, setToldEvilCount] = useState<string>('');
 
   const roleData = stateManager.getRoleData(item.role);
 
-  // 從 stateManager 讀即時狀態
+  // 从 stateManager 讀及時狀態
   const currentPlayer = stateManager.getPlayer(item.seat);
   const isPoisoned = currentPlayer?.isPoisoned ?? item.isPoisoned;
   const isDrunk = currentPlayer?.isDrunk ?? item.isDrunk;
@@ -19,7 +19,7 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
   const isDead = currentPlayer ? !currentPlayer.isAlive : item.isDead;
   const isPoisonedOrDrunk = isPoisoned || isDrunk;
 
-  // 自動執行能力（廚師不需選擇目標）
+  // 自動執行能力（共情者不需要選擇目標）
   useEffect(() => {
     if (!result) {
       const r = processAbility(item.seat, null);
@@ -33,31 +33,31 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
       const info = result.info as Record<string, unknown>;
       if (!isPoisonedOrDrunk) {
         // 正常狀態：預填實際數字
-        setToldPairCount(String(info.actualPairCount ?? 0));
+        setToldEvilCount(String(info.actualEvilCount ?? 0));
       }
       // 中毒/醉酒：不預填（保持空字串）
     }
   }, [result, isPoisonedOrDrunk]);
 
   const handleConfirm = () => {
-    if (toldPairCount === '') return;
+    if (toldEvilCount === '') return;
 
     const info = result?.info as Record<string, unknown> | undefined;
-    const actualPairCount = (info?.actualPairCount as number) ?? 0;
-    const toldNumber = parseInt(toldPairCount, 10);
-    const storytellerOverride = actualPairCount !== toldNumber;
+    const actualEvilCount = (info?.actualEvilCount as number) ?? 0;
+    const toldNumber = parseInt(toldEvilCount, 10);
+    const storytellerOverride = actualEvilCount !== toldNumber;
 
     stateManager.logEvent({
       type: 'ability_use',
-      description: `廚師資訊：說書人告知 ${toldNumber} 組相鄰邪惡配對${storytellerOverride ? ` (實際: ${actualPairCount})` : ''}`,
+      description: `共情者資訊：說書人告知 ${toldNumber} 位相鄰邪惡玩家${storytellerOverride ? ` (實際: ${actualEvilCount})` : ''}`,
       details: {
-        actualPairCount,
-        toldPairCount: toldNumber,
+        actualEvilCount,
+        toldEvilCount: toldNumber,
         isPoisoned,
         isDrunk,
         storytellerOverride,
-        segments: info?.segments,
-        pairDetails: info?.pairDetails,
+        leftNeighbor: info?.leftNeighbor,
+        rightNeighbor: info?.rightNeighbor,
         recluseSeats: info?.recluseSeats,
         spySeats: info?.spySeats,
       },
@@ -66,9 +66,7 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
   };
 
   const info = result?.info as Record<string, unknown> | undefined;
-  const actualPairCount = (info?.actualPairCount as number) ?? 0;
-  const evilSeats = (info?.evilSeats as number[]) ?? [];
-  const maxPossiblePairs = Math.max(0, evilSeats.length - 1);
+  const actualEvilCount = (info?.actualEvilCount as number) ?? 0;
 
   return (
     <div className="ability-processor">
@@ -97,24 +95,24 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
           <div className="storyteller-choice">
             {isPoisonedOrDrunk && (
               <div className="result-warning">
-                ℹ️ 廚師已{isPoisoned && isDrunk ? '中毒且醉酒' : isPoisoned ? '中毒' : '醉酒'}，你可以告訴玩家任意數字。
+                ℹ️ 共情者已{isPoisoned && isDrunk ? '中毒且醉酒' : isPoisoned ? '中毒' : '醉酒'}，你可以提示 0-2 的數字。
                 <br />
-                <strong>ℹ️ 相鄰的邪惡客人：{actualPairCount} 組（你可以選擇撒謊）</strong>
+                <strong>ℹ️ 相鄰的邪惡玩家：{actualEvilCount} 位（你可以選擇說謊）</strong>
               </div>
             )}
 
             {isPoisonedOrDrunk && <div style={{ marginTop: '1rem' }}>
-              <label htmlFor="chef-number">
-                <strong>告訴廚師的數字 (建議範圍: 0-{maxPossiblePairs})：</strong>
+              <label htmlFor="empath-number">
+                <strong>告訴共情者的數字 (建議範圍: 0-2)：</strong>
               </label>
               <input
-                id="chef-number"
+                id="empath-number"
                 type="number"
                 min="0"
-                max={maxPossiblePairs}
-                value={toldPairCount}
-                onChange={(e) => setToldPairCount(e.target.value)}
-                placeholder={isPoisonedOrDrunk ? '請輸入數字' : String(actualPairCount)}
+                max="2"
+                value={toldEvilCount}
+                onChange={(e) => setToldEvilCount(e.target.value)}
+                placeholder={isPoisonedOrDrunk ? '請輸入數字' : String(actualEvilCount)}
                 style={{
                   marginLeft: '0.5rem',
                   padding: '0.5rem',
@@ -122,12 +120,12 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
                   width: '100px',
                 }}
               />
-              <span style={{ marginLeft: '0.5rem' }}>組</span>
+              <span style={{ marginLeft: '0.5rem' }}>位</span>
             </div>}
 
-            {toldPairCount !== '' && parseInt(toldPairCount, 10) !== actualPairCount && (
+            {toldEvilCount !== '' && parseInt(toldEvilCount, 10) !== actualEvilCount && (
               <div className="result-warning" style={{ marginTop: '1rem' }}>
-                ⚠️ 注意：你將告訴廚師不同於實際的數字（撒謊）
+                ⚠️ 注意：你將告訴共情者不同於實際的數字（說謊）
               </div>
             )}
           </div>
@@ -136,7 +134,7 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
             <button
               className="btn-primary"
               onClick={handleConfirm}
-              disabled={toldPairCount === '' || isNaN(parseInt(toldPairCount, 10))}
+              disabled={toldEvilCount === '' || isNaN(parseInt(toldEvilCount, 10))}
             >
               確認
             </button>

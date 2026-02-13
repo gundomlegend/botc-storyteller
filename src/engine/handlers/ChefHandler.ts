@@ -171,6 +171,25 @@ export class ChefHandler implements RoleHandler {
     return seat === 1 ? totalPlayers : seat - 1;
   }
 
+  /** 生成特殊角色說明文字（陌客/間諜） */
+  private buildSpecialRoleNotes(
+    recluseSeats: number[],
+    spySeats: number[],
+    withEmoji = false
+  ): string[] {
+    const notes: string[] = [];
+    const prefix = withEmoji ? 'ℹ️ ' : '';
+
+    if (recluseSeats.length > 0) {
+      notes.push(`${prefix}陌客 ${recluseSeats.join('、')}號 被視為邪惡`);
+    }
+    if (spySeats.length > 0) {
+      notes.push(`${prefix}間諜 ${spySeats.join('、')}號 不被視為邪惡`);
+    }
+
+    return notes;
+  }
+
   private buildReasoning(
     actualPairCount: number,
     segments: number[][],
@@ -179,17 +198,7 @@ export class ChefHandler implements RoleHandler {
     gameState: GameState,
     getRoleName: (roleId: string) => string
   ): string {
-    const notes: string[] = [];
-
-    if (recluseSeats.length > 0) {
-      const recluseList = recluseSeats.map(s => `${s}號`).join('、');
-      notes.push(`陌客 ${recluseList} 被視為邪惡`);
-    }
-
-    if (spySeats.length > 0) {
-      const spyList = spySeats.map(s => `${s}號`).join('、');
-      notes.push(`間諜 ${spyList} 不被視為邪惡`);
-    }
+    const notes = this.buildSpecialRoleNotes(recluseSeats, spySeats, false);
 
     if (actualPairCount === 0) {
       const noteStr = notes.length > 0 ? `（${notes.join('；')}）` : '';
@@ -223,16 +232,7 @@ export class ChefHandler implements RoleHandler {
     gameState: GameState,
     getRoleName: (roleId: string) => string
   ): string {
-    const specialNotes: string[] = [];
-
-    if (recluseSeats.length > 0) {
-      specialNotes.push(`ℹ️ 陌客 ${recluseSeats.join('、')}號 被視為邪惡`);
-    }
-
-    if (spySeats.length > 0) {
-      specialNotes.push(`ℹ️ 間諜 ${spySeats.join('、')}號 不被視為邪惡`);
-    }
-
+    const specialNotes = this.buildSpecialRoleNotes(recluseSeats, spySeats, true);
     const specialNotesStr = specialNotes.length > 0
       ? `\n\n${specialNotes.join('\n')}`
       : '';
