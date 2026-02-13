@@ -305,42 +305,67 @@ export function InvestigatorProcessor({ item, onDone }: InvestigatorProcessorPro
   const hasRecluse = players.some(p => p.role === 'recluse');
 
   // UI 狀態
-  const [selectedMinionRole, setSelectedMinionRole] = useState<string | null>(null);
-  const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
+  const [selectedMinionRole, setSelectedMinionRole] = useState<string>('');
+  const [selectedPlayer1, setSelectedPlayer1] = useState<number | null>(null);
+  const [selectedPlayer2, setSelectedPlayer2] = useState<number | null>(null);
 
   // 初始化預選
   useEffect(() => {
-    if (isReliable && !onlySpyExists) {
-      // 預選爪牙角色
-      if (minions.length > 0) {
-        const targetMinion = minions[0];
-        setSelectedMinionRole(targetMinion.role);
+    if (!result?.info || typeof result.info !== 'object') return;
+    const info = result.info as Record<string, unknown>;
 
-        // 預選玩家
-        if (hasRecluse) {
-          const recluse = players.find(p => p.role === 'recluse');
-          setSelectedPlayers([targetMinion.seat, recluse!.seat]);
-        } else {
-          const decoy = players.find(
-            p => p.seat !== targetMinion.seat &&
-                 p.seat !== item.seat &&
-                 p.team !== 'minion' &&
-                 p.team !== 'demon'
-          );
-          setSelectedPlayers([targetMinion.seat, decoy!.seat]);
+    // 只有間諜或無爪牙：不預選
+    if (info.onlySpyInGame || info.noMinionInGame) return;
+
+    const minions = (info.minions as Array<{ seat: number; role: string; name: string }>) || [];
+    const hasRecluse = info.hasRecluse as boolean;
+    const recluseSeat = info.recluseSeat as number | null;
+
+    // 不可靠時清除預選
+    if (!isReliable) {
+      setSelectedMinionRole('');
+      setSelectedPlayer1(null);
+      setSelectedPlayer2(null);
+      return;
+    }
+
+    // 可靠時預選
+    if (minions.length > 0) {
+      const firstMinion = minions[0];
+      setSelectedMinionRole(firstMinion.role);
+
+      const allPlayers = stateManager.getAlivePlayers();
+
+      if (hasRecluse && recluseSeat !== null) {
+        // 有陌客：預選爪牙玩家 + 陌客玩家
+        setSelectedPlayer1(firstMinion.seat);
+        setSelectedPlayer2(recluseSeat);
+      } else {
+        // 無陌客：預選爪牙玩家 + 外來者/善良玩家
+        const decoyPlayer = allPlayers.find(
+          p => p.seat !== firstMinion.seat &&
+               p.seat !== item.seat &&
+               (p.team === 'outsider' || p.team === 'townsfolk')
+        );
+        if (decoyPlayer) {
+          setSelectedPlayer1(firstMinion.seat);
+          setSelectedPlayer2(decoyPlayer.seat);
         }
       }
     }
-  }, [isReliable, onlySpyExists]);
+  }, [result, isReliable, stateManager, item.seat]);
 
   const handleConfirm = () => {
     // 記錄選擇結果
-    const result = {
-      minionRole: selectedMinionRole,
-      player1: selectedPlayers[0],
-      player2: selectedPlayers[1]
-    };
-    // 儲存並繼續
+    stateManager.logEvent({
+      type: 'ability_use',
+      description: `調查員資訊：展示${selectedMinionRole}，指向${selectedPlayer1}號和${selectedPlayer2}號`,
+      details: {
+        minionRole: selectedMinionRole,
+        player1: selectedPlayer1,
+        player2: selectedPlayer2,
+      },
+    });
     onDone();
   };
 
@@ -387,29 +412,56 @@ export function InvestigatorProcessor({ item, onDone }: InvestigatorProcessorPro
         </select>
       </div>
 
-      {/* 選擇兩位玩家 */}
+      {/* 選擇第一位玩家 */}
       <div className="player-selection">
-        <label>選擇兩位玩家（其中一位是該爪牙）：</label>
-        <PlayerSelector
-          mode="multiple"
-          maxSelections={2}
-          showRoles={true}  // 顯示角色名稱
-          onlyAlive={true}
-          currentPlayerSeat={item.seat}
-          excludePlayers={[item.seat]}
-          initialSelection={isReliable ? selectedPlayers : []}
-          onSelect={(players) => setSelectedPlayers(players.map(p => p.seat))}
-        />
+        <label>選擇第一位玩家：</label>
+        <select
+          value={selectedPlayer1 ?? ''}
+          onChange={(e) => setSelectedPlayer1(e.target.value ? Number(e.target.value) : null)}
+        >
+          <option value="">-- 請選擇 --</option>
+          {stateManager.getAlivePlayers()
+            .filter(p => p.seat !== item.seat)
+            .map(p => {
+              const rd = stateManager.getRoleData(p.role);
+              return (
+                <option key={p.seat} value={p.seat}>
+                  {p.seat}號 {p.name} ({rd?.name_cn || p.role})
+                </option>
+              );
+            })}
+        </select>
+      </div>
+
+      {/* 選擇第二位玩家 */}
+      <div className="player-selection">
+        <label>選擇第二位玩家：</label>
+        <select
+          value={selectedPlayer2 ?? ''}
+          onChange={(e) => setSelectedPlayer2(e.target.value ? Number(e.target.value) : null)}
+        >
+          <option value="">-- 請選擇 --</option>
+          {stateManager.getAlivePlayers()
+            .filter(p => p.seat !== item.seat && p.seat !== selectedPlayer1)
+            .map(p => {
+              const rd = stateManager.getRoleData(p.role);
+              return (
+                <option key={p.seat} value={p.seat}>
+                  {p.seat}號 {p.name} ({rd?.name_cn || p.role})
+                </option>
+              );
+            })}
+        </select>
         {hasRecluse && isReliable && (
           <div className="hint">
-            💡 場上有陌客，已預選爪牙玩家和陌客玩家
+            💡 場上有陌客，建議選擇爪牙玩家和陌客玩家
           </div>
         )}
       </div>
 
       <button
         onClick={handleConfirm}
-        disabled={!selectedMinionRole || selectedPlayers.length !== 2}
+        disabled={!selectedMinionRole || selectedPlayer1 === null || selectedPlayer2 === null}
       >
         確認
       </button>
