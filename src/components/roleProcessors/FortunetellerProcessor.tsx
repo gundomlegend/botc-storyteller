@@ -4,6 +4,9 @@ import { t } from '../../engine/locale';
 import type { NightResult, Player } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import PlayerSelector from '../PlayerSelector';
+import AbilityHeader from '../shared/AbilityHeader';
+import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
+import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
 
 export default function FortunetellerProcessor({ item, onDone }: RoleProcessorProps) {
   const { processAbility, stateManager } = useGameStore();
@@ -17,12 +20,8 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
   const isFirstNight = stateManager.getState().night === 1;
   const needsRedHerring = isFirstNight && stateManager.getRedHerring() === null && !redHerringSet;
 
-  // 從 stateManager 讀即時狀態（item 是夜晚開始時的快照，不會反映夜間中毒等變化）
-  const currentPlayer = stateManager.getPlayer(item.seat);
-  const isPoisoned = currentPlayer?.isPoisoned ?? item.isPoisoned;
-  const isDrunk = currentPlayer?.isDrunk ?? item.isDrunk;
-  const isProtected = currentPlayer?.isProtected ?? item.isProtected;
-  const isDead = currentPlayer ? !currentPlayer.isAlive : item.isDead;
+  // 讀取玩家即時狀態
+  const { isPoisoned, isDrunk, isProtected, isDead } = usePlayerRealTimeStatus(item);
   const isPoisonedOrDrunk = isPoisoned || isDrunk;
 
   // 當結果出來，根據中毒狀態設定預設答案
@@ -70,22 +69,19 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
 
   return (
     <div className="ability-processor">
-      {/* Header */}
-      <div className="ability-header">
-        <h3>
-          {item.seat}號 — {item.roleName}
-        </h3>
-        {roleData && <p className="ability-desc">{t(roleData, 'ability')}</p>}
-        <p className="ability-reminder">{item.reminder}</p>
-      </div>
+      <AbilityHeader
+        seat={item.seat}
+        roleName={item.roleName}
+        roleData={roleData}
+        reminder={item.reminder}
+      />
 
-      {/* 狀態警告（即時狀態） */}
-      <div className="ability-status">
-        {isDead && <span className="status-tag dead">已死亡</span>}
-        {isPoisoned && <span className="status-tag poisoned">中毒</span>}
-        {isDrunk && <span className="status-tag drunk">醉酒</span>}
-        {isProtected && <span className="status-tag protected">受保護</span>}
-      </div>
+      <AbilityStatusIndicator
+        isDead={isDead}
+        isPoisoned={isPoisoned}
+        isDrunk={isDrunk}
+        isProtected={isProtected}
+      />
 
       {/* 第一晚：干擾項選擇 */}
       {needsRedHerring && (
