@@ -41,7 +41,7 @@ export function PlayerSelector({
   onError,
 }: PlayerSelectorProps) {
   const players = useGameStore((s) => s.players);
-  const { getRoleDisplayName } = useRoleHelpers();
+  const { getPlayerRoleDisplay } = useRoleHelpers();
   const [selected, setSelected] = useState<number[]>([]);
 
   const selectablePlayers = useMemo(() => {
@@ -158,7 +158,9 @@ export function PlayerSelector({
               {showUsers && <div className="player-name">{player.name}</div>}
 
               {showRoles && (
-                <div className="player-role">{getRoleDisplayName(player.role)}</div>
+                <div className="player-role">
+                  {getPlayerRoleDisplay(player)}
+                </div>
               )}
 
               {showStatus && (

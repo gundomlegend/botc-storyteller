@@ -14,6 +14,23 @@
 
 > 定義：此類失效以「說書人結算該動作」為準（見 AC4）。
 
+### 酒鬼角色本質 vs 醉酒狀態標記
+
+**重要區分**：
+- **`role='drunk'` + `believesRole`** = 酒鬼角色（永久無能力，角色本質）
+- **`isDrunk=true`** = 臨時醉酒狀態（可被其他角色能力施加，狀態標記）
+
+**酒鬼角色行為**：
+1. 酒鬼玩家會使用假角色（`believesRole`）的 Handler 和 UI
+2. 酒鬼會執行假角色的完整行為（選擇目標、獲取資訊等）
+3. 能力效果**永遠**無效化（透過 RuleEngine 步驟 7 檢查 `role='drunk'`）
+4. 酒鬼初始化時 `isDrunk = false`（醉酒是狀態，不是本質）
+
+**酒鬼失效機制**：
+- 不透過 `isDrunk` 狀態標記判定
+- 透過 `role='drunk'` 本質檢查（在 Handler 調用後、統一後處理前）
+- 優先級：酒鬼本質檢查（步驟 7）> 狀態類失效檢查（步驟 8）
+
 ---
 
 ## AC2：死亡類失效
@@ -47,14 +64,22 @@
 
 本合約的規則由以下三層共同執行。**Handler 不負責 invalidation 檢查**。
 
-### 層 1：RuleEngine 統一後處理（負責 AC1、AC4）
+### 層 1：RuleEngine 統一後處理（負責 AC1、AC4、酒鬼本質檢查）
 
 `processNightAbility()` 在呼叫 handler 取得結果後，統一檢查：
 
+**步驟 7：酒鬼本質檢查**
+- 若 `player.role === 'drunk'` 且 `player.believesRole` 存在，
+  標記 `effectNullified: true` 和 `reasoning`（說明是酒鬼角色）
+- 此步驟在 Handler 調用後、狀態類失效檢查前執行
+
+**步驟 8：狀態類失效檢查（AC1）**
 - 若 `!infoReliable` 且結果的 `action` 為效果型（`add_protection` / `add_poison` / `kill`），
   在結果上標記 `effectNullified: true`，保留 `display` 供說書人參考。
 - 資訊型 handler（如占卜師）回傳實際偵測結果（不根據 `infoReliable` 調整），RuleEngine 不介入。UI 層根據 `item.isPoisoned / isDrunk` 提示說書人可自行決定回答。
-- AC4 攔截：透過 `NightContext.blockedRoles` 追蹤已生效的攔截，後續角色結算前檢查。
+
+**AC4 攔截**：
+- 透過 `NightContext.blockedRoles` 追蹤已生效的攔截，後續角色結算前檢查。
 
 ### 層 2：GameState API（負責 AC2、AC3）
 
@@ -81,3 +106,6 @@
 - T4：`replaceRole()` 當下自動呼叫 `revokeEffectsFrom()`，撤銷舊角色造成的持續性狀態
 - T5：Exorcist 先於 Demon 行動時，`NightContext.blockedRoles` 阻止 Demon，kill 結果為 null
 - T6：`addStatus()` 對已死亡玩家靜默忽略
+- **T7：酒鬼角色使用假角色 Handler，但效果永遠無效** → `role='drunk'` 且 `believesRole='fortuneteller'` 的玩家執行占卜師行為，RuleEngine 步驟 7 標記 `effectNullified: true`
+- **T8：酒鬼初始狀態 `isDrunk=false`** → `role='drunk'` 的玩家初始化時 `isDrunk` 應為 `false`（醉酒是狀態標記，不是角色本質）
+- **T9：generateDemonBluffs 排除酒鬼** → 惡魔虛張聲勢不包含 `'drunk'` 角色

@@ -6,6 +6,8 @@ import PlayerSelector from './PlayerSelector';
 import AbilityHeader from './shared/AbilityHeader';
 import AbilityStatusIndicator from './shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../hooks/usePlayerRealTimeStatus';
+import { useDrunkPlayerInfo } from '../hooks/useDrunkPlayerInfo';
+import { DrunkIndicator } from './shared/DrunkIndicator';
 import { MayorBounceUI } from './mayorBounce';
 
 interface AbilityProcessorProps {
@@ -24,12 +26,13 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
   }
 
   // ─── 以下為通用流程 ───
-  const { processAbility, stateManager } = useGameStore();
+  const { processAbility } = useGameStore();
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null);
   const [result, setResult] = useState<NightResult | null>(null);
 
-  const roleData = stateManager.getRoleData(item.role);
-  const needsTarget = ROLES_NEEDING_TARGET.has(item.role);
+  // 取得玩家資訊（檢查是否為酒鬼）
+  const { isDrunkRole, believesRole, effectiveRole, roleData } = useDrunkPlayerInfo(item);
+  const needsTarget = ROLES_NEEDING_TARGET.has(effectiveRole);
 
   // 讀取玩家即時狀態
   const { isPoisoned, isDrunk, isProtected, isDead } = usePlayerRealTimeStatus(item);
@@ -97,6 +100,11 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
         isDrunk={isDrunk}
         isProtected={isProtected}
       />
+
+      {/* 酒鬼角色標記 */}
+      {isDrunkRole && believesRole && roleData && (
+        <DrunkIndicator roleData={roleData} />
+      )}
 
       {/* 還沒有結果：選擇目標（或直接執行） */}
       {!result && (

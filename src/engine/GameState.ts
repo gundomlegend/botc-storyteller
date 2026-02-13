@@ -48,9 +48,9 @@ export class GameStateManager {
         team: roleData.team,
         isAlive: true,
         isPoisoned: false,
-        isDrunk: p.role === 'drunk',
+        isDrunk: false, // 初始狀態為無醉酒（即使是酒鬼角色）
         isProtected: false,
-        believesRole: null,
+        believesRole: null, // 酒鬼的假角色會在後續步驟設定
         masterSeat: null,
         abilityUsed: false,
         deathCause: null,
@@ -65,11 +65,90 @@ export class GameStateManager {
     this.state.selectedRoles = players.map((p) => p.role);
     this.state.setupComplete = true;
 
+    // 生成惡魔虛張聲勢清單（必須在酒鬼初始化之前）
+    this.generateDemonBluffs();
+
+    // 初始化酒鬼的假角色
+    this.initializeDrunkPlayers();
+
     this.logEvent({
       type: 'init',
       description: `遊戲初始化完成，${players.length} 位玩家`,
       details: { players: players.map((p) => ({ seat: p.seat, name: p.name, role: p.role })) },
     });
+  }
+
+  /**
+   * 初始化酒鬼玩家的假角色
+   *
+   * 規則：
+   * 1. 從所有鎮民角色中選擇
+   * 2. 排除場上已使用的鎮民角色
+   * 3. 排除惡魔的虛張聲勢清單
+   * 4. 隨機分配給每個酒鬼玩家
+   */
+  private initializeDrunkPlayers(): void {
+    const drunkPlayers = this.getAllPlayers().filter(p => p.role === 'drunk');
+
+    if (drunkPlayers.length === 0) {
+      return; // 沒有酒鬼玩家，直接返回
+    }
+
+    // 取得所有鎮民角色
+    const allTownfolkRoles = Array.from(this.roleRegistry.values())
+      .filter(r => r.team === 'townsfolk')
+      .map(r => r.id);
+
+    // 收集場上已使用的鎮民角色
+    const usedTownfolkRoles = new Set<string>();
+    for (const player of this.state.players.values()) {
+      if (player.team === 'townsfolk') {
+        usedTownfolkRoles.add(player.role);
+      }
+    }
+
+    // 取得惡魔虛張聲勢清單
+    const demonBluffs = this.state.demonBluffs;
+
+    // 計算可用角色：排除已使用的和虛張聲勢的
+    const availableRoles = allTownfolkRoles.filter(role => {
+      return !usedTownfolkRoles.has(role) && !demonBluffs.includes(role);
+    });
+
+    if (availableRoles.length < drunkPlayers.length) {
+      console.warn(`可用鎮民角色不足以分配給所有酒鬼！可用: ${availableRoles.length}, 需要: ${drunkPlayers.length}`);
+    }
+
+    // 為每個酒鬼隨機分配假角色
+    for (const drunkPlayer of drunkPlayers) {
+      if (availableRoles.length === 0) {
+        console.error(`沒有可用的鎮民角色供酒鬼 ${drunkPlayer.seat}號 假冒！`);
+        break;
+      }
+
+      // 隨機選擇一個角色
+      const randomIndex = Math.floor(Math.random() * availableRoles.length);
+      const selectedRole = availableRoles[randomIndex];
+
+      // 分配給酒鬼
+      drunkPlayer.believesRole = selectedRole;
+
+      // 從可用清單中移除，避免多個酒鬼假冒同一角色
+      availableRoles.splice(randomIndex, 1);
+
+      const roleData = this.getRoleData(selectedRole);
+      const roleName = roleData ? t(roleData, 'name') : selectedRole;
+
+      this.logEvent({
+        type: 'ability_use',
+        description: `酒鬼初始化：${drunkPlayer.seat}號 ${drunkPlayer.name} 以為自己是 ${roleName}`,
+        details: {
+          drunkSeat: drunkPlayer.seat,
+          drunkName: drunkPlayer.name,
+          believesRole: selectedRole,
+        },
+      });
+    }
   }
 
   getPlayer(seat: number): Player | undefined {
@@ -342,7 +421,9 @@ export class GameStateManager {
   generateDemonBluffs(): string[] {
     const assignedRoles = new Set(this.state.selectedRoles);
     const goodRoles = (rolesData as RoleData[]).filter(
-      (r) => (r.team === 'townsfolk' || r.team === 'outsider') && !assignedRoles.has(r.id)
+      (r) => (r.team === 'townsfolk' || r.team === 'outsider') &&
+             !assignedRoles.has(r.id) &&
+             r.id !== 'drunk'  // 排除酒鬼：惡魔不會宣稱自己是酒鬼
     );
 
     // Shuffle and pick 3
@@ -365,7 +446,12 @@ export class GameStateManager {
     const items: NightOrderItem[] = [];
 
     for (const player of this.state.players.values()) {
-      const roleData = this.roleRegistry.get(player.role);
+      // 酒鬼使用假角色的夜間順序和提示
+      const effectiveRole = player.role === 'drunk' && player.believesRole
+        ? player.believesRole
+        : player.role;
+
+      const roleData = this.roleRegistry.get(effectiveRole);
       if (!roleData) continue;
 
       const priority = isFirstNight ? roleData.firstNight : roleData.otherNight;
@@ -375,10 +461,16 @@ export class GameStateManager {
         ? t(roleData, 'firstNightReminder')
         : t(roleData, 'otherNightReminder');
 
+      // 酒鬼的角色名稱加上標記
+      const displayName = t(roleData, 'name');
+      const roleName = player.role === 'drunk'
+        ? `${displayName} (酒鬼)`
+        : displayName;
+
       items.push({
         seat: player.seat,
-        role: player.role,
-        roleName: t(roleData, 'name'),
+        role: player.role, // 保留真實角色
+        roleName, // 酒鬼會顯示為「假角色 (酒鬼)」
         priority,
         isDead: !player.isAlive,
         isPoisoned: player.isPoisoned,

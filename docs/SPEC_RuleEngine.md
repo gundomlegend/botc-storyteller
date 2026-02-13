@@ -32,6 +32,9 @@ export class RuleEngine {
   /** 每夜開始時呼叫，重置攔截狀態 */
   startNightResolution(): void;
 
+  /** 獲取玩家的有效角色（用於 Handler 路由，處理酒鬼） */
+  private getEffectiveRole(player: Player): string;
+
   // 主處理方法（含統一後處理）
   processNightAbility(
     player: Player,
@@ -104,7 +107,9 @@ constructor() {
 
 **處理流程**:
 ```
-1. 獲取角色資料
+1. 獲取角色資料（透過 getEffectiveRole()）
+   ├─ 酒鬼角色（role='drunk' && believesRole 存在）→ 使用假角色資料
+   └─ 其他角色 → 使用實際角色資料
    ↓
 2. 檢查 NightContext 攔截（AC4）
    ├─ 該角色類型在 blockedRoles 中 → 返回 null 結果
@@ -116,21 +121,25 @@ constructor() {
    ↓
 4. 檢查狀態影響
    ├─ 檢查中毒（affectedByPoison && isPoisoned）
-   ├─ 檢查醉酒（affectedByDrunk && isDrunk）
+   ├─ 檢查醉酒狀態標記（affectedByDrunk && isDrunk）
    └─ 設定 infoReliable 和 statusReason
    ↓
 5. 檢查 Jinx 規則
    └─ 如有 Jinx 生效，更新 infoReliable 和 statusReason
    ↓
-6. 調用處理器
+6. 調用處理器（酒鬼使用假角色的 Handler）
    ├─ 有特殊處理器 → 調用處理器
    └─ 無特殊處理器 → 使用預設處理器
    ↓
-7. 統一後處理 applyInvalidation()（AC1）
+7. 酒鬼角色本質檢查（永久無能力）
+   ├─ role='drunk' && believesRole 存在 → 標記 effectNullified: true
+   └─ 其他角色 → 繼續
+   ↓
+8. 統一後處理 applyInvalidation()（AC1 狀態類失效）
    ├─ !infoReliable 且 action 為效果型 → 標記 effectNullified: true
    └─ 資訊型結果 → 不介入（handler 回傳實際結果，由 UI 層提示說書人）
    ↓
-8. 返回結果
+9. 返回結果
 ```
 
 **範例**:
@@ -150,6 +159,50 @@ const result = engine.processNightAbility(
 console.log((result.info as any).rawDetection);  // true（偵測到惡魔）
 console.log(result.mustFollow);                   // false
 console.log(result.canLie);                       // true
+```
+
+---
+
+### getEffectiveRole()
+
+**功能**: 獲取玩家的有效角色（用於 Handler 路由）
+
+**輸入**: `player: Player` - 玩家物件
+
+**輸出**: `string` - 有效角色 ID
+
+**邏輯**:
+```typescript
+private getEffectiveRole(player: Player): string {
+  // 酒鬼玩家：使用假角色的 Handler
+  if (player.role === 'drunk' && player.believesRole) {
+    return player.believesRole;
+  }
+  // 其他玩家：使用實際角色
+  return player.role;
+}
+```
+
+**重要說明**:
+- **酒鬼角色本質 vs 醉酒狀態標記**：
+  - `role='drunk'` = 永久無能力（角色本質，immutable）
+  - `isDrunk=true` = 臨時醉酒狀態（狀態標記，mutable）
+- 酒鬼玩家會使用假角色的完整 Handler（包含 UI、目標選擇等）
+- 能力效果會在步驟 7 被無效化（因為 `role='drunk'`）
+- 這讓酒鬼執行假角色的完整行為，但不產生實際效果
+
+**範例**:
+```typescript
+// 酒鬼玩家（以為自己是占卜師）
+const drunkPlayer = {
+  seat: 3,
+  role: 'drunk',
+  believesRole: 'fortuneteller'
+};
+
+const effectiveRole = engine.getEffectiveRole(drunkPlayer);
+// 返回 'fortuneteller' → 使用 FortunetellerHandler
+// 但在步驟 7 會標記 effectNullified: true
 ```
 
 ---
@@ -572,7 +625,13 @@ export const handlers = new Map<string, RoleHandler>([
 ## 注意事項
 
 1. **狀態檢查優先順序**
-   - NightContext 攔截檢查 > 死亡檢查 > 中毒檢查 > 醉酒檢查 > Jinx 檢查 > 統一後處理
+   - NightContext 攔截檢查 > 死亡檢查 > 中毒檢查 > 醉酒狀態檢查 > Jinx 檢查 > 酒鬼本質檢查 > 統一後處理
+
+2. **酒鬼角色本質 vs 醉酒狀態**
+   - `role='drunk'` + `believesRole` = 永久無能力的酒鬼角色（角色本質）
+   - `isDrunk=true` = 被其他角色能力導致的臨時醉酒（狀態標記）
+   - 酒鬼初始化時 `isDrunk=false`（因為醉酒是狀態，不是本質）
+   - 酒鬼的無能力透過步驟 7 檢查，不是透過 `isDrunk` 標記
 
 2. **預設處理器限制**
    - 只適用於無複雜邏輯的角色

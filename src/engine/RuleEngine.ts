@@ -28,6 +28,24 @@ export class RuleEngine {
     this.nightContext = { blockedRoles: new Set() };
   }
 
+  /**
+   * 獲取玩家的有效角色（用於 Handler 路由）
+   *
+   * 對於酒鬼玩家：
+   * - 如果有 believesRole，使用假角色的 Handler
+   * - 讓酒鬼執行假角色的完整行為（選擇目標、使用 UI）
+   * - 能力效果會在後續被無效化（因為 role='drunk'）
+   *
+   * 對於其他玩家：
+   * - 使用實際角色
+   */
+  private getEffectiveRole(player: Player): string {
+    if (player.role === 'drunk' && player.believesRole) {
+      return player.believesRole;
+    }
+    return player.role;
+  }
+
   processNightAbility(
     player: Player,
     target: Player | null,
@@ -35,13 +53,14 @@ export class RuleEngine {
     stateManager: GameStateManager,
     secondTarget?: Player | null
   ): NightResult {
-    // 1. 獲取角色資料
-    const roleData = this.roleRegistry.get(player.role);
+    // 1. 獲取角色資料（酒鬼使用假角色資料）
+    const effectiveRole = this.getEffectiveRole(player);
+    const roleData = this.roleRegistry.get(effectiveRole);
     if (!roleData) {
       return {
         skip: true,
-        skipReason: `未知角色：${player.role}`,
-        display: `未知角色：${player.role}`,
+        skipReason: `未知角色：${effectiveRole}`,
+        display: `未知角色：${effectiveRole}`,
       };
     }
 
@@ -84,8 +103,8 @@ export class RuleEngine {
       statusReason = statusReason ? `${statusReason}，且${jinxReason}` : jinxReason;
     }
 
-    // 6. 調用處理器
-    const handler = this.handlers.get(player.role);
+    // 6. 調用處理器（酒鬼使用假角色的 Handler）
+    const handler = this.handlers.get(effectiveRole);
     let result: NightResult;
 
     if (handler) {
@@ -106,7 +125,17 @@ export class RuleEngine {
       result = this.defaultHandler(roleData, player, infoReliable, statusReason);
     }
 
-    // 7. 統一後處理（AC1）
+    // 7. 酒鬼角色本質檢查（永久無能力）
+    if (player.role === 'drunk' && player.believesRole) {
+      // 酒鬼執行了假角色的行為，但效果不會生效
+      result = {
+        ...result,
+        effectNullified: true,
+        reasoning: `此玩家是酒鬼（以為自己是${this.getRoleName(player.believesRole)}），能力不會生效。說書人可給予任意假資訊。`,
+      };
+    }
+
+    // 8. 統一後處理（AC1：中毒/醉酒狀態）
     return this.applyInvalidation(result, infoReliable, statusReason);
   }
 
