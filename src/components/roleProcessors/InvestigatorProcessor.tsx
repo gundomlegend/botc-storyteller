@@ -1,18 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import type { NightResult } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import AbilityHeader from '../shared/AbilityHeader';
 import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
-
-// Trouble Brewing 所有爪牙角色
-const ALL_MINION_ROLES = [
-  { id: 'poisoner', name_cn: '投毒者' },
-  { id: 'spy', name_cn: '間諜' },
-  { id: 'baron', name_cn: '男爵' },
-  { id: 'scarlet_woman', name_cn: '猩紅女郎' },
-] as const;
+import rolesData from '../../data/roles/trouble-brewing.json';
 
 export default function InvestigatorProcessor({ item, onDone }: RoleProcessorProps) {
   const { processAbility, stateManager } = useGameStore();
@@ -22,6 +15,11 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
   const [selectedPlayer2, setSelectedPlayer2] = useState<number | null>(null);
 
   const roleData = stateManager.getRoleData(item.role);
+
+  // 從角色數據中過濾出 Trouble Brewing 爪牙角色
+  const minionRoles = useMemo(() => {
+    return rolesData.filter(role => role.team === 'minion');
+  }, []);
 
   // 檢查是否為酒鬼角色
   const player = stateManager.getPlayer(item.seat);
@@ -90,9 +88,12 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
 
   const handleConfirm = () => {
     // 記錄說書人選擇
+    const selectedRoleData = stateManager.getRoleData(selectedMinionRole);
+    const roleName = selectedRoleData?.name_cn || selectedMinionRole;
+
     stateManager.logEvent({
       type: 'ability_use',
-      description: `調查員資訊：展示${ALL_MINION_ROLES.find(r => r.id === selectedMinionRole)?.name_cn}，指向${selectedPlayer1}號和${selectedPlayer2}號`,
+      description: `調查員資訊：展示${roleName}，指向${selectedPlayer1}號和${selectedPlayer2}號`,
       details: {
         minionRole: selectedMinionRole,
         player1: selectedPlayer1,
@@ -234,7 +235,7 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
           style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
         >
           <option value="">-- 請選擇 --</option>
-          {ALL_MINION_ROLES.map(role => (
+          {minionRoles.map(role => (
             <option key={role.id} value={role.id}>
               {role.name_cn}
             </option>
