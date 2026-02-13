@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { t } from '../engine/locale';
 import type { NightOrderItem, NightResult, Player } from '../engine/types';
 import { ROLE_PROCESSORS } from './roleProcessors';
 import PlayerSelector from './PlayerSelector';
+import AbilityHeader from './shared/AbilityHeader';
+import AbilityStatusIndicator from './shared/AbilityStatusIndicator';
+import { usePlayerRealTimeStatus } from '../hooks/usePlayerRealTimeStatus';
 
 interface AbilityProcessorProps {
   item: NightOrderItem;
@@ -28,12 +30,8 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
   const roleData = stateManager.getRoleData(item.role);
   const needsTarget = ROLES_NEEDING_TARGET.has(item.role);
 
-  // 從 stateManager 讀即時狀態（item 是夜晚開始時的快照，不會反映夜間中毒等變化）
-  const currentPlayer = stateManager.getPlayer(item.seat);
-  const isPoisoned = currentPlayer?.isPoisoned ?? item.isPoisoned;
-  const isDrunk = currentPlayer?.isDrunk ?? item.isDrunk;
-  const isProtected = currentPlayer?.isProtected ?? item.isProtected;
-  const isDead = currentPlayer ? !currentPlayer.isAlive : item.isDead;
+  // 讀取玩家即時狀態
+  const { isPoisoned, isDrunk, isProtected, isDead } = usePlayerRealTimeStatus(item);
 
   const handleProcess = () => {
     const r = processAbility(item.seat, selectedTarget);
@@ -85,21 +83,19 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
 
   return (
     <div className="ability-processor">
-      <div className="ability-header">
-        <h3>
-          {item.seat}號 — {item.roleName}
-        </h3>
-        {roleData && <p className="ability-desc">{t(roleData, 'ability')}</p>}
-        <p className="ability-reminder">{item.reminder}</p>
-      </div>
+      <AbilityHeader
+        seat={item.seat}
+        roleName={item.roleName}
+        roleData={roleData}
+        reminder={item.reminder}
+      />
 
-      {/* 狀態警告（即時狀態） */}
-      <div className="ability-status">
-        {isDead && <span className="status-tag dead">已死亡</span>}
-        {isPoisoned && <span className="status-tag poisoned">中毒</span>}
-        {isDrunk && <span className="status-tag drunk">醉酒</span>}
-        {isProtected && <span className="status-tag protected">受保護</span>}
-      </div>
+      <AbilityStatusIndicator
+        isDead={isDead}
+        isPoisoned={isPoisoned}
+        isDrunk={isDrunk}
+        isProtected={isProtected}
+      />
 
       {/* 還沒有結果：選擇目標（或直接執行） */}
       {!result && (
