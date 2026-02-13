@@ -420,6 +420,14 @@ export class GameStateManager {
 
   generateDemonBluffs(): string[] {
     const assignedRoles = new Set(this.state.selectedRoles);
+
+    // 排除酒鬼的假角色（believesRole）
+    for (const player of this.state.players.values()) {
+      if (player.role === 'drunk' && player.believesRole) {
+        assignedRoles.add(player.believesRole);
+      }
+    }
+
     const goodRoles = (rolesData as RoleData[]).filter(
       (r) => (r.team === 'townsfolk' || r.team === 'outsider') &&
              !assignedRoles.has(r.id) &&
