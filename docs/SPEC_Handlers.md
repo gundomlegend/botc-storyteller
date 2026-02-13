@@ -1859,40 +1859,579 @@ describe('ImpHandler', () => {
 
 ---
 
-## 6. 酒鬼處理器 (DrunkHandler)
+## 6. 酒鬼機制 (Drunk Mechanism)
 
 ### 角色能力
+**酒鬼（Drunk）- 外來者**
+
 你不知道你是酒鬼。你以為你是一個鎮民角色，但你不是。
 
-### 實作規格
+### 設計原則
 
-**注意**：酒鬼的狀態在遊戲設置時就已配置好，夜間無需處理。
+**重要**：酒鬼沒有專屬的 Handler，而是偽裝成假角色執行該角色的所有行為。
 
-#### 程式碼實作
+1. **執行假角色行為**：酒鬼在夜間會執行假角色的所有行為（選擇目標、操作 UI 等）
+2. **使用假角色 Handler/Processor**：使用假角色的處理邏輯（例如：假占卜師使用 FortunetellerHandler 和 FortunetellerProcessor）
+3. **能力不生效**：因為 `role = 'drunk'`（角色本質），所有能力效果被 RuleEngine 無效化（`effectNullified = true`）
+4. **說書人給假資訊**：能力無效時，說書人可以給予任意假資訊欺騙玩家
+5. **保持演戲一致性**：酒鬼的體驗與真正的角色完全相同，只是效果不會真的發生
+6. **無需 DrunkHandler**：酒鬼不需要專屬 Handler，系統透過 `believesRole` 路由到假角色的 Handler
+
+### 重要概念：角色本質 vs 狀態標記
+
+**酒鬼的「醉」有兩種不同含義，必須區分清楚：**
+
+| 類型 | 說明 | 欄位 | 可變性 | 效果 |
+|------|------|------|--------|------|
+| **角色本質** | 酒鬼這個角色本身就沒有能力 | `role = 'drunk'` | ❌ 不可變 | 永久無能力 |
+| **狀態標記** | 被其他能力改變的醉酒狀態 | `isDrunk = true/false` | ✅ 可變 | 暫時失效 |
+
+**範例說明**：
+
 ```typescript
-export class DrunkHandler implements RoleHandler {
-  process(context: HandlerContext): NightResult {
-    // 酒鬼無夜間行動
-    return {
-      skip: true,
-      skipReason: '酒鬼無夜間行動（狀態已在設置時配置）',
-      display: '酒鬼無夜間行動'
-    };
+// 酒鬼初始化
+const drunk = {
+  role: 'drunk',           // 角色本質：酒鬼
+  believesRole: 'empath',  // 假角色：共情者
+  isDrunk: false,          // 狀態標記：初始無醉酒狀態
+  isPoisoned: false,       // 狀態標記：初始無中毒狀態
+};
+
+// 酒鬼可以被投毒者下毒
+poisoner.target(drunk);
+drunk.isPoisoned = true;  // ✅ 可以被設置
+
+// 酒鬼可以被水手醉酒（假設鄰居）
+sailor.affectNeighbors();
+drunk.isDrunk = true;     // ✅ 可以被設置
+
+// 但無論狀態如何，酒鬼本身就沒有能力
+const hasAbility = drunk.role !== 'drunk';  // false，酒鬼永遠無能力
+```
+
+**能力有效性檢查邏輯**：
+
+```typescript
+function isAbilityEffective(player: Player): boolean {
+  // 酒鬼角色本質上無能力
+  if (player.role === 'drunk') {
+    return false;  // 酒鬼永遠無能力，無論狀態如何
   }
+
+  // 其他角色：檢查被動失效狀態
+  if (player.isDrunk || player.isPoisoned) {
+    return false;  // 被醉酒或中毒，暫時失效
+  }
+
+  return true;
 }
 ```
 
-#### 設置時處理
+### 核心機制
 
-酒鬼的配置應在 `GameStateManager.initializePlayers()` 中處理：
+#### 1. 遊戲初始化時的設置
+
+酒鬼的配置在遊戲開始時完成，需要在 `GameState` 或 `GameStateManager` 中處理：
+
 ```typescript
-// 在初始化玩家時
-if (player.role === 'drunk') {
-  player.isDrunk = true;
-  player.believesRole = selectRandomTownsfolk(); // 隨機善良角色
+// src/engine/GameState.ts 或 GameStateManager
+
+/**
+ * 初始化酒鬼玩家
+ * @param player 酒鬼玩家
+ * @param gameState 遊戲狀態（用於獲取已使用的角色）
+ * @param allTownfolkRoles 所有可能的鎮民角色清單
+ */
+export function initializeDrunk(
+  player: Player,
+  gameState: GameState,
+  allTownfolkRoles: string[]
+): void {
+  // 設置酒鬼的真實角色
+  player.role = 'drunk';
+  player.team = 'good';        // 酒鬼是外來者，屬於善良陣營
   player.originalRole = 'drunk';
+
+  // 重要：酒鬼的「無能力」是角色本質，不是狀態標記
+  // 初始時不設置 isDrunk 或 isPoisoned
+  player.isDrunk = false;      // 初始無醉酒狀態
+  player.isPoisoned = false;   // 初始無中毒狀態
+
+  // 選擇假角色：從未被使用的鎮民角色中選擇
+  const availableRoles = getAvailableTownfolkForDrunk(gameState, allTownfolkRoles);
+  const randomTownsfolk = selectRandom(availableRoles);
+  player.believesRole = randomTownsfolk;
+
+  console.log(`玩家 ${player.seat}號 是酒鬼，以為自己是 ${randomTownsfolk}`);
+}
+
+/**
+ * 取得可用於酒鬼假冒的鎮民角色清單
+ * 排除規則：
+ * 1. 場上已存在的鎮民角色
+ * 2. 惡魔的虛張聲勢清單
+ */
+function getAvailableTownfolkForDrunk(
+  gameState: GameState,
+  allTownfolkRoles: string[]
+): string[] {
+  // 收集場上已使用的鎮民角色
+  const usedTownfolkRoles = new Set<string>();
+
+  for (const player of gameState.players.values()) {
+    // 只統計真正的鎮民角色（不包含外來者、爪牙、惡魔）
+    if (player.team === 'townsfolk') {
+      usedTownfolkRoles.add(player.role);
+    }
+  }
+
+  // 收集惡魔的虛張聲勢清單
+  const demonBluffs = gameState.getDemonBluffs(); // ['washerwoman', 'librarian', 'investigator']
+
+  // 排除已使用的和虛張聲勢的角色
+  const availableRoles = allTownfolkRoles.filter(role => {
+    return !usedTownfolkRoles.has(role) && !demonBluffs.includes(role);
+  });
+
+  if (availableRoles.length === 0) {
+    throw new Error('沒有可用的鎮民角色供酒鬼假冒！請檢查遊戲設置。');
+  }
+
+  return availableRoles;
+}
+
+// 輔助函數：從可用角色中隨機選擇
+function selectRandom(roles: string[]): string {
+  return roles[Math.floor(Math.random() * roles.length)];
 }
 ```
+
+**初始化時機**：
+- ✅ 在分配角色後、第一個夜晚開始前
+- ✅ 說書人可以看到酒鬼的真實角色和假角色
+- ✅ 酒鬼玩家只能看到假角色
+
+**假角色選擇規則**：
+
+| 條件 | 說明 |
+|------|------|
+| ✅ 必須是鎮民角色 | 只能從鎮民（Townsfolk）中選擇，不能是外來者/爪牙/惡魔 |
+| ❌ 排除場上已有的鎮民 | 避免兩個玩家聲稱相同角色 |
+| ❌ 排除惡魔虛張聲勢清單 | 避免與惡魔的謊言重疊，增加混淆 |
+| ✅ 隨機選擇 | 從剩餘可用角色中隨機選擇一個 |
+
+**範例**：
+
+```typescript
+// 遊戲設置：7人局（Trouble Brewing）
+// 場上角色：占卜師、廚師、共情者、管家、酒鬼、投毒者、小惡魔
+// 惡魔虛張聲勢：洗衣婦、圖書管理員、調查員
+
+const allTownfolkRoles = [
+  'fortuneteller', 'chef', 'empath', 'washerwoman',
+  'librarian', 'investigator', 'undertaker', 'monk',
+  'ravenkeeper', 'virgin', 'slayer', 'soldier', 'mayor'
+];
+
+const usedRoles = ['fortuneteller', 'chef', 'empath'];  // 場上已有的鎮民
+const demonBluffs = ['washerwoman', 'librarian', 'investigator'];  // 惡魔虛張聲勢
+
+// 可用角色 = 全部 - 已使用 - 虛張聲勢
+const available = [
+  'undertaker', 'monk', 'ravenkeeper', 'virgin',
+  'slayer', 'soldier', 'mayor'  // 7個可選
+];
+
+// 隨機選擇一個（例如：undertaker）
+drunk.believesRole = 'undertaker';
+```
+
+#### 2. Handler 路由機制
+
+**酒鬼不需要專屬 Handler**，而是使用假角色的 Handler。
+
+```typescript
+// src/engine/RuleEngine.ts 或 processAbility
+function getHandlerForPlayer(player: Player): RoleHandler {
+  // 如果是酒鬼，使用假角色的 Handler
+  const effectiveRole = player.isDrunk && player.believesRole
+    ? player.believesRole
+    : player.role;
+
+  return HANDLERS[effectiveRole];
+}
+
+// 使用範例
+const handler = getHandlerForPlayer(player);  // 酒鬼會得到假角色的 Handler
+const result = handler.process(context);      // 執行假角色的邏輯
+
+// RuleEngine 會檢查 isDrunk 並設置 effectNullified
+if (player.isDrunk) {
+  result.effectNullified = true;
+  result.reasoning = '此玩家是酒鬼，能力不會生效。說書人可給予任意假資訊。';
+}
+```
+
+**執行流程**：
+```
+1. 玩家是酒鬼（role='drunk', believesRole='fortuneteller', isDrunk=true）
+   ↓
+2. getHandlerForPlayer() 返回 FortunetellerHandler
+   ↓
+3. 使用 FortunetellerProcessor UI（選擇目標、顯示占卜師介面）
+   ↓
+4. FortunetellerHandler.process() 執行偵測邏輯
+   ↓
+5. RuleEngine 檢測到 role='drunk'（酒鬼角色），設置 effectNullified=true
+   ↓
+6. UI 顯示「能力無效」提示，說書人給予假資訊
+```
+
+#### 3. Handler 中的 isDrunk 檢查
+
+**所有 Handler 不需要自行檢查 `isDrunk`**，這由 RuleEngine 統一處理。
+
+Handler 照常執行邏輯，RuleEngine 會在後處理階段檢查：
+
+```typescript
+// RuleEngine.ts
+function processNightAbility(player: Player, target: Player | null): NightResult {
+  // 1. 取得適當的 Handler（酒鬼會得到假角色的 Handler）
+  const handler = getHandlerForPlayer(player);
+
+  // 2. 執行 Handler 邏輯（照常執行，不管是否酒鬼）
+  const result = handler.process({ player, target, gameState });
+
+  // 3. 後處理：檢查能力是否有效
+  // 注意：酒鬼的無能力是角色本質（role='drunk'），不是狀態標記（isDrunk）
+  const isEffectivelyDrunk = player.role === 'drunk';  // 酒鬼角色本質上無能力
+  const isInvalidated = player.isDrunk || player.isPoisoned;  // 被動失效
+
+  if (isEffectivelyDrunk || isInvalidated) {
+    result.effectNullified = true;
+
+    if (isEffectivelyDrunk) {
+      result.reasoning = `此玩家是酒鬼（以為自己是 ${player.believesRole}），能力不會生效。說書人可給予任意假資訊。`;
+    } else {
+      result.reasoning = '此玩家的能力被無效化（中毒或醉酒）。';
+    }
+  }
+
+  return result;
+}
+```
+
+**範例：占卜師酒鬼的完整流程**
+
+```typescript
+// 玩家資料
+const player = {
+  seat: 3,
+  role: 'drunk',                    // 真實角色（酒鬼）
+  believesRole: 'fortuneteller',    // 假角色
+  isDrunk: false,                   // 初始無醉酒狀態（酒鬼的無能力是角色本質）
+  isPoisoned: false,                // 初始無中毒狀態
+};
+
+// 1. 路由到 FortunetellerHandler
+const handler = getHandlerForPlayer(player);  // 返回 FortunetellerHandler
+
+// 2. FortunetellerHandler 照常執行（不知道玩家是酒鬼）
+const result = handler.process({ player, target, gameState });
+// result = {
+//   action: 'show_info',
+//   display: '👿 是惡魔',
+//   info: { rawDetection: true, target: 5 },
+// }
+
+// 3. RuleEngine 檢測 role='drunk'（酒鬼角色），設置 effectNullified
+// result.effectNullified = true
+// result.reasoning = '此玩家是酒鬼（以為自己是 fortuneteller），能力不會生效。說書人可給予任意假資訊。'
+
+// 4. UI 顯示結果時，看到 effectNullified 標記
+//    說書人介面提示：「此玩家是酒鬼，可以給予假資訊」
+```
+
+#### 4. UI 層處理
+
+**Processor 路由機制**：
+
+酒鬼直接使用假角色的 Processor，不需要專屬 Processor。
+
+```typescript
+// src/components/AbilityProcessor.tsx
+export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps) {
+  // 註冊表路由：酒鬼不在此路由，而是在生成 NightOrderItem 時就已經使用假角色
+  const CustomProcessor = ROLE_PROCESSORS[item.role];
+  if (CustomProcessor) {
+    return <CustomProcessor item={item} onDone={onDone} />;
+  }
+  // ... 通用流程
+}
+```
+
+**NightOrderItem 生成時的處理**：
+
+```typescript
+// 生成夜間順序項目時
+const nightOrderItem: NightOrderItem = {
+  seat: player.seat,
+  // 如果是酒鬼，role 使用假角色（用於路由到正確的 Processor）
+  role: player.isDrunk && player.believesRole ? player.believesRole : player.role,
+  roleName: getRoleName(effectiveRole),
+  // 額外資訊供說書人查看
+  actualRole: player.role,              // 真實角色（'drunk'）
+  believesRole: player.believesRole,    // 假角色
+  isDrunk: player.isDrunk,              // 標記為酒鬼
+};
+```
+
+**說書人介面需求**：
+
+1. **AbilityHeader 顯示**：
+   ```tsx
+   <AbilityHeader
+     seat={item.seat}
+     roleName={item.isDrunk ? `酒鬼（以為自己是 ${item.roleName}）` : item.roleName}
+     roleData={roleData}
+   />
+   ```
+
+2. **能力無效提示**：
+   當 `result.effectNullified` 為 true 時，AbilityProcessor 顯示提示：
+   ```tsx
+   {result.effectNullified && (
+     <div className="drunk-warning">
+       ⚠️ 此玩家是酒鬼，能力不會生效。
+       <br />
+       說書人可給予任意假資訊，讓玩家相信自己的假角色。
+     </div>
+   )}
+   ```
+
+3. **假資訊建議**：
+   ```tsx
+   <div className="storyteller-notes">
+     <h4>給予假資訊建議：</h4>
+     <ul>
+       <li>給予合理但錯誤的資訊（例如：假占卜師偵測到錯誤結果）</li>
+       <li>不要太明顯錯誤，避免暴露酒鬼身份</li>
+       <li>記錄給予的資訊，保持前後一致性</li>
+     </ul>
+   </div>
+   ```
+
+**完整 UI 流程範例（占卜師酒鬼）**：
+
+```
+1. 夜間順序顯示「3號 — 酒鬼（以為自己是 占卜師）」
+   ↓
+2. 點擊後顯示 FortunetellerProcessor UI
+   ↓
+3. 酒鬼玩家選擇偵測目標（與真占卜師操作完全相同）
+   ↓
+4. 執行能力，RuleEngine 返回 effectNullified=true
+   ↓
+5. UI 顯示偵測結果（例如：「是惡魔」）+ 酒鬼警告
+   ↓
+6. 說書人看到提示，可以給予假資訊（例如：搖頭說「不是惡魔」）
+```
+
+### 夜間順序整合
+
+酒鬼在夜間順序中的處理：
+
+```typescript
+// 生成夜間順序時
+function generateNightOrder(players: Player[]): NightOrderItem[] {
+  return players
+    .filter(p => p.isAlive)
+    .map(p => {
+      // 如果是酒鬼，使用假角色的順序
+      const roleForOrder = p.isDrunk ? p.believesRole : p.role;
+      const orderIndex = NIGHT_ORDER[roleForOrder];
+
+      return {
+        seat: p.seat,
+        role: p.role,              // 真實角色（說書人看到）
+        believesRole: p.believesRole,  // 假角色
+        roleName: getRoleName(roleForOrder),
+        orderIndex,
+        isDrunk: p.isDrunk,
+      };
+    })
+    .sort((a, b) => a.orderIndex - b.orderIndex);
+}
+```
+
+### Player 型別擴展
+
+需要在 Player 介面中加入 `believesRole` 欄位：
+
+```typescript
+// src/engine/types.ts
+export interface Player {
+  seat: number;
+  name: string;
+  role: string;           // 真實角色
+  believesRole?: string;  // 酒鬼以為自己的角色
+  team: Team;
+  isAlive: boolean;
+  isDrunk: boolean;       // 酒鬼狀態
+  isPoisoned: boolean;
+  // ... 其他欄位
+}
+```
+
+### 測試案例
+
+```typescript
+describe('DrunkHandler', () => {
+  test('酒鬼無夜間行動', () => {
+    const drunk = createPlayer({ role: 'drunk', isDrunk: true, believesRole: 'fortuneteller' });
+    const handler = new DrunkHandler();
+
+    const result = handler.process({
+      player: drunk,
+      gameState,
+    });
+
+    expect(result.action).toBe('skip');
+    expect(result.display).toContain('無夜間行動');
+  });
+
+  test('酒鬼初始化時設定假角色', () => {
+    const player = createPlayer({ role: 'drunk' });
+    const availableRoles = ['fortuneteller', 'empath', 'chef'];
+
+    initializeDrunk(player, availableRoles);
+
+    expect(player.isDrunk).toBe(true);
+    expect(player.originalRole).toBe('drunk');
+    expect(availableRoles).toContain(player.believesRole);
+  });
+
+  test('酒鬼的能力被 RuleEngine 無效化', () => {
+    const drunk = createPlayer({
+      role: 'drunk',
+      isDrunk: true,
+      believesRole: 'fortuneteller'
+    });
+
+    // 假設酒鬼以為自己是占卜師
+    const result = processAbility(drunk.seat, targetSeat);
+
+    expect(result.effectNullified).toBe(true);
+    expect(result.reasoning).toContain('酒鬼');
+  });
+});
+
+describe('Drunk Integration', () => {
+  test('酒鬼在夜間順序中使用假角色順序', () => {
+    const players = [
+      createPlayer({ role: 'drunk', believesRole: 'fortuneteller', isDrunk: true }),
+      createPlayer({ role: 'empath' }),
+      createPlayer({ role: 'chef' }),
+    ];
+
+    const nightOrder = generateNightOrder(players);
+
+    // 酒鬼應該按照占卜師（假角色）的順序排列
+    const drunkOrder = nightOrder.find(item => item.role === 'drunk');
+    expect(drunkOrder.orderIndex).toBe(NIGHT_ORDER['fortuneteller']);
+  });
+
+  test('說書人介面顯示酒鬼的真實和假角色', () => {
+    const drunk = createPlayer({
+      role: 'drunk',
+      believesRole: 'empath',
+      isDrunk: true
+    });
+
+    const display = formatPlayerRole(drunk);
+
+    expect(display).toContain('酒鬼');
+    expect(display).toContain('empath');
+    expect(display).toContain('以為');
+  });
+});
+```
+
+### 實作優先順序
+
+#### Phase 1（核心功能）
+- ⬜ 在 GameState/GameStateManager 中實作酒鬼初始化邏輯
+- ⬜ 實作 DrunkHandler（返回 skip）
+- ⬜ 在 Player 型別中加入 `believesRole` 欄位
+- ⬜ 修改夜間順序生成邏輯，支援酒鬼使用假角色順序
+
+#### Phase 2（UI 整合）
+- ⬜ 建立酒鬼專屬 UI 提示元件
+- ⬜ 在說書人介面顯示真實角色和假角色
+- ⬜ 提供假資訊建議功能
+
+#### Phase 3（測試和完善）
+- ⬜ 撰寫完整測試案例
+- ⬜ 測試與所有鎮民角色的整合
+- ⬜ 優化說書人體驗（記錄給予的假資訊）
+
+### 注意事項
+
+1. **保密性**：酒鬼玩家不能看到自己的真實角色，只能看到假角色
+2. **一致性**：說書人給予的假資訊需要保持一致，避免暴露
+3. **合理性**：假資訊應該合理，不要太明顯錯誤
+4. **記錄**：建議記錄給予酒鬼的所有假資訊，便於後續保持一致
+5. **夜間順序**：酒鬼按照假角色的順序被喚醒，說書人需要演戲
+6. **能力無效**：酒鬼的所有「能力」都無效，由 `isDrunk` 標記控制
+
+### 與其他機制的互動
+
+| 機制 | 互動方式 |
+|------|---------|
+| **中毒（Poison）** | 酒鬼可以被投毒者下毒，`isPoisoned=true`，但**完全不影響酒鬼**，因為酒鬼本身已經是 `isDrunk=true` 狀態，能力本來就無效 |
+| **醉酒（Drunk）** | 酒鬼可以被其他機制設置為醉酒（例如：水手鄰居），但**完全不影響酒鬼**，因為酒鬼本來就是醉酒狀態 |
+| **陣營屬性** | 酒鬼是**外來者（Outsider）**，屬於善良陣營（`team='good'`） |
+| **假角色來源** | 從**未被使用的鎮民角色**中選擇，**不會與場上已有鎮民或惡魔虛張聲勢重疊** |
+| **死亡** | 酒鬼死亡時不會揭露真實角色，保持假角色身份 |
+| **投票** | 酒鬼正常投票，無特殊規則 |
+| **處決** | 酒鬼被處決時可能仍不知道自己是酒鬼 |
+| **遊戲結束** | 遊戲結束時才揭露酒鬼的真實身份 |
+
+**重要說明**：
+
+1. **中毒和醉酒狀態可以被設置，但對酒鬼無額外影響**：
+   ```typescript
+   // 酒鬼可以被下毒或醉酒
+   drunk.isPoisoned = true;  // ✅ 可以被設置
+   drunk.isDrunk = true;     // ✅ 可以被設置（例如：水手鄰居）
+
+   // 能力有效性檢查
+   function isAbilityEffective(player: Player): boolean {
+     // 酒鬼永遠無能力（角色本質）
+     if (player.role === 'drunk') {
+       return false;  // 無論 isPoisoned 或 isDrunk 如何，都無能力
+     }
+
+     // 其他角色：檢查狀態標記
+     if (player.isDrunk || player.isPoisoned) {
+       return false;
+     }
+
+     return true;
+   }
+
+   // 結論：酒鬼可以被下毒/醉酒，但本來就無能力，所以沒有額外影響
+   ```
+
+2. **酒鬼是外來者**：
+   - 屬於善良陣營，計入善良玩家數量
+   - 使用外來者（Outsider）的遊戲機制
+   - 在角色統計中歸類為外來者，而非鎮民
+
+3. **假角色選擇限制**：
+   - ❌ 不能選擇場上已存在的鎮民角色
+   - ❌ 不能選擇惡魔的虛張聲勢清單
+   - ✅ 只能從剩餘未使用的鎮民角色中選擇
 
 ---
 
