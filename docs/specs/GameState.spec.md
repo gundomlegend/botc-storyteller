@@ -20,7 +20,8 @@ export class GameStateManager {
   
   // 初始化方法
   initializePlayers(players: Array<{seat: number; name: string; role: string}>): void;
-  
+  private initializeDrunkPlayers(): void;
+
   // 查詢方法
   getPlayer(seat: number): Player | undefined;
   getAllPlayers(): Player[];
@@ -123,10 +124,17 @@ players: Array<{
 1. 清空現有玩家列表
 2. 為每個玩家建立 `Player` 物件
 3. 從角色註冊表獲取角色資料
-4. 設定初始狀態（存活、無中毒等、`masterSeat = null`）
+4. 設定初始狀態（存活、無中毒等、`masterSeat = null`、`isDrunk = false`）
 5. 更新玩家總數
 6. 標記設置完成
-7. 記錄初始化事件
+7. 生成惡魔虛張聲勢 (`generateDemonBluffs()`)
+8. 初始化酒鬼玩家 (`initializeDrunkPlayers()`)
+9. 記錄初始化事件
+
+**重要**: 酒鬼玩家的初始狀態 `isDrunk = false`，因為：
+- `role='drunk'` = 永久無能力（角色本質）
+- `isDrunk=true/false` = 臨時醉酒狀態（狀態標記）
+- 酒鬼的無能力來自角色本質，不是醉酒狀態
 
 **範例**:
 ```typescript
@@ -139,6 +147,41 @@ manager.initializePlayers([
 
 **錯誤處理**:
 - 如果角色 ID 不存在，拋出錯誤：`Unknown role: ${role}`
+
+---
+
+### initializeDrunkPlayers()
+
+**功能**: 為酒鬼玩家分配假角色（`believesRole`）
+
+**調用時機**: 在 `initializePlayers()` 結束時自動調用（在 `generateDemonBluffs()` 之後）
+
+**行為**:
+1. 找出所有 `role='drunk'` 的玩家
+2. 收集所有鎮民（townsfolk）角色
+3. 排除已使用的鎮民角色
+4. 排除惡魔虛張聲勢中的角色
+5. 從剩餘角色中隨機選擇一個作為酒鬼的 `believesRole`
+6. 記錄日誌（供說書人查看）
+
+**範例**:
+```typescript
+// 遊戲設定：7 人局
+// - 已分配角色：fortuneteller, monk, washerwoman, butler, drunk, poisoner, imp
+// - 惡魔虛張聲勢：['chef', 'empath', 'mayor']
+
+// 酒鬼的 believesRole 將從剩餘鎮民中選擇
+// 可選範圍：investigator, librarian, ravenkeeper, slayer, soldier, virgin
+// （排除了 fortuneteller, monk, washerwoman, butler 因為已使用）
+// （排除了 chef, empath, mayor 因為是惡魔虛張聲勢）
+
+const drunkPlayer = manager.getPlayer(5); // 酒鬼
+console.log(drunkPlayer.believesRole); // 例如 'investigator'
+```
+
+**限制**:
+- 必須在 `generateDemonBluffs()` 之後調用（避免酒鬼的假角色與虛張聲勢重複）
+- 如果可用鎮民角色不足，會從已有的角色中選擇（可能重複）
 
 ---
 
@@ -365,11 +408,86 @@ if (masterSeat != null) {
 
 ---
 
+### generateDemonBluffs()
+
+**功能**: 生成惡魔虛張聲勢（Demon Bluffs）— 三個未被分配的善良角色
+
+**調用時機**: 在 `initializePlayers()` 中自動調用
+
+**輸出**: `string[]` - 三個角色 ID
+
+**行為**:
+1. 收集所有善良角色（townsfolk + outsider）
+2. 排除已分配給玩家的角色
+3. **排除酒鬼角色**（惡魔不會宣稱自己是酒鬼）
+4. 隨機洗牌
+5. 選擇前三個作為虛張聲勢
+6. 儲存到 `state.demonBluffs`
+7. 返回角色 ID 陣列
+
+**範例**:
+```typescript
+// 7 人局 - 已分配角色
+// townsfolk: fortuneteller, monk, washerwoman, butler
+// outsider: drunk
+// minion: poisoner
+// demon: imp
+
+const bluffs = manager.generateDemonBluffs();
+// 可能結果：['chef', 'empath', 'investigator']
+// 排除了：fortuneteller, monk, washerwoman, butler（已使用）
+// 排除了：drunk（永不選為虛張聲勢）
+```
+
+**重要**: 酒鬼（drunk）永遠不會出現在虛張聲勢中，因為：
+- 酒鬼沒有實際能力
+- 惡魔宣稱自己是酒鬼沒有意義
+- 符合遊戲規則邏輯
+
+**實作**:
+```typescript
+generateDemonBluffs(): string[] {
+  const assignedRoles = new Set(this.state.selectedRoles);
+  const goodRoles = rolesData.filter(
+    (r) => (r.team === 'townsfolk' || r.team === 'outsider') &&
+           !assignedRoles.has(r.id) &&
+           r.id !== 'drunk'  // 排除酒鬼
+  );
+  // 洗牌並選擇前 3 個
+  const shuffled = [...goodRoles];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const bluffs = shuffled.slice(0, 3).map((r) => r.id);
+  this.state.demonBluffs = bluffs;
+  return bluffs;
+}
+```
+
+---
+
+### getDemonBluffs()
+
+**功能**: 獲取已生成的惡魔虛張聲勢
+
+**輸出**: `string[]` - 三個角色 ID
+
+**範例**:
+```typescript
+const bluffs = manager.getDemonBluffs();
+console.log('惡魔可宣稱的角色：', bluffs);
+// ['chef', 'empath', 'investigator']
+```
+
+---
+
 ### generateNightOrder()
 **補充規則**
 - 死亡角色仍列入順序（標記 isDead）
 - drunk / poisoned 不影響排序
 - priority 必須唯一
+- 酒鬼使用假角色的 priority 和 reminder
 
 **功能**: 生成夜間行動順序清單
 
@@ -380,13 +498,33 @@ if (masterSeat != null) {
 **演算法**:
 ```
 1. 遍歷所有玩家
-2. 獲取角色的夜間優先級
+2. 計算有效角色（酒鬼使用 believesRole）
+   - role='drunk' && believesRole 存在 → 使用 believesRole
+   - 其他 → 使用實際 role
+3. 獲取角色的夜間優先級
    - 第一夜：使用 roleData.firstNight
    - 其他夜：使用 roleData.otherNight
-3. 如果優先級 > 0，創建 NightOrderItem
-4. 收集玩家的當前狀態（死亡、中毒、醉酒、保護）
-5. 按優先級數字由小到大排序
-6. 返回排序後的陣列
+4. 如果優先級 > 0，創建 NightOrderItem
+5. 生成 roleName（酒鬼會加上 "(酒鬼)" 標記）
+   - role='drunk' → `${假角色名稱} (酒鬼)`
+   - 其他 → 角色名稱
+6. 收集玩家的當前狀態（死亡、中毒、醉酒、保護）
+7. 按優先級數字由小到大排序
+8. 返回排序後的陣列
+```
+
+**酒鬼特殊處理**:
+```typescript
+// 酒鬼使用假角色的順序和提示
+const effectiveRole = player.role === 'drunk' && player.believesRole
+  ? player.believesRole
+  : player.role;
+
+const roleData = this.roleRegistry.get(effectiveRole);
+const displayName = t(roleData, 'name');
+const roleName = player.role === 'drunk'
+  ? `${displayName} (酒鬼)`
+  : displayName;
 ```
 
 **輸出格式**:
@@ -413,6 +551,17 @@ if (masterSeat != null) {
     isDrunk: false,
     isProtected: false,
     reminder: '占卜師指向兩位玩家...'
+  },
+  {
+    seat: 5,
+    role: 'drunk',           // 實際角色
+    roleName: '調查員 (酒鬼)', // 顯示名稱包含標記
+    priority: 35,             // 使用假角色的 priority
+    isDead: false,
+    isPoisoned: false,
+    isDrunk: false,           // 酒鬼角色的 isDrunk 初始為 false
+    isProtected: false,
+    reminder: '調查員指向兩位玩家...' // 使用假角色的 reminder
   }
 ]
 ```
