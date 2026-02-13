@@ -4,6 +4,7 @@ import type { NightResult } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import AbilityHeader from '../shared/AbilityHeader';
 import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
+import DrunkRoleIndicator from '../shared/DrunkRoleIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
 import rolesData from '../../data/roles/trouble-brewing.json';
 
@@ -197,31 +198,12 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
         isProtected={isProtected}
       />
 
-      {/* 酒鬼角色標記 */}
-      {isDrunkRole && roleData && (
-        <div className="drunk-indicator" style={{
-          background: '#3a1a1a',
-          border: '2px solid #e01111',
-          borderRadius: '8px',
-          padding: '1rem',
-          marginBottom: '1rem'
-        }}>
-          <strong style={{ color: '#e01111' }}>🍺 酒鬼角色</strong>
-          <p style={{ marginTop: '0.5rem', color: '#ffffff' }}>
-            此玩家實際上是酒鬼，以為自己是 <strong>{roleData.name_cn}</strong>。
-            他們會執行假角色的行為，但能力不會生效。說書人可給予任意假資訊。
-          </p>
-        </div>
-      )}
+      <DrunkRoleIndicator isDrunkRole={isDrunkRole} roleData={roleData} />
 
       {/* 狀態警告 */}
       {!isReliable && (
         <div className="result-warning" style={{ marginBottom: '1rem' }}>
-          ⚠️ 調查員
-          {isPoisoned && '中毒'}
-          {isDrunk && '醉酒'}
-          {isDrunkRole && '是酒鬼'}
-          ，說書人可給予任意資訊
+          ℹ️ 調查員中毒/醉酒或是酒鬼，說書人可給予任意資訊
         </div>
       )}
 
@@ -288,7 +270,7 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
         </select>
         {isReliable && (info.hasRecluse as boolean) && (
           <div className="result-hint" style={{ marginTop: '0.5rem' }}>
-            💡 場上有陌客，建議選擇爪牙玩家和陌客玩家
+            ℹ️ 場上有陌客，建議選擇爪牙玩家和陌客玩家
           </div>
         )}
       </div>
