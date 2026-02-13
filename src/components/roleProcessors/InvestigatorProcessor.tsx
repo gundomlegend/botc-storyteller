@@ -35,7 +35,7 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
   useEffect(() => {
     const r = processAbility(item.seat, null);
     setResult(r);
-  }, []);
+  }, [processAbility, item.seat]);
 
   // 預選邏輯
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
         }
       }
     }
-  }, [result, isReliable]);
+  }, [result, isReliable, stateManager, item.seat]);
 
   const handleConfirm = () => {
     // 記錄說書人選擇
@@ -229,20 +229,33 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
 
       {/* 選擇兩位玩家 */}
       <div className="ability-target" style={{ marginTop: '1rem' }}>
-        <p>選擇兩位玩家（其中一位是該爪牙）：</p>
-        <PlayerSelector
-          mode="multiple"
-          maxSelections={2}
-          showRoles={true}
-          onlyAlive={true}
-          currentPlayerSeat={item.seat}
-          excludePlayers={[item.seat]}
-          initialSelection={selectedPlayers}
-          onSelect={(players: Player[]) => setSelectedPlayers(players.map(p => p.seat))}
-        />
-        {isReliable && info.hasRecluse && (
+        {selectedPlayers.length === 0 ? (
+          <>
+            <p>選擇兩位玩家（其中一位是該爪牙）：</p>
+            <PlayerSelector
+              mode="double"
+              showRoles={true}
+              onlyAlive={true}
+              currentPlayerSeat={item.seat}
+              excludePlayers={[item.seat]}
+              onSelect={(players: Player[]) => setSelectedPlayers(players.map(p => p.seat))}
+            />
+          </>
+        ) : (
+          <>
+            <p>已選擇：{selectedPlayers[0]}號 和 {selectedPlayers[1]}號</p>
+            <button
+              className="btn-secondary"
+              onClick={() => setSelectedPlayers([])}
+              style={{ marginTop: '0.5rem' }}
+            >
+              重新選擇
+            </button>
+          </>
+        )}
+        {isReliable && info.hasRecluse && selectedPlayers.length === 2 && (
           <div className="result-hint" style={{ marginTop: '0.5rem' }}>
-            💡 場上有陌客，已預選爪牙玩家和陌客玩家
+            💡 場上有陌客，建議選擇爪牙玩家和陌客玩家
           </div>
         )}
       </div>
