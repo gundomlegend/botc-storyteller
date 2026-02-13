@@ -6,6 +6,7 @@ import PlayerSelector from './PlayerSelector';
 import AbilityHeader from './shared/AbilityHeader';
 import AbilityStatusIndicator from './shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../hooks/usePlayerRealTimeStatus';
+import { MayorBounceUI } from './mayorBounce';
 
 interface AbilityProcessorProps {
   item: NightOrderItem;
@@ -128,8 +129,13 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
         </>
       )}
 
-      {/* 顯示結果 */}
-      {result && (
+      {/* 鎮長轉移 UI（特殊結果類型） */}
+      {result && result.action === 'mayor_bounce' && (
+        <MayorBounceUI result={result} item={item} onDone={onDone} />
+      )}
+
+      {/* 一般結果顯示 */}
+      {result && result.action !== 'mayor_bounce' && (
         <div className="ability-result">
           <div className="result-display">{result.display}</div>
 

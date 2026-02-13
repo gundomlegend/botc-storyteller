@@ -96,7 +96,7 @@ export interface NightOrderItem {
 }
 
 export interface NightResult {
-  action?: 'show_info' | 'tell_alignment' | 'tell_number' | 'add_protection' | 'add_poison' | 'kill' | 'set_master';
+  action?: 'show_info' | 'tell_alignment' | 'tell_number' | 'add_protection' | 'add_poison' | 'kill' | 'set_master' | 'mayor_bounce';
   skip?: boolean;
   skipReason?: string;
   needInput?: boolean;

@@ -1896,6 +1896,376 @@ if (player.role === 'drunk') {
 
 ---
 
+## 7. 鎮長處理器 (MayorHandler)
+
+### 檔案位置
+`src/engine/handlers/MayorHandler.ts`
+
+### 角色能力
+1. **三人勝利條件**（白天階段）：若場上僅剩 3 人且當天未處決任何人，善良陣營獲勝
+2. **死亡轉移機制**（夜晚階段）：若你在夜晚死亡，可能改由另一名玩家死亡
+
+### 設計原則
+- **鎮長無主動夜間能力**，Handler 僅用於死亡轉移機制
+- 死亡轉移由說書人決定，系統提供建議但不強制
+- 三人勝利條件由白天階段檢查（不在此 Handler 中）
+
+### 死亡轉移機制
+
+#### 觸發條件
+```
+1. 鎮長被惡魔攻擊（ImpHandler 中檢測）
+2. 鎮長未中毒/醉酒（能力有效）
+3. 鎮長未受僧侶保護（保護優先於轉移）
+```
+
+#### 處理流程
+```
+ImpHandler 檢測到目標是鎮長：
+1. 檢查鎮長能力是否有效
+   ├─ 中毒/醉酒 → 直接擊殺鎮長
+   └─ 能力有效 → 繼續
+   ↓
+2. 返回特殊結果 mayor_bounce
+   └─ 提示說書人選擇轉移目標
+   ↓
+3. 說書人選擇
+   ├─ 不轉移 → 擊殺鎮長
+   └─ 轉移 → 選擇其他玩家（排除惡魔）
+   ↓
+4. 執行擊殺
+   └─ 擊殺選定的目標玩家
+```
+
+#### 轉移建議邏輯
+
+提供精簡的建議參考表格給說書人，讓說書人根據實際情況自行判斷：
+
+| 情境 | 建議轉給（優先級：高 → 低） |
+|------|----------------------------|
+| 早期 (D1-D2) | 士兵 → 無能力鎮民 → 外來者 |
+| 中期 | 可疑玩家 → 善良玩家 |
+| 好人太順 | 強鎮民 → 鎮長 |
+| 邪惡太順 | 免疫惡魔攻擊者 → 爪牙 |
+| 盤面混亂 | 外來者 ≈ 間諜 → 對跳者 |
+
+**實作方式**：
+- 直接在 `display` 訊息中顯示建議表格
+- 不進行動態計算或條件判斷
+- 說書人根據表格自行評估並選擇
+- 使用 → 箭頭表示優先級，≈ 表示同等級
+
+```typescript
+return {
+  action: 'mayor_bounce',
+  info: {
+    mayorSeat: mayor.seat,
+    mayorName: mayor.name,
+    availableTargets: /* 所有可轉移目標 */
+  },
+  display: `小惡魔選擇擊殺鎮長 ${mayor.seat}號 (${mayor.name})
+
+🎭 鎮長的死亡轉移能力觸發！
+
+📋 轉移建議參考（優先級：高 → 低）：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 早期 (D1-D2)：士兵 → 無能力鎮民 → 外來者
+• 中期：可疑玩家 → 善良玩家
+• 好人太順：資訊多鎮民 → 鎮長
+• 邪惡太順：免疫惡魔攻擊者 → 爪牙
+• 盤面混亂：外來者 ≈ 間諜 → 對跳者
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+說書人可選擇：
+1. 不轉移：鎮長死亡
+2. 轉移：選擇其他玩家承受死亡（不含惡魔）`,
+  gesture: 'none',
+};
+```
+
+#### 轉移目標排除規則
+
+```typescript
+// 不可轉移的目標
+function canBeBounceTarget(player: Player): boolean {
+  return (
+    player.role !== 'mayor' &&        // 不能轉回鎮長自己
+    player.team !== 'demon' &&        // 不能轉給惡魔
+    player.isAlive                     // 必須存活
+  );
+}
+```
+
+### ImpHandler 整合
+
+修改 ImpHandler 以支援鎮長轉移：
+
+```typescript
+// 在 ImpHandler.process() 中，士兵檢查之前
+if (target.role === 'mayor' && !target.isPoisoned && !target.isDrunk) {
+  return {
+    action: 'mayor_bounce',
+    info: {
+      mayorSeat: target.seat,
+      mayorName: target.name,
+      availableTargets: gameState.getAlivePlayers()
+        .filter(p => p.seat !== target.seat && p.team !== 'demon')
+    },
+    display: `小惡魔選擇擊殺鎮長 ${target.seat}號 (${target.name})
+
+🎭 鎮長的死亡轉移能力觸發！
+
+📋 轉移建議參考（優先級：高 → 低）：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 早期 (D1-D2)：士兵 → 無能力鎮民 → 外來者
+• 中期：可疑玩家 → 善良玩家
+• 好人太順：資訊多鎮民 → 鎮長
+• 邪惡太順：免疫惡魔攻擊者 → 爪牙
+• 盤面混亂：外來者 ≈ 間諜 → 對跳者
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+說書人可選擇：
+1. 不轉移：鎮長死亡
+2. 轉移：選擇其他玩家承受死亡（不含惡魔）`,
+    gesture: 'none',
+  };
+}
+```
+
+### UI 流程
+
+#### 模組化設計：MayorBounceUI 元件
+
+**檔案結構**：
+```
+src/components/mayorBounce/
+  ├── MayorBounceUI.tsx       // UI 元件
+  ├── useMayorBounce.ts       // 狀態管理 hook
+  └── index.ts                // 導出
+```
+
+**觸發時機**：
+- 小惡魔使用 AbilityProcessor 選擇攻擊目標
+- ImpHandler 檢測到目標是鎮長，返回 `mayor_bounce` 結果
+- AbilityProcessor 檢測到 `result.action === 'mayor_bounce'`，渲染 MayorBounceUI 元件
+
+**在 AbilityProcessor 中的使用**：
+
+```typescript
+// src/components/AbilityProcessor.tsx
+import { MayorBounceUI } from './mayorBounce';
+
+// ... 其他代碼 ...
+
+{result && result.action === 'mayor_bounce' && (
+  <MayorBounceUI result={result} item={item} onDone={onDone} />
+)}
+```
+
+#### MayorBounceUI 元件
+
+**檔案位置**：`src/components/mayorBounce/MayorBounceUI.tsx`
+
+**Props 介面**：
+
+```typescript
+interface MayorBounceUIProps {
+  result: NightResult;  // 包含 mayor_bounce 資訊的結果
+  item: NightOrderItem; // 當前夜間項目（小惡魔）
+  onDone: () => void;   // 完成回調
+}
+```
+
+**處理流程**：
+
+1. **顯示建議表格**：顯示轉移建議參考表格（由 ImpHandler 生成）
+2. **說書人選擇**：
+   - 使用 PlayerSelector 選擇轉移目標（showRoles=true 顯示角色名稱，排除惡魔和鎮長本人）
+   - 或點選「不轉移 - 鎮長死亡」按鈕
+3. **確認階段**：
+   - 顯示選擇結果摘要
+   - 確認後執行 `killPlayer()` 和 `logEvent()`
+   - 提供「重選」按鈕允許重新決策
+4. **完成**：呼叫 `onDone()` 進入下一個夜間能力
+
+#### useMayorBounce Hook
+
+**檔案位置**：`src/components/mayorBounce/useMayorBounce.ts`
+
+**功能**：封裝鎮長轉移的狀態管理和業務邏輯
+
+```typescript
+export function useMayorBounce(
+  result: NightResult,
+  onDone: () => void
+) {
+  const stateManager = useGameStore((s) => s.stateManager);
+
+  // 狀態：null = 未選擇，-1 = 不轉移，其他數字 = 轉移目標座位號
+  const [target, setTarget] = useState<number | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+
+  // 處理目標選擇
+  const handleTargetSelect = (players: Player[]) => {
+    setTarget(players[0]?.seat ?? null);
+  };
+
+  // 處理不轉移
+  const handleNoTransfer = () => {
+    setTarget(-1);
+    setConfirmed(true);
+  };
+
+  // 處理確認轉移
+  const handleConfirmTransfer = () => {
+    if (target !== null && target !== -1) {
+      setConfirmed(true);
+    }
+  };
+
+  // 處理重選
+  const handleReset = () => {
+    setTarget(null);
+    setConfirmed(false);
+  };
+
+  // 執行擊殺並完成
+  const handleExecute = (targetSeat: number, logDescription: string, logDetails: Record<string, unknown>) => {
+    useGameStore.getState().killPlayer(targetSeat, 'demon_kill');
+    stateManager.logEvent({
+      type: 'ability_use',
+      description: logDescription,
+      details: logDetails,
+    });
+    onDone();
+  };
+
+  return {
+    target,
+    confirmed,
+    handleTargetSelect,
+    handleNoTransfer,
+    handleConfirmTransfer,
+    handleReset,
+    handleExecute,
+  };
+}
+```
+
+**設計優勢**：
+- **關注點分離**：UI 元件和業務邏輯分離，易於維護
+- **可測試性**：hook 可獨立測試狀態邏輯
+- **可重用性**：未來若有類似的死亡轉移機制可重用
+- **保持 AbilityProcessor 簡潔**：避免內嵌過多特殊邏輯
+- **模組化**：鎮長相關代碼集中在 mayorBounce 目錄，便於管理
+
+**設計理由**：
+- 鎮長沒有主動的夜間能力，不是獨立的夜間順序項目
+- mayor_bounce 是小惡魔能力的特殊結果，應在小惡魔的 AbilityProcessor 中觸發
+- 使用獨立元件封裝複雜 UI 邏輯，避免 AbilityProcessor 過度膨脹
+- 使用 `showUsers={false}` 和 `showRoles={true}` 讓說書人根據角色名稱選擇，而非玩家名稱
+- 自動排除惡魔和鎮長本人作為轉移目標
+
+### NightResult 擴展
+
+```typescript
+// 新增 action 類型
+type NightAction =
+  | 'kill'
+  | 'mayor_bounce'  // 新增
+  | ... ;
+
+// mayor_bounce 的 info 結構
+interface MayorBounceInfo {
+  mayorSeat: number;
+  mayorName: string;
+  availableTargets: Player[];  // 所有可轉移目標（排除惡魔）
+}
+```
+
+### 測試案例
+
+```typescript
+describe('MayorHandler - Death Bounce', () => {
+  test('鎮長正常狀態觸發轉移', () => {
+    const result = impHandler.process({
+      player: imp,
+      target: mayor,  // 未中毒/醉酒
+      gameState
+    });
+
+    expect(result.action).toBe('mayor_bounce');
+    expect(result.info.mayorSeat).toBe(mayor.seat);
+    expect(result.info.availableTargets).not.toContain(
+      expect.objectContaining({ team: 'demon' })
+    );
+  });
+
+  test('中毒鎮長直接被擊殺', () => {
+    mayor.isPoisoned = true;
+
+    const result = impHandler.process({
+      player: imp,
+      target: mayor,
+      gameState
+    });
+
+    expect(result.action).toBe('kill');
+    expect(result.info.blocked).toBe(false);
+  });
+
+  test('availableTargets 包含所有可轉移目標', () => {
+    const result = impHandler.process({
+      player: imp,
+      target: mayor,
+      gameState
+    });
+
+    expect(result.action).toBe('mayor_bounce');
+    expect(result.info.availableTargets.length).toBeGreaterThan(0);
+    // 不包含惡魔
+    expect(result.info.availableTargets.every(p => p.team !== 'demon')).toBe(true);
+    // 不包含鎮長自己
+    expect(result.info.availableTargets.every(p => p.seat !== mayor.seat)).toBe(true);
+  });
+
+  test('顯示建議參考表格給說書人', () => {
+    const result = impHandler.process({
+      player: imp,
+      target: mayor,
+      gameState
+    });
+
+    expect(result.display).toContain('轉移建議參考');
+    expect(result.display).toContain('早期 (D1-D2)');
+    expect(result.display).toContain('資訊角');
+    expect(result.display).toContain('中期');
+    expect(result.display).toContain('威脅邪惡者');
+  });
+});
+```
+
+### 實作優先順序
+
+#### Phase 1（已完成）
+- ✅ 撰寫規格文件
+- ✅ 修改 ImpHandler 偵測鎮長並返回 mayor_bounce
+- ✅ 提供精簡建議參考表格（不做動態判斷）
+- ✅ UI：建立模組化的 MayorBounceUI 元件和 useMayorBounce hook
+- ✅ 在 AbilityProcessor 中整合 MayorBounceUI 元件
+
+#### Phase 2（未來優化）
+- ⬜ 實作三人勝利條件（白天階段）
+
+### 注意事項
+
+1. **優先順序**：僧侶保護 > 鎮長轉移 > 士兵免疫
+2. **中毒/醉酒**：鎮長失去能力時，直接被擊殺，不觸發轉移
+3. **不可轉移目標**：惡魔、鎮長自己、已死亡玩家
+4. **記錄事件**：需詳細記錄轉移決定與目標，供回顧使用
+
+---
+
 ## 處理器註冊
 
 ### 檔案：`src/engine/handlers/index.ts`

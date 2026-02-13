@@ -46,6 +46,11 @@ export class ImpHandler implements RoleHandler {
       };
     }
 
+    // 鎮長轉移機制
+    if (target.role === 'mayor' && !target.isPoisoned && !target.isDrunk) {
+      return this.handleMayorBounce(target, gameState, getRoleName);
+    }
+
     if (target.role === 'soldier' && !target.isPoisoned && !target.isDrunk) {
       return {
         action: 'kill',
@@ -71,6 +76,49 @@ export class ImpHandler implements RoleHandler {
       gesture: 'none',
     };
   }
+
+  private handleMayorBounce(
+    mayor: Player,
+    gameState: GameState,
+    getRoleName: (roleId: string) => string
+  ): NightResult {
+    const availableTargets = Array.from(gameState.players.values()).filter(
+      (p) => p.seat !== mayor.seat && p.team !== 'demon' && p.isAlive
+    );
+
+    return {
+      action: 'mayor_bounce',
+      info: {
+        mayorSeat: mayor.seat,
+        mayorName: mayor.name,
+        availableTargets: availableTargets.map((p) => ({
+          seat: p.seat,
+          name: p.name,
+          role: p.role,
+          roleName: getRoleName(p.role),
+          team: p.team,
+        })),
+      },
+      display: `小惡魔選擇擊殺鎮長 ${mayor.seat}號 (${mayor.name})
+
+🎭 鎮長的死亡轉移能力觸發！
+
+📋 轉移建議參考（優先級：高 → 低）：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 早期 (D1-D2)：士兵 → 無能力鎮民 → 外來者
+• 中期：可疑玩家 → 善良玩家
+• 好人太順：資訊多鎮民 → 鎮長
+• 邪惡太順：免疫惡魔攻擊者 → 爪牙
+• 盤面混亂：外來者 ≈ 間諜 → 對跳者
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+說書人可選擇：
+1. 不轉移：鎮長死亡
+2. 轉移：選擇其他玩家承受死亡（不含惡魔）`,
+      gesture: 'none',
+    };
+  }
+
 
   private handleStarPass(
     player: Player,
