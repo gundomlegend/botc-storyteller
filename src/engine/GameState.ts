@@ -422,6 +422,9 @@ export class GameStateManager {
     const assignedRoles = new Set(this.state.selectedRoles);
 
     // 排除酒鬼的假角色（believesRole）
+    // 注意：酒鬼的假角色實際上不在場，但必須從虛張聲勢中排除
+    // 原因：如果假角色出現在虛張聲勢中，惡魔會知道跳出該角色的玩家是酒鬼
+    // 這違反了遊戲平衡，酒鬼應該被保護不被輕易識別
     for (const player of this.state.players.values()) {
       if (player.role === 'drunk' && player.believesRole) {
         assignedRoles.add(player.believesRole);
