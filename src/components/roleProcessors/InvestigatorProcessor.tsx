@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
-import type { NightResult, Player } from '../../engine/types';
+import type { NightResult } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
-import PlayerSelector from '../PlayerSelector';
 import AbilityHeader from '../shared/AbilityHeader';
 import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
