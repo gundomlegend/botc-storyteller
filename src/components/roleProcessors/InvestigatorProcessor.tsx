@@ -19,7 +19,8 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
   const { processAbility, stateManager } = useGameStore();
   const [result, setResult] = useState<NightResult | null>(null);
   const [selectedMinionRole, setSelectedMinionRole] = useState<string>('');
-  const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
+  const [selectedPlayer1, setSelectedPlayer1] = useState<number | null>(null);
+  const [selectedPlayer2, setSelectedPlayer2] = useState<number | null>(null);
 
   const roleData = stateManager.getRoleData(item.role);
 
@@ -55,7 +56,8 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
     // 不可靠時不預選
     if (!isReliable) {
       setSelectedMinionRole('');
-      setSelectedPlayers([]);
+      setSelectedPlayer1(null);
+      setSelectedPlayer2(null);
       return;
     }
 
@@ -70,7 +72,8 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
 
       if (hasRecluse && recluseSeat !== null) {
         // 有陌客：預選爪牙玩家 + 陌客玩家
-        setSelectedPlayers([firstMinion.seat, recluseSeat]);
+        setSelectedPlayer1(firstMinion.seat);
+        setSelectedPlayer2(recluseSeat);
       } else {
         // 無陌客：預選爪牙玩家 + 外來者/善良玩家
         const decoyPlayer = allPlayers.find(
@@ -79,7 +82,8 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
                (p.team === 'outsider' || p.team === 'townsfolk')
         );
         if (decoyPlayer) {
-          setSelectedPlayers([firstMinion.seat, decoyPlayer.seat]);
+          setSelectedPlayer1(firstMinion.seat);
+          setSelectedPlayer2(decoyPlayer.seat);
         }
       }
     }
@@ -89,11 +93,11 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
     // 記錄說書人選擇
     stateManager.logEvent({
       type: 'ability_use',
-      description: `調查員資訊：展示${ALL_MINION_ROLES.find(r => r.id === selectedMinionRole)?.name_cn}，指向${selectedPlayers[0]}號和${selectedPlayers[1]}號`,
+      description: `調查員資訊：展示${ALL_MINION_ROLES.find(r => r.id === selectedMinionRole)?.name_cn}，指向${selectedPlayer1}號和${selectedPlayer2}號`,
       details: {
         minionRole: selectedMinionRole,
-        player1: selectedPlayers[0],
-        player2: selectedPlayers[1],
+        player1: selectedPlayer1,
+        player2: selectedPlayer2,
       },
     });
     onDone();
@@ -175,7 +179,7 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
     );
   }
 
-  const isSelectionComplete = selectedMinionRole !== '' && selectedPlayers.length === 2;
+  const isSelectionComplete = selectedMinionRole !== '' && selectedPlayer1 !== null && selectedPlayer2 !== null;
 
   return (
     <div className="ability-processor">
@@ -241,31 +245,48 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
 
       {/* 選擇兩位玩家 */}
       <div className="ability-target" style={{ marginTop: '1rem' }}>
-        {selectedPlayers.length === 0 ? (
-          <>
-            <p>選擇兩位玩家（其中一位是該爪牙）：</p>
-            <PlayerSelector
-              mode="double"
-              showRoles={true}
-              onlyAlive={true}
-              currentPlayerSeat={item.seat}
-              excludePlayers={[item.seat]}
-              onSelect={(players: Player[]) => setSelectedPlayers(players.map(p => p.seat))}
-            />
-          </>
-        ) : (
-          <>
-            <p>已選擇：{selectedPlayers[0]}號 和 {selectedPlayers[1]}號</p>
-            <button
-              className="btn-secondary"
-              onClick={() => setSelectedPlayers([])}
-              style={{ marginTop: '0.5rem' }}
-            >
-              重新選擇
-            </button>
-          </>
-        )}
-        {isReliable && (info.hasRecluse as boolean) && selectedPlayers.length === 2 && (
+        <label htmlFor="player1-select">選擇第一位玩家：</label>
+        <select
+          id="player1-select"
+          value={selectedPlayer1 ?? ''}
+          onChange={(e) => setSelectedPlayer1(e.target.value ? Number(e.target.value) : null)}
+          style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
+        >
+          <option value="">-- 請選擇 --</option>
+          {stateManager.getAlivePlayers()
+            .filter(p => p.seat !== item.seat)
+            .map(p => {
+              const rd = stateManager.getRoleData(p.role);
+              return (
+                <option key={p.seat} value={p.seat}>
+                  {p.seat}號 {p.name} ({rd?.name_cn || p.role})
+                </option>
+              );
+            })}
+        </select>
+      </div>
+
+      <div className="ability-target" style={{ marginTop: '1rem' }}>
+        <label htmlFor="player2-select">選擇第二位玩家：</label>
+        <select
+          id="player2-select"
+          value={selectedPlayer2 ?? ''}
+          onChange={(e) => setSelectedPlayer2(e.target.value ? Number(e.target.value) : null)}
+          style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
+        >
+          <option value="">-- 請選擇 --</option>
+          {stateManager.getAlivePlayers()
+            .filter(p => p.seat !== item.seat && p.seat !== selectedPlayer1)
+            .map(p => {
+              const rd = stateManager.getRoleData(p.role);
+              return (
+                <option key={p.seat} value={p.seat}>
+                  {p.seat}號 {p.name} ({rd?.name_cn || p.role})
+                </option>
+              );
+            })}
+        </select>
+        {isReliable && (info.hasRecluse as boolean) && (
           <div className="result-hint" style={{ marginTop: '0.5rem' }}>
             💡 場上有陌客，建議選擇爪牙玩家和陌客玩家
           </div>
@@ -280,9 +301,6 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
           disabled={!isSelectionComplete}
         >
           確認
-        </button>
-        <button className="btn-secondary" onClick={onDone}>
-          跳過
         </button>
       </div>
     </div>
