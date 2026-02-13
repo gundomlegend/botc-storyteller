@@ -116,6 +116,7 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
                 mode="single"
                 canSelectSelf={item.role === 'imp' || item.role === 'poisoner'}
                 onlyAlive={true}
+                showRoles={true}
                 currentPlayerSeat={item.seat}
                 excludePlayers={item.role === 'monk' || item.role === 'butler' ? [item.seat] : []}
                 onSelect={(players: Player[]) => setSelectedTarget(players[0]?.seat ?? null)}

@@ -2,7 +2,7 @@ import type { RoleHandler, HandlerContext, NightResult, Player, GameState } from
 
 export class ChefHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { gameState, getRoleName } = context;
+    const { gameState, getPlayerRoleName } = context;
 
     // 步驟 1: 僅第一晚執行
     if (gameState.night > 1) {
@@ -24,7 +24,7 @@ export class ChefHandler implements RoleHandler {
       recluseSeats,
       spySeats,
       gameState,
-      getRoleName
+      getPlayerRoleName
     );
 
     return {
@@ -48,7 +48,7 @@ export class ChefHandler implements RoleHandler {
         recluseSeats,
         spySeats,
         gameState,
-        getRoleName
+        getPlayerRoleName
       ),
     };
   }
@@ -196,7 +196,7 @@ export class ChefHandler implements RoleHandler {
     recluseSeats: number[],
     spySeats: number[],
     gameState: GameState,
-    getRoleName: (roleId: string) => string
+    getPlayerRoleName: (player: Player) => string
   ): string {
     const notes = this.buildSpecialRoleNotes(recluseSeats, spySeats, false);
 
@@ -209,7 +209,7 @@ export class ChefHandler implements RoleHandler {
     for (const segment of segments) {
       const roles = segment.map(seat => {
         const player = gameState.players.get(seat)!;
-        return `${seat}號(${getRoleName(player.role)})`;
+        return `${seat}號(${getPlayerRoleName(player)})`;
       }).join('、');
 
       const pairs = segment.length - 1;
@@ -230,7 +230,7 @@ export class ChefHandler implements RoleHandler {
     recluseSeats: number[],
     spySeats: number[],
     gameState: GameState,
-    getRoleName: (roleId: string) => string
+    getPlayerRoleName: (player: Player) => string
   ): string {
     const specialNotes = this.buildSpecialRoleNotes(recluseSeats, spySeats, true);
     const specialNotesStr = specialNotes.length > 0
@@ -246,7 +246,7 @@ export class ChefHandler implements RoleHandler {
     const segmentInfo = segments.map(seg => {
       const players = seg.map(seat => {
         const player = gameState.players.get(seat)!;
-        const role = getRoleName(player.role);
+        const role = getPlayerRoleName(player);
         return `${seat}號 ${player.name}(${role})`;
       }).join(' - ');
       return `  • ${players}`;

@@ -28,6 +28,21 @@ export function useRoleHelpers() {
   };
 
   /**
+   * 獲取玩家的角色顯示名稱（考慮 believesRole）
+   * 如果玩家有 believesRole（如酒鬼），顯示為「假角色名 (真實角色名)」
+   * @param player - 玩家物件
+   * @returns 角色顯示名稱
+   */
+  const getPlayerRoleDisplayName = (player: Player): string => {
+    if (player.believesRole) {
+      const believesRoleName = getRoleDisplayName(player.believesRole);
+      const actualRoleName = getRoleDisplayName(player.role);
+      return `${believesRoleName} (${actualRoleName})`;
+    }
+    return getRoleDisplayName(player.role);
+  };
+
+  /**
    * 獲取角色的能力描述
    * @param roleId - 角色 ID
    * @returns 角色的能力描述
@@ -62,6 +77,7 @@ export function useRoleHelpers() {
 
   return {
     getRoleDisplayName,
+    getPlayerRoleDisplayName,
     getRoleAbility,
     getRoleData,
     getPlayerRoleDisplay,

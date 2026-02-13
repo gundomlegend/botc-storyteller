@@ -9,7 +9,7 @@ import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
 import rolesData from '../../data/roles/trouble-brewing.json';
 
 export default function InvestigatorProcessor({ item, onDone }: RoleProcessorProps) {
-  const { processAbility, stateManager } = useGameStore();
+  const { processAbility, stateManager, ruleEngine } = useGameStore();
   const [result, setResult] = useState<NightResult | null>(null);
   const [selectedMinionRole, setSelectedMinionRole] = useState<string>('');
   const [selectedPlayer1, setSelectedPlayer1] = useState<number | null>(null);
@@ -237,14 +237,11 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
           <option value="">-- 請選擇 --</option>
           {stateManager.getAlivePlayers()
             .filter(p => p.seat !== item.seat)
-            .map(p => {
-              const rd = stateManager.getRoleData(p.role);
-              return (
-                <option key={p.seat} value={p.seat}>
-                  {p.seat}號 {p.name} ({rd?.name_cn || p.role})
-                </option>
-              );
-            })}
+            .map(p => (
+              <option key={p.seat} value={p.seat}>
+                {p.seat}號 {p.name} ({ruleEngine.getPlayerRoleName(p)})
+              </option>
+            ))}
         </select>
       </div>
 
@@ -259,14 +256,11 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
           <option value="">-- 請選擇 --</option>
           {stateManager.getAlivePlayers()
             .filter(p => p.seat !== item.seat && p.seat !== selectedPlayer1)
-            .map(p => {
-              const rd = stateManager.getRoleData(p.role);
-              return (
-                <option key={p.seat} value={p.seat}>
-                  {p.seat}號 {p.name} ({rd?.name_cn || p.role})
-                </option>
-              );
-            })}
+            .map(p => (
+              <option key={p.seat} value={p.seat}>
+                {p.seat}號 {p.name} ({ruleEngine.getPlayerRoleName(p)})
+              </option>
+            ))}
         </select>
         {isReliable && (info.hasRecluse as boolean) && (
           <div className="result-hint" style={{ marginTop: '0.5rem' }}>

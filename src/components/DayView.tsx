@@ -6,7 +6,7 @@ import PlayerSelector from './PlayerSelector';
 
 export default function DayView() {
   const { day, players, alivePlayers, killPlayer, startNight, stateManager } = useGameStore();
-  const { getPlayerRoleDisplay } = useRoleHelpers();
+  const { getPlayerRoleDisplayName } = useRoleHelpers();
 
   const [nominatorSeat, setNominatorSeat] = useState<number | null>(null);
   const [nomineeSeat, setNomineeSeat] = useState<number | null>(null);
@@ -74,7 +74,7 @@ export default function DayView() {
             >
               <span className="ps-seat">{p.seat}</span>
               <span className="ps-name">{p.name}</span>
-              <span className="ps-role">{getPlayerRoleDisplay(p)}</span>
+              <span className="ps-role">{getPlayerRoleDisplayName(p)}</span>
               <span className="ps-alive">{p.isAlive ? '存活' : '死亡'}</span>
             </div>
           ))}

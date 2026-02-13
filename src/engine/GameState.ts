@@ -35,7 +35,12 @@ export class GameStateManager {
   ): void {
     this.state.players.clear();
 
+    // 收集已分配的角色（用於酒鬼假角色選擇）
+    const assignedRoles = new Set(players.map(p => p.role));
+    console.log('[InitPlayers] 已分配角色:', Array.from(assignedRoles));
+
     for (const p of players) {
+      console.log(`[InitPlayers] 處理玩家 ${p.seat}號 ${p.name} - 角色: ${p.role}`);
       const roleData = this.roleRegistry.get(p.role);
       if (!roleData) {
         throw new Error(`Unknown role: ${p.role}`);
@@ -58,12 +63,29 @@ export class GameStateManager {
         deathDay: null,
       };
 
+      // 酒鬼：隨機選擇一個未分配的村民角色作為假角色
+      if (p.role === 'drunk') {
+        console.log(`[Drunk] 檢測到酒鬼玩家 ${p.seat}號 ${p.name}`);
+        player.believesRole = this.selectRandomTownsfolkForDrunk(assignedRoles);
+        console.log(`[Drunk] ${player.seat}號 ${player.name} 是酒鬼，以為自己是 ${player.believesRole}`);
+        console.log(`[Drunk] believesRole 已設定:`, player.believesRole);
+      }
+
       this.state.players.set(p.seat, player);
     }
 
     this.state.playerCount = players.length;
     this.state.selectedRoles = players.map((p) => p.role);
     this.state.setupComplete = true;
+    this.state.demonBluffs = []; // 清空之前的惡魔虛張聲勢
+
+    // 記錄初始化事件，包含酒鬼的假角色資訊
+    const playerDetails = Array.from(this.state.players.values()).map(p => ({
+      seat: p.seat,
+      name: p.name,
+      role: p.role,
+      ...(p.role === 'drunk' && p.believesRole ? { believesRole: p.believesRole } : {})
+    }));
 
     // 生成惡魔虛張聲勢清單（必須在酒鬼初始化之前）
     this.generateDemonBluffs();
@@ -74,7 +96,7 @@ export class GameStateManager {
     this.logEvent({
       type: 'init',
       description: `遊戲初始化完成，${players.length} 位玩家`,
-      details: { players: players.map((p) => ({ seat: p.seat, name: p.name, role: p.role })) },
+      details: { players: playerDetails },
     });
   }
 
@@ -374,6 +396,29 @@ export class GameStateManager {
     return this.state.redHerringSeat;
   }
 
+  private selectRandomTownsfolkForDrunk(assignedRoles: Set<string>): string {
+    console.log('[SelectDrunkRole] 開始選擇酒鬼的假角色...');
+    console.log('[SelectDrunkRole] 已分配角色:', Array.from(assignedRoles));
+
+    // 獲取所有未分配的村民角色（排除已在場的角色）
+    const availableTownsfolk = (rolesData as RoleData[])
+      .filter(r => r.team === 'townsfolk' && !assignedRoles.has(r.id))
+      .map(r => r.id);
+
+    console.log('[SelectDrunkRole] 可用村民角色數量:', availableTownsfolk.length);
+    console.log('[SelectDrunkRole] 可用村民角色:', availableTownsfolk);
+
+    if (availableTownsfolk.length === 0) {
+      throw new Error('無可用的村民角色供酒鬼使用（這不應該發生）');
+    }
+
+    // 隨機選擇一個未分配的村民角色
+    const randomIndex = Math.floor(Math.random() * availableTownsfolk.length);
+    const selected = availableTownsfolk[randomIndex];
+    console.log('[SelectDrunkRole] 選擇的假角色:', selected);
+    return selected;
+  }
+
   startNight(): void {
     this.state.night += 1;
     this.state.phase = 'night';
@@ -421,21 +466,48 @@ export class GameStateManager {
   generateDemonBluffs(): string[] {
     const assignedRoles = new Set(this.state.selectedRoles);
 
+    console.log('[DemonBluffs] Initial assignedRoles:', Array.from(assignedRoles));
+    console.log('[DemonBluffs] selectedRoles length:', this.state.selectedRoles.length);
+    console.log('[DemonBluffs] playerCount:', this.state.playerCount);
+
+    // 驗證 selectedRoles 不為空
+    if (this.state.selectedRoles.length === 0) {
+      console.error('[DemonBluffs] ERROR: selectedRoles is empty! Players may not be initialized.');
+    }
+
+    // 永久排除酒鬼標記（無論是否在場）
+    // 原因：酒鬼標記只有說書人可見，不應被惡魔看到
+    assignedRoles.add('drunk');
+
     // 排除酒鬼的假角色（believesRole）
     // 注意：酒鬼的假角色實際上不在場，但必須從虛張聲勢中排除
     // 原因：如果假角色出現在虛張聲勢中，惡魔會知道跳出該角色的玩家是酒鬼
     // 這違反了遊戲平衡，酒鬼應該被保護不被輕易識別
     for (const player of this.state.players.values()) {
       if (player.role === 'drunk' && player.believesRole) {
+        console.log('[DemonBluffs] Found drunk with believesRole:', player.believesRole);
         assignedRoles.add(player.believesRole);
       }
     }
+
+    console.log('[DemonBluffs] After drunk handling:', Array.from(assignedRoles));
 
     const goodRoles = (rolesData as RoleData[]).filter(
       (r) => (r.team === 'townsfolk' || r.team === 'outsider') &&
              !assignedRoles.has(r.id) &&
              r.id !== 'drunk'  // 排除酒鬼：惡魔不會宣稱自己是酒鬼
     );
+
+    console.log('[DemonBluffs] Available good roles:', goodRoles.map(r => r.id));
+
+    // 驗證酒鬼是否被正確排除
+    const drunkInGoodRoles = goodRoles.some(r => r.id === 'drunk');
+    const drunkInAssignedRoles = assignedRoles.has('drunk');
+    console.log('[DemonBluffs] Is drunk in assignedRoles?', drunkInAssignedRoles);
+    console.log('[DemonBluffs] Is drunk in available goodRoles?', drunkInGoodRoles);
+    if (drunkInAssignedRoles && drunkInGoodRoles) {
+      console.error('[DemonBluffs] ERROR: drunk is in assignedRoles but still in goodRoles!');
+    }
 
     // Shuffle and pick 3
     const shuffled = [...goodRoles];
@@ -445,6 +517,14 @@ export class GameStateManager {
     }
 
     const bluffs = shuffled.slice(0, 3).map((r) => r.id);
+    console.log('[DemonBluffs] Final bluffs:', bluffs);
+
+    // 最終驗證：檢查生成的虛張聲勢中是否包含任何在場角色
+    const invalidBluffs = bluffs.filter(bluff => assignedRoles.has(bluff));
+    if (invalidBluffs.length > 0) {
+      console.error('[DemonBluffs] ERROR: Generated bluffs contain assigned roles:', invalidBluffs);
+    }
+
     this.state.demonBluffs = bluffs;
     return bluffs;
   }

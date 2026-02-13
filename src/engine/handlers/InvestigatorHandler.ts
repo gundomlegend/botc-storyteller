@@ -2,7 +2,7 @@ import type { RoleHandler, HandlerContext, NightResult } from '../types';
 
 export class InvestigatorHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { gameState, getRoleName, infoReliable, statusReason } = context;
+    const { gameState, getPlayerRoleName, infoReliable, statusReason } = context;
 
     // 步驟 1: 僅第一晚執行
     if (gameState.night > 1) {
@@ -49,7 +49,7 @@ export class InvestigatorHandler implements RoleHandler {
       seat: m.seat,
       name: m.name,
       role: m.role,
-      roleName: getRoleName(m.role),
+      roleName: getPlayerRoleName(m),
     }));
 
     // 步驟 6: 檢查是否有陌客（供 UI 層參考）
