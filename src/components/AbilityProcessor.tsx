@@ -43,9 +43,9 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
     setResult(null);
   };
 
-  // 鎮長轉移決策狀態
-  const [mayorBounceDecision, setMayorBounceDecision] = useState<'keep' | 'bounce' | null>(null);
+  // 鎮長轉移狀態：null = 未選擇，-1 = 不轉移（鎮長死亡），其他數字 = 轉移目標座位號
   const [mayorBounceTarget, setMayorBounceTarget] = useState<number | null>(null);
+  const [mayorBounceConfirmed, setMayorBounceConfirmed] = useState(false);
 
   const handleConfirm = () => {
     // effectNullified: 中毒/醉酒導致效果不落地，跳過狀態變更
@@ -137,53 +137,18 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
         <div className="ability-result">
           <div className="result-display">{result.display}</div>
 
-          {/* 鎮長轉移 UI */}
-          {mayorBounceDecision === null && (
-            <div className="storyteller-choice" style={{ marginTop: '1.5rem' }}>
-              <div className="ability-actions">
-                <button
-                  className="btn-primary"
-                  onClick={() => setMayorBounceDecision('keep')}
-                  style={{ flex: 1 }}
-                >
-                  不轉移 → 鎮長死亡
-                </button>
-                <button
-                  className="btn-secondary"
-                  onClick={() => setMayorBounceDecision('bounce')}
-                  style={{ flex: 1 }}
-                >
-                  轉移死亡 → 選擇目標
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 不轉移：擊殺鎮長 */}
-          {mayorBounceDecision === 'keep' && (() => {
-            const info = result.info as Record<string, unknown>;
-            const mayorSeat = info.mayorSeat as number;
-            const mayorName = info.mayorName as string;
-            useGameStore.getState().killPlayer(mayorSeat, 'demon_kill');
-            stateManager.logEvent({
-              type: 'ability_use',
-              description: `鎮長 ${mayorSeat}號 (${mayorName}) 被小惡魔擊殺（說書人選擇不轉移）`,
-              details: { mayorSeat, mayorName, bounced: false },
-            });
-            onDone();
-            return null;
-          })()}
-
-          {/* 轉移：選擇目標 */}
-          {mayorBounceDecision === 'bounce' && mayorBounceTarget === null && (
-            <div style={{ marginTop: '1rem' }}>
-              <h4>🎯 選擇轉移目標</h4>
-              <p>鎮長的死亡將轉移給選定的玩家（不包含惡魔）</p>
+          {/* 鎮長轉移 UI：未確認 */}
+          {!mayorBounceConfirmed && (
+            <div style={{ marginTop: '1.5rem' }}>
+              <h4>🎯 選擇處理方式</h4>
               <div className="ability-target">
+                <p style={{ marginBottom: '0.5rem' }}>轉移給其他角色（不包含惡魔）：</p>
                 <PlayerSelector
                   mode="single"
                   canSelectSelf={false}
                   onlyAlive={true}
+                  showUsers={false}
+                  showRoles={true}
                   currentPlayerSeat={item.seat}
                   excludePlayers={[(result.info as Record<string, unknown>).mayorSeat as number]}
                   onSelect={(players) => setMayorBounceTarget(players[0]?.seat ?? null)}
@@ -193,37 +158,117 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
                 <button
                   className="btn-primary"
                   onClick={() => {
-                    if (mayorBounceTarget !== null) {
-                      const info = result.info as Record<string, unknown>;
-                      const mayorSeat = info.mayorSeat as number;
-                      const mayorName = info.mayorName as string;
-                      useGameStore.getState().killPlayer(mayorBounceTarget, 'demon_kill');
-                      const target = stateManager.getPlayer(mayorBounceTarget);
-                      stateManager.logEvent({
-                        type: 'ability_use',
-                        description: `鎮長轉移死亡：${mayorBounceTarget}號 ${target?.name ?? ''} 被擊殺（原目標：鎮長 ${mayorSeat}號）`,
-                        details: {
-                          mayorSeat,
-                          mayorName,
-                          bounced: true,
-                          bouncedTo: mayorBounceTarget,
-                          bouncedToName: target?.name,
-                          bouncedToRole: target?.role,
-                        },
-                      });
-                      onDone();
+                    if (mayorBounceTarget !== null && mayorBounceTarget !== -1) {
+                      setMayorBounceConfirmed(true);
                     }
                   }}
-                  disabled={mayorBounceTarget === null}
+                  disabled={mayorBounceTarget === null || mayorBounceTarget === -1}
                 >
                   確認轉移
                 </button>
-                <button className="btn-secondary" onClick={() => setMayorBounceDecision(null)}>
-                  返回
+                <button
+                  className="btn-secondary"
+                  onClick={() => {
+                    setMayorBounceTarget(-1);
+                    setMayorBounceConfirmed(true);
+                  }}
+                >
+                  不轉移 - 鎮長死亡
                 </button>
               </div>
             </div>
           )}
+
+          {/* 鎮長轉移 UI：已確認 */}
+          {mayorBounceConfirmed && (() => {
+            const info = result.info as Record<string, unknown>;
+            const mayorSeat = info.mayorSeat as number;
+            const mayorName = info.mayorName as string;
+
+            // 不轉移：鎮長死亡
+            if (mayorBounceTarget === -1) {
+              return (
+                <div style={{ marginTop: '1.5rem' }}>
+                  <div className="result-display">
+                    ✅ 確認：鎮長 {mayorSeat}號 ({mayorName}) 被小惡魔擊殺
+                  </div>
+                  <div className="ability-actions">
+                    <button
+                      className="btn-primary"
+                      onClick={() => {
+                        useGameStore.getState().killPlayer(mayorSeat, 'demon_kill');
+                        stateManager.logEvent({
+                          type: 'ability_use',
+                          description: `鎮長 ${mayorSeat}號 (${mayorName}) 被小惡魔擊殺（說書人選擇不轉移）`,
+                          details: { mayorSeat, mayorName, bounced: false },
+                        });
+                        onDone();
+                      }}
+                    >
+                      確認
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => {
+                        setMayorBounceTarget(null);
+                        setMayorBounceConfirmed(false);
+                      }}
+                    >
+                      重選
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            // 轉移：目標玩家死亡
+            if (mayorBounceTarget !== null && mayorBounceTarget !== -1) {
+              const target = stateManager.getPlayer(mayorBounceTarget);
+              return (
+                <div style={{ marginTop: '1.5rem' }}>
+                  <div className="result-display">
+                    ✅ 確認轉移：{mayorBounceTarget}號 {target?.name ?? ''} 被擊殺
+                    <br />
+                    <small>（原目標：鎮長 {mayorSeat}號）</small>
+                  </div>
+                  <div className="ability-actions">
+                    <button
+                      className="btn-primary"
+                      onClick={() => {
+                        useGameStore.getState().killPlayer(mayorBounceTarget, 'demon_kill');
+                        stateManager.logEvent({
+                          type: 'ability_use',
+                          description: `鎮長轉移死亡：${mayorBounceTarget}號 ${target?.name ?? ''} 被擊殺（原目標：鎮長 ${mayorSeat}號）`,
+                          details: {
+                            mayorSeat,
+                            mayorName,
+                            bounced: true,
+                            bouncedTo: mayorBounceTarget,
+                            bouncedToName: target?.name,
+                            bouncedToRole: target?.role,
+                          },
+                        });
+                        onDone();
+                      }}
+                    >
+                      確認
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => {
+                        setMayorBounceTarget(null);
+                        setMayorBounceConfirmed(false);
+                      }}
+                    >
+                      重選
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return null;
+          })()}
         </div>
       )}
 

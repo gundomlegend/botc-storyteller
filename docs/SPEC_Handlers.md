@@ -1939,51 +1939,48 @@ ImpHandler 檢測到目標是鎮長：
 
 #### 轉移建議邏輯
 
-根據場上陣營比例提供建議：
+提供精簡的建議參考表格給說書人，讓說書人根據實際情況自行判斷：
+
+| 情境 | 建議轉給（優先級：高 → 低） |
+|------|----------------------------|
+| 早期 (D1-D2) | 士兵 → 無能力鎮民 → 外來者 |
+| 中期 | 可疑玩家 → 善良玩家 |
+| 好人太順 | 強鎮民 → 鎮長 |
+| 邪惡太順 | 免疫惡魔攻擊者 → 爪牙 |
+| 盤面混亂 | 外來者 ≈ 間諜 → 對跳者 |
+
+**實作方式**：
+- 直接在 `display` 訊息中顯示建議表格
+- 不進行動態計算或條件判斷
+- 說書人根據表格自行評估並選擇
+- 使用 → 箭頭表示優先級，≈ 表示同等級
 
 ```typescript
-function suggestBounceTarget(gameState: GameState): {
-  suggestion: 'keep' | 'bounce';
-  recommendedTargets?: Player[];
-  reason: string;
-} {
-  const alive = gameState.getAlivePlayers();
-  const evilCount = alive.filter(p => p.team === 'minion' || p.team === 'demon').length;
-  const goodCount = alive.length - evilCount;
+return {
+  action: 'mayor_bounce',
+  info: {
+    mayorSeat: mayor.seat,
+    mayorName: mayor.name,
+    availableTargets: /* 所有可轉移目標 */
+  },
+  display: `小惡魔選擇擊殺鎮長 ${mayor.seat}號 (${mayor.name})
 
-  // 邪惡較多：建議轉給爪牙
-  if (evilCount > goodCount + 1) {
-    const minions = alive.filter(p => p.team === 'minion');
-    return {
-      suggestion: 'bounce',
-      recommendedTargets: minions,
-      reason: '邪惡玩家較多，建議轉移給爪牙以平衡局勢'
-    };
-  }
+🎭 鎮長的死亡轉移能力觸發！
 
-  // 好人較多：建議保留鎮長
-  if (goodCount > evilCount + 1) {
-    return {
-      suggestion: 'keep',
-      reason: '好人玩家較多，建議不轉移以保持平衡'
-    };
-  }
+📋 轉移建議參考（優先級：高 → 低）：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 早期 (D1-D2)：士兵 → 無能力鎮民 → 外來者
+• 中期：可疑玩家 → 善良玩家
+• 好人太順：資訊多鎮民 → 鎮長
+• 邪惡太順：免疫惡魔攻擊者 → 爪牙
+• 盤面混亂：外來者 ≈ 間諜 → 對跳者
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  // 勢均力敵：建議轉給次要目標
-  const secondaryTargets = alive.filter(p =>
-    p.role === 'soldier' ||                           // 士兵（已免疫惡魔）
-    p.isProtected ||                                   // 受僧侶保護
-    p.isPoisoned || p.isDrunk ||                      // 失去能力的角色
-    (p.team === 'townsfolk' && hasLostAbility(p)) || // 已用完能力的鎮民
-    p.team === 'outsider'                             // 外來者
-  );
-
-  return {
-    suggestion: 'bounce',
-    recommendedTargets: secondaryTargets,
-    reason: '雙方勢均力敵，建議轉移給次要目標（士兵/受保護/失能角色）'
-  };
-}
+說書人可選擇：
+1. 不轉移：鎮長死亡
+2. 轉移：選擇其他玩家承受死亡（不含惡魔）`,
+  gesture: 'none',
+};
 ```
 
 #### 轉移目標排除規則
@@ -2011,14 +2008,25 @@ if (target.role === 'mayor' && !target.isPoisoned && !target.isDrunk) {
     info: {
       mayorSeat: target.seat,
       mayorName: target.name,
-      suggestion: calculateBounceSuggestion(gameState),
       availableTargets: gameState.getAlivePlayers()
         .filter(p => p.seat !== target.seat && p.team !== 'demon')
     },
     display: `小惡魔選擇擊殺鎮長 ${target.seat}號 (${target.name})
 
-鎮長的死亡轉移能力觸發！
-說書人可選擇是否將死亡轉移給其他玩家`,
+🎭 鎮長的死亡轉移能力觸發！
+
+📋 轉移建議參考（優先級：高 → 低）：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 早期 (D1-D2)：士兵 → 無能力鎮民 → 外來者
+• 中期：可疑玩家 → 善良玩家
+• 好人太順：資訊多鎮民 → 鎮長
+• 邪惡太順：免疫惡魔攻擊者 → 爪牙
+• 盤面混亂：外來者 ≈ 間諜 → 對跳者
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+說書人可選擇：
+1. 不轉移：鎮長死亡
+2. 轉移：選擇其他玩家承受死亡（不含惡魔）`,
     gesture: 'none',
   };
 }
@@ -2056,7 +2064,6 @@ export default function MayorBounceProcessor({ item, onDone }: RoleProcessorProp
     return (
       <TargetSelectionUI
         availableTargets={result.info.availableTargets}
-        recommendedTargets={result.info.recommendedTargets}
         onSelect={setBounceTarget}
       />
     );
@@ -2082,12 +2089,7 @@ type NightAction =
 interface MayorBounceInfo {
   mayorSeat: number;
   mayorName: string;
-  suggestion: {
-    action: 'keep' | 'bounce';
-    reason: string;
-  };
-  availableTargets: Player[];
-  recommendedTargets?: Player[];
+  availableTargets: Player[];  // 所有可轉移目標（排除惡魔）
 }
 ```
 
@@ -2122,58 +2124,48 @@ describe('MayorHandler - Death Bounce', () => {
     expect(result.info.blocked).toBe(false);
   });
 
-  test('建議轉移給爪牙（邪惡較多）', () => {
-    // 設置場景：5 邪惡 vs 3 好人
+  test('availableTargets 包含所有可轉移目標', () => {
     const result = impHandler.process({
       player: imp,
       target: mayor,
-      gameState: evilMajorityState
+      gameState
     });
 
-    expect(result.info.suggestion.action).toBe('bounce');
-    expect(result.info.recommendedTargets).toContain(
-      expect.objectContaining({ team: 'minion' })
-    );
+    expect(result.action).toBe('mayor_bounce');
+    expect(result.info.availableTargets.length).toBeGreaterThan(0);
+    // 不包含惡魔
+    expect(result.info.availableTargets.every(p => p.team !== 'demon')).toBe(true);
+    // 不包含鎮長自己
+    expect(result.info.availableTargets.every(p => p.seat !== mayor.seat)).toBe(true);
   });
 
-  test('建議保留鎮長（好人較多）', () => {
-    // 設置場景：3 邪惡 vs 7 好人
+  test('顯示建議參考表格給說書人', () => {
     const result = impHandler.process({
       player: imp,
       target: mayor,
-      gameState: goodMajorityState
+      gameState
     });
 
-    expect(result.info.suggestion.action).toBe('keep');
-  });
-
-  test('建議轉移給次要目標（勢均力敵）', () => {
-    const result = impHandler.process({
-      player: imp,
-      target: mayor,
-      gameState: balancedState
-    });
-
-    expect(result.info.suggestion.action).toBe('bounce');
-    expect(result.info.recommendedTargets).toContain(
-      expect.objectContaining({ role: 'soldier' })
-    );
+    expect(result.display).toContain('轉移建議參考');
+    expect(result.display).toContain('早期 (D1-D2)');
+    expect(result.display).toContain('資訊角');
+    expect(result.display).toContain('中期');
+    expect(result.display).toContain('威脅邪惡者');
   });
 });
 ```
 
 ### 實作優先順序
 
-#### Phase 1（本次實作）
+#### Phase 1（已完成）
 - ✅ 撰寫規格文件
-- ⬜ 修改 ImpHandler 偵測鎮長並返回 mayor_bounce
-- ⬜ 實作建議邏輯（suggestBounceTarget）
-- ⬜ 臨時 UI：使用 AbilityProcessor 通用流程處理
+- ✅ 修改 ImpHandler 偵測鎮長並返回 mayor_bounce
+- ✅ 提供精簡建議參考表格（不做動態判斷）
+- ✅ UI：使用 AbilityProcessor 內嵌處理 mayor_bounce
 
 #### Phase 2（未來優化）
-- ⬜ 建立專屬 MayorBounceProcessor UI
-- ⬜ 改善建議演算法（更細緻的角色評估）
 - ⬜ 實作三人勝利條件（白天階段）
+- ⬜ 改善 UI 呈現（更清晰的表格樣式）
 
 ### 注意事項
 
