@@ -1174,7 +1174,379 @@ describe('MonkHandler', () => {
 
 ---
 
-## 4. 投毒者處理器 (PoisonerHandler)
+## 4. 共情者處理器 (EmpathHandler)
+
+### 檔案位置
+`src/engine/handlers/EmpathHandler.ts`
+
+### 角色能力
+每個夜晚，你會得知你左右兩側相鄰且存活的玩家中，有幾位是邪惡陣營（0、1 或 2）。
+
+### 能力機制
+
+**鄰居偵測**：
+- 偵測左右兩側相鄰且**存活**的玩家
+- 座位為環形結構（1號左邊是最後一位，最後一位右邊是1號）
+- 只計算存活玩家，死亡玩家跳過
+- 回傳邪惡玩家數量（0、1 或 2）
+
+**特殊角色處理**（與廚師邏輯一致）：
+
+**陌客（Recluse）**：
+- **正常狀態**：被視為邪惡（說書人決定，預設為 true）
+- **中毒/醉酒**：能力失效，不被視為邪惡
+
+**間諜（Spy）**：
+- **正常狀態**：不被視為邪惡（登記為善良）
+- **中毒/醉酒**：能力失效，被視為邪惡
+
+### 中毒/醉酒處理
+
+**設計原則**：提供正確答案，但讓說書人決定要告訴玩家什麼數字。
+
+- Handler 回傳實際計算結果（`actualEvilCount`）
+- UI 層根據 `item.isPoisoned / item.isDrunk` 顯示不同介面
+- **正常狀態**：
+  - 顯示完整偵測資訊（鄰居身份、實際邪惡數量）
+  - **自動使用**實際計算結果
+  - 說書人直接確認即可
+- **中毒/醉酒狀態**：
+  - 顯示警告：「ℹ️ 共情者中毒/醉酒，你可以告訴玩家任意數字」
+  - 顯示實際正確數字：「ℹ️ 相鄰的邪惡玩家：X 位（你可以選擇撒謊）」
+  - 顯示數字輸入框（建議範圍: 0-2）
+  - 記錄說書人實際告訴玩家的數字（可能與正確答案不同）
+
+**記錄內容**：
+```typescript
+historyEntry = {
+  actualEvilCount: number,      // 實際邪惡數量（0-2，永遠正確）
+  toldEvilCount: number,         // 說書人告訴玩家的數字（正常狀態 = actualEvilCount）
+  isPoisoned: boolean,
+  isDrunk: boolean,
+  storytellerOverride: boolean,  // toldEvilCount !== actualEvilCount
+  leftNeighbor: { seat, name, role, isEvil },
+  rightNeighbor: { seat, name, role, isEvil },
+  recluseSeats: number[],        // 陌客座位
+  spySeats: number[],            // 間諜座位
+}
+```
+
+### 演算法實作
+
+#### 鄰居查找邏輯
+
+```typescript
+private findAliveNeighbors(
+  player: Player,
+  gameState: GameState
+): { left: Player | null; right: Player | null } {
+  const alivePlayers = Array.from(gameState.players.values())
+    .filter(p => p.isAlive)
+    .sort((a, b) => a.seat - b.seat);
+
+  if (alivePlayers.length < 2) {
+    return { left: null, right: null };
+  }
+
+  const playerIndex = alivePlayers.findIndex(p => p.seat === player.seat);
+  if (playerIndex === -1) {
+    return { left: null, right: null };
+  }
+
+  // 環形結構：左右鄰居
+  const leftIndex = (playerIndex - 1 + alivePlayers.length) % alivePlayers.length;
+  const rightIndex = (playerIndex + 1) % alivePlayers.length;
+
+  return {
+    left: alivePlayers[leftIndex],
+    right: alivePlayers[rightIndex],
+  };
+}
+```
+
+#### 邪惡判定邏輯
+
+```typescript
+private isEvilForEmpath(player: Player): boolean {
+  // 特例 1：間諜
+  if (player.role === 'spy') {
+    // 間諜中毒/醉酒：能力失效，被視為邪惡
+    if (player.isPoisoned || player.isDrunk) return true;
+    // 間諜正常：不被視為邪惡
+    return false;
+  }
+
+  // 特例 2：陌客
+  if (player.role === 'recluse') {
+    // 陌客中毒/醉酒：能力失效，不被視為邪惡
+    if (player.isPoisoned || player.isDrunk) return false;
+    // 陌客正常：被視為邪惡（說書人決定，預設為 true）
+    return true;
+  }
+
+  // 一般規則：爪牙和惡魔
+  return player.team === 'minion' || player.team === 'demon';
+}
+```
+
+### 處理流程
+
+```
+1. 找出左右相鄰且存活的玩家
+   ├─ 篩選存活玩家並排序
+   ├─ 找出共情者在存活玩家中的位置
+   └─ 計算環形結構下的左右鄰居
+   ↓
+2. 計算邪惡玩家數量
+   ├─ 檢查左鄰居是否為邪惡（考慮陌客/間諜特例）
+   ├─ 檢查右鄰居是否為邪惡（考慮陌客/間諜特例）
+   └─ 累計邪惡數量（0-2）
+   ↓
+3. 回傳結果
+   └─ action: 'tell_number'
+   └─ info: { actualEvilCount, leftNeighbor, rightNeighbor, ... }
+```
+
+### 程式碼實作
+
+```typescript
+export class EmpathHandler implements RoleHandler {
+  process(context: HandlerContext): NightResult {
+    const { player, gameState, getRoleName } = context;
+
+    // 步驟 1: 找出左右相鄰且存活的玩家
+    const { left, right } = this.findAliveNeighbors(player, gameState);
+
+    if (!left || !right) {
+      return {
+        skip: true,
+        skipReason: '存活玩家不足，無法偵測鄰居',
+        display: '存活玩家不足（需至少3人含共情者）',
+      };
+    }
+
+    // 步驟 2: 計算邪惡玩家數量
+    const leftIsEvil = this.isEvilForEmpath(left);
+    const rightIsEvil = this.isEvilForEmpath(right);
+    const actualEvilCount = (leftIsEvil ? 1 : 0) + (rightIsEvil ? 1 : 0);
+
+    // 記錄特殊角色
+    const recluseSeats = [left, right]
+      .filter(p => p.role === 'recluse')
+      .map(p => p.seat);
+
+    const spySeats = [left, right]
+      .filter(p => p.role === 'spy')
+      .map(p => p.seat);
+
+    // 步驟 3: 回傳結果
+    const reasoning = this.buildReasoning(
+      left, right, leftIsEvil, rightIsEvil,
+      recluseSeats, spySeats, getRoleName
+    );
+
+    return {
+      action: 'tell_number',
+      info: {
+        actualEvilCount,
+        toldEvilCount: undefined, // UI 層填入
+        leftNeighbor: {
+          seat: left.seat,
+          name: left.name,
+          role: left.role,
+          isEvil: leftIsEvil,
+        },
+        rightNeighbor: {
+          seat: right.seat,
+          name: right.name,
+          role: right.role,
+          isEvil: rightIsEvil,
+        },
+        recluseSeats,
+        spySeats,
+      },
+      mustFollow: false,
+      canLie: true,
+      reasoning,
+      display: this.formatDisplay(
+        left, right, leftIsEvil, rightIsEvil,
+        actualEvilCount, recluseSeats, spySeats, getRoleName
+      ),
+    };
+  }
+
+  private buildReasoning(
+    left: Player,
+    right: Player,
+    leftIsEvil: boolean,
+    rightIsEvil: boolean,
+    recluseSeats: number[],
+    spySeats: number[],
+    getRoleName: (roleId: string) => string
+  ): string {
+    const parts: string[] = [];
+
+    if (leftIsEvil) {
+      parts.push(`左鄰 ${left.seat}號 ${getRoleName(left.role)} 是邪惡`);
+    }
+    if (rightIsEvil) {
+      parts.push(`右鄰 ${right.seat}號 ${getRoleName(right.role)} 是邪惡`);
+    }
+
+    if (recluseSeats.length > 0) {
+      parts.push(`陌客 ${recluseSeats.join('、')}號 被視為邪惡`);
+    }
+    if (spySeats.length > 0) {
+      parts.push(`間諜 ${spySeats.join('、')}號 不被視為邪惡`);
+    }
+
+    return parts.length > 0 ? parts.join('；') : '兩側鄰居皆為善良';
+  }
+
+  private formatDisplay(
+    left: Player,
+    right: Player,
+    leftIsEvil: boolean,
+    rightIsEvil: boolean,
+    actualEvilCount: number,
+    recluseSeats: number[],
+    spySeats: number[],
+    getRoleName: (roleId: string) => string
+  ): string {
+    const leftTag = leftIsEvil ? ' [邪惡]' : '';
+    const rightTag = rightIsEvil ? ' [邪惡]' : '';
+
+    const specialNotes: string[] = [];
+    if (recluseSeats.length > 0) {
+      specialNotes.push(`ℹ️ 陌客 ${recluseSeats.join('、')}號 被視為邪惡`);
+    }
+    if (spySeats.length > 0) {
+      specialNotes.push(`ℹ️ 間諜 ${spySeats.join('、')}號 不被視為邪惡`);
+    }
+
+    const specialNotesStr = specialNotes.length > 0
+      ? `\n\n${specialNotes.join('\n')}`
+      : '';
+
+    return `共情者資訊：${actualEvilCount} 位相鄰邪惡玩家
+
+左鄰：${left.seat}號 ${left.name}（${getRoleName(left.role)}）${leftTag}
+右鄰：${right.seat}號 ${right.name}（${getRoleName(right.role)}）${rightTag}${specialNotesStr}`;
+  }
+
+  private findAliveNeighbors(
+    player: Player,
+    gameState: GameState
+  ): { left: Player | null; right: Player | null } {
+    // 實作如上
+  }
+
+  private isEvilForEmpath(player: Player): boolean {
+    // 實作如上
+  }
+}
+```
+
+### UI 處理流程
+
+```
+1. 自動執行能力
+   └─ useEffect 自動調用 processAbility(item.seat, null)
+   ↓
+2. 顯示偵測結果
+   ├─ 左右鄰居資訊（座位、姓名、角色、是否邪惡）
+   ├─ 特殊角色標記（陌客/間諜）
+   └─ 實際邪惡數量
+   ↓
+3. 根據狀態顯示不同介面
+   ├─ 正常：
+   │   ├─ 顯示完整結果
+   │   ├─ 自動使用實際數字（預填到 state）
+   │   └─ 直接確認
+   └─ 中毒/醉酒：
+       ├─ 顯示警告：「⚠️ 共情者中毒/醉酒，你可以告訴玩家任意數字」
+       ├─ 顯示實際數字：「👥 相鄰的邪惡玩家：X 位（你可以選擇撒謊）」
+       ├─ 顯示數字輸入框（建議範圍: 0-2）
+       └─ 說書人手動輸入數字
+   ↓
+4. 撒謊警告（若數字 ≠ 實際）
+   └─ 「⚠️ 注意：你將告訴共情者不同於實際的數字（撒謊）」
+   ↓
+5. 確認 → 記錄到歷史
+```
+
+#### 實作細節
+
+```typescript
+// EmpathProcessor.tsx
+
+const [toldEvilCount, setToldEvilCount] = useState<string>('');
+
+// 根據狀態預填數字（正常狀態自動預填）
+useEffect(() => {
+  if (result?.action === 'tell_number' && result.info) {
+    const info = result.info as Record<string, unknown>;
+    if (!isPoisonedOrDrunk) {
+      setToldEvilCount(String(info.actualEvilCount ?? 0));
+    }
+  }
+}, [result, isPoisonedOrDrunk]);
+
+// 中毒/醉酒時才顯示輸入框
+{isPoisonedOrDrunk && (
+  <div>
+    <label>告訴共情者的數字 (建議範圍: 0-2)：</label>
+    <input
+      type="number"
+      min="0"
+      max="2"
+      value={toldEvilCount}
+      onChange={(e) => setToldEvilCount(e.target.value)}
+      placeholder="請輸入數字"
+    />
+  </div>
+)}
+
+// 記錄歷史
+stateManager.logEvent({
+  type: 'ability_use',
+  description: `共情者資訊：說書人告知 ${toldNumber} 位相鄰邪惡玩家${storytellerOverride ? ` (實際: ${actualEvilCount})` : ''}`,
+  details: {
+    actualEvilCount,
+    toldEvilCount: toldNumber,
+    isPoisoned,
+    isDrunk,
+    storytellerOverride,
+    leftNeighbor: info.leftNeighbor,
+    rightNeighbor: info.rightNeighbor,
+    recluseSeats: info.recluseSeats,
+    spySeats: info.spySeats,
+  },
+});
+```
+
+### 測試案例
+
+```typescript
+describe('EmpathHandler', () => {
+  test('兩側鄰居皆為善良 → actualEvilCount: 0');
+  test('左鄰是惡魔 → actualEvilCount: 1');
+  test('右鄰是爪牙 → actualEvilCount: 1');
+  test('兩側皆為邪惡 → actualEvilCount: 2');
+  test('陌客正常狀態被視為邪惡 → actualEvilCount 增加');
+  test('陌客中毒不被視為邪惡 → actualEvilCount 不增加');
+  test('陌客醉酒不被視為邪惡 → actualEvilCount 不增加');
+  test('間諜正常狀態不被視為邪惡 → actualEvilCount 不增加');
+  test('間諜中毒被視為邪惡 → actualEvilCount 增加');
+  test('存活玩家不足（< 3人）→ skip');
+  test('環形座位正確計算（1號的左鄰是最後一位）');
+  test('跳過死亡玩家，找到下一位存活鄰居');
+});
+```
+
+---
+
+## 5. 投毒者處理器 (PoisonerHandler)
 
 ### 角色能力
 每個夜晚，選擇一位玩家：他今晚和明天白天中毒。
