@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
-import { t } from '../../engine/locale';
 import type { NightResult, Player } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import PlayerSelector from '../PlayerSelector';
 import AbilityHeader from '../shared/AbilityHeader';
 import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
-import { useDrunkPlayerInfo } from '../../hooks/useDrunkPlayerInfo';
-import { DrunkIndicator } from '../shared/DrunkIndicator';
 
 // Trouble Brewing 所有爪牙角色
 const ALL_MINION_ROLES = [
@@ -25,7 +22,10 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
 
   const roleData = stateManager.getRoleData(item.role);
-  const { isDrunkRole, believesRole } = useDrunkPlayerInfo(item);
+
+  // 檢查是否為酒鬼角色
+  const player = stateManager.getPlayer(item.seat);
+  const isDrunkRole = player?.role === 'drunk' && player?.believesRole != null;
 
   // 讀取玩家即時狀態
   const { isPoisoned, isDrunk, isProtected, isDead } = usePlayerRealTimeStatus(item);
@@ -194,8 +194,20 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
       />
 
       {/* 酒鬼角色標記 */}
-      {isDrunkRole && believesRole && roleData && (
-        <DrunkIndicator roleData={roleData} />
+      {isDrunkRole && roleData && (
+        <div className="drunk-indicator" style={{
+          background: '#3a1a1a',
+          border: '2px solid #e01111',
+          borderRadius: '8px',
+          padding: '1rem',
+          marginBottom: '1rem'
+        }}>
+          <strong style={{ color: '#e01111' }}>🍺 酒鬼角色</strong>
+          <p style={{ marginTop: '0.5rem', color: '#ffffff' }}>
+            此玩家實際上是酒鬼，以為自己是 <strong>{roleData.name_cn}</strong>。
+            他們會執行假角色的行為，但能力不會生效。說書人可給予任意假資訊。
+          </p>
+        </div>
       )}
 
       {/* 狀態警告 */}
@@ -253,7 +265,7 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
             </button>
           </>
         )}
-        {isReliable && info.hasRecluse && selectedPlayers.length === 2 && (
+        {isReliable && (info.hasRecluse as boolean) && selectedPlayers.length === 2 && (
           <div className="result-hint" style={{ marginTop: '0.5rem' }}>
             💡 場上有陌客，建議選擇爪牙玩家和陌客玩家
           </div>

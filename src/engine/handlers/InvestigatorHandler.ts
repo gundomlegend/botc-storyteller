@@ -2,7 +2,7 @@ import type { RoleHandler, HandlerContext, NightResult } from '../types';
 
 export class InvestigatorHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { gameState, player, getRoleName, infoReliable, statusReason } = context;
+    const { gameState, getRoleName, infoReliable, statusReason } = context;
 
     // 步驟 1: 僅第一晚執行
     if (gameState.night > 1) {
