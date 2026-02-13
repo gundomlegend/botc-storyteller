@@ -65,11 +65,6 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
     onDone();
   };
 
-  const handleReset = () => {
-    setResult(null);
-    setToldPairCount('');
-  };
-
   const info = result?.info as Record<string, unknown> | undefined;
   const actualPairCount = (info?.actualPairCount as number) ?? 0;
   const evilSeats = (info?.evilSeats as number[]) ?? [];
@@ -102,9 +97,9 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
           <div className="storyteller-choice">
             {isPoisonedOrDrunk && (
               <div className="result-warning">
-                ⚠️ 廚師已{isPoisoned && isDrunk ? '中毒且醉酒' : isPoisoned ? '中毒' : '醉酒'}，你可以告訴玩家任意數字。
+                ℹ️ 廚師已{isPoisoned && isDrunk ? '中毒且醉酒' : isPoisoned ? '中毒' : '醉酒'}，你可以告訴玩家任意數字。
                 <br />
-                <strong>🍽 相鄰的邪惡客人：{actualPairCount} 組（你可以選擇撒謊）</strong>
+                <strong>ℹ️ 相鄰的邪惡客人：{actualPairCount} 組（你可以選擇撒謊）</strong>
               </div>
             )}
 
@@ -144,9 +139,6 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
               disabled={toldPairCount === '' || isNaN(parseInt(toldPairCount, 10))}
             >
               確認
-            </button>
-            <button className="btn-secondary" onClick={handleReset}>
-              重新計算
             </button>
             <button className="btn-secondary" onClick={onDone}>
               跳過
