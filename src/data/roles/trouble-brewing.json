@@ -416,6 +416,8 @@
     "otherNightReminder": "",
     "reminders": [],
     "setup": true,
+    "setupAbility": "add_outsiders",
+    "minPlayers": 10,
     "affectedByPoison": false,
     "affectedByDrunk": false,
     "worksWhenDead": false,
