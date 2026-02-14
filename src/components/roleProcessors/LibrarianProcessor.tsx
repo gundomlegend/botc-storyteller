@@ -200,7 +200,8 @@ export default function LibrarianProcessor({ item, onDone }: RoleProcessorProps)
   const isSelectionComplete = selectedOutsiderRole !== '' && selectedPlayer1 !== null && selectedPlayer2 !== null;
 
   // 判斷是否可以顯示「給予無外來者資訊」按鈕
-  const canGiveNoOutsiderInfo = onlySpyInGame || (outsiders.length === 0 && recluses.length > 0);
+  // 條件：只有間諜、只有陌客、或能力不可靠（中毒/醉酒/酒鬼）
+  const canGiveNoOutsiderInfo = onlySpyInGame || (outsiders.length === 0 && recluses.length > 0) || !isReliable;
 
   return (
     <div className="ability-processor">
@@ -223,9 +224,19 @@ export default function LibrarianProcessor({ item, onDone }: RoleProcessorProps)
       {/* 狀態警告 */}
       {!isReliable && (
         <div className="result-warning" style={{ marginBottom: '1rem' }}>
-          ℹ️ 圖書管理員中毒/醉酒或是酒鬼，說書人可給予任意資訊
-          <br />
-          <small>推薦：給予正確資訊，避免暴露投毒者</small>
+          {isDrunkRole ? (
+            <>
+              ℹ️ 圖書管理員實際上是酒鬼（無能力），說書人可給予任意資訊
+              <br />
+              <small>推薦：給予假外來者角色，挑選兩個反差大的玩家</small>
+            </>
+          ) : (
+            <>
+              ℹ️ 圖書管理員中毒/醉酒（能力不可靠），說書人可給予任意資訊
+              <br />
+              <small>推薦：給予正確資訊，避免暴露投毒者</small>
+            </>
+          )}
         </div>
       )}
 
