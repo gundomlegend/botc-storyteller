@@ -1,8 +1,9 @@
 import type { RoleHandler, HandlerContext, NightResult } from '../types';
+import { BaseRoleHandler } from './BaseRoleHandler';
 
-export class InvestigatorHandler implements RoleHandler {
+export class InvestigatorHandler extends BaseRoleHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { gameState, getPlayerRoleName, infoReliable, statusReason } = context;
+    const { gameState, infoReliable, statusReason } = context;
 
     // 步驟 1: 僅第一晚執行
     if (gameState.night > 1) {
@@ -30,11 +31,13 @@ export class InvestigatorHandler implements RoleHandler {
       };
     }
 
-    // 步驟 4: 只有間諜的特殊情況
-    if (minions.length === 1 && minions[0].role === 'spy') {
+    // 步驟 4: 只有間諜的特殊情況（僅在間諜能力正常時適用）
+    // 如果間諜中毒或醉酒，能力失效，不適用特殊規則
+    if (minions.length === 1 && minions[0].role === 'spy' &&
+        !minions[0].isPoisoned && !minions[0].isDrunk) {
       return {
         action: 'show_info',
-        display: '場上只有間諜，告知調查員：場上無任何爪牙角色',
+        display: '場上只有間諜（能力正常），告知調查員：場上無任何爪牙角色',
         info: {
           onlySpyInGame: true,
           noMinionToShow: true,
@@ -49,12 +52,17 @@ export class InvestigatorHandler implements RoleHandler {
       seat: m.seat,
       name: m.name,
       role: m.role,
-      roleName: getPlayerRoleName(m),
+      roleName: this.getPlayerRoleName(m),
     }));
 
     // 步驟 6: 檢查是否有陌客（供 UI 層參考）
-    const hasRecluse = allPlayers.some(p => p.role === 'recluse' && p.isAlive);
-    const recluse = hasRecluse ? allPlayers.find(p => p.role === 'recluse' && p.isAlive) : null;
+    // 陌客中毒或醉酒時，能力失效，不應視為可疑目標
+    const hasRecluse = allPlayers.some(p =>
+      p.role === 'recluse' && p.isAlive && !p.isPoisoned && !p.isDrunk
+    );
+    const recluse = hasRecluse
+      ? allPlayers.find(p => p.role === 'recluse' && p.isAlive && !p.isPoisoned && !p.isDrunk)
+      : null;
 
     // 步驟 7: 返回資訊，讓說書人在 UI 中選擇
     return {
