@@ -9,7 +9,7 @@
 - 不是夜間能力，沒有任何夜間行動（firstNight: 0, otherNight: 0）
 - 影響角色池的組成，不影響玩家數量
 - 必須在角色分配前就確定是否有男爵
-- **僅在 9 人及以上的局才會出現**（遊戲平衡限制）
+- **僅在 10 人及以上的局才會出現**（遊戲平衡限制）
 
 ---
 
@@ -30,7 +30,7 @@
   "reminders": [],
   "setup": true,
   "setupAbility": "add_outsiders",
-  "minPlayers": 9
+  "minPlayers": 10
 }
 ```
 
@@ -39,7 +39,7 @@
 **重要屬性**：
 - `setup: true` - 標記此角色具有設置時能力
 - `setupAbility: "add_outsiders"` - 具體的設置能力類型
-- `minPlayers: 9` - 最小玩家數量限制（9人及以上才能使用）
+- `minPlayers: 10` - 最小玩家數量限制（10人及以上才能使用）
 
 ---
 
@@ -59,16 +59,16 @@ Baron 引入了全新的 **Setup Ability** 系統，用於處理在遊戲初始�
 ### Baron 的具體效果
 
 **玩家數量限制**：
-- **Baron 僅在 9 人及以上的局才會出現**
-- 原因：7 人局只有 5 個鎮民，若 Baron 生效（-2 鎮民）會導致只剩 3 個鎮民，遊戲平衡性過差
+- **Baron 僅在 10 人及以上的局才會出現**
+- 原因：9 人局只有 5 個鎮民，若 Baron 生效（-2 鎮民）會導致只剩 3 個鎮民，遊戲平衡性過差
 - 實作：
-  - UI 層：人數 < 9 時，Baron 在角色選擇列表中禁用或隱藏
-  - 邏輯層：若意外選中 Baron 但人數 < 9，跳過 Baron 效果並記錄警告
+  - UI 層：人數 < 10 時，Baron 在角色選擇列表中禁用或隱藏
+  - 邏輯層：若意外選中 Baron 但人數 < 10，跳過 Baron 效果並記錄警告
 
 **基礎分配規則**（無男爵）：
 ```
-9人局：
-- 鎮民：5
+10人局：
+- 鎮民：6
 - 外來者：1
 - 爪牙：2
 - 惡魔：1
@@ -80,10 +80,10 @@ Baron 引入了全新的 **Setup Ability** 系統，用於處理在遊戲初始�
 - 惡魔：1
 ```
 
-**男爵生效後**（9人及以上）：
+**男爵生效後**（10人及以上）：
 ```
-9人局（有男爵）：
-- 鎮民：5 - 2 = 3
+10人局（有男爵）：
+- 鎮民：6 - 2 = 4
 - 外來者：1 + 2 = 3
 - 爪牙：2（含男爵）
 - 惡魔：1
@@ -96,8 +96,8 @@ Baron 引入了全新的 **Setup Ability** 系統，用於處理在遊戲初始�
 ```
 
 **特殊情況處理**：
-- 若人數 < 9：跳過 Baron 效果，記錄警告日誌
-- 若鎮民數量 < 2：只減少現有數量，外來者增加相同數量（理論上不會發生，因為 9 人以上必有足夠鎮民）
+- 若人數 < 10：跳過 Baron 效果，記錄警告日誌
+- 若鎮民數量 < 2：只減少現有數量，外來者增加相同數量（理論上不會發生，因為 10 人以上必有足夠鎮民）
 
 ---
 
@@ -171,8 +171,8 @@ static initializeGame(
     baseDistribution,
     playerCount  // 傳入玩家數量，用於檢查 minPlayers 限制
   );
-  // 若有男爵且人數 >= 9：finalDistribution = { townsfolk: 5, outsiders: 4, minions: 3, demons: 1 }
-  // 若有男爵但人數 < 9：跳過男爵效果，記錄警告
+  // 若有男爵且人數 >= 10：finalDistribution = { townsfolk: 5, outsiders: 4, minions: 3, demons: 1 }
+  // 若有男爵但人數 < 10：跳過男爵效果，記錄警告
   // 若無男爵：finalDistribution = baseDistribution（不變）
 
   // ═════════════════════════════════════════
@@ -365,7 +365,7 @@ export class RoleRegistry {
       const baronData = this.getRoleData('baron');
       const minPlayers = baronData?.minPlayers ?? 0;
 
-      // 檢查玩家數量是否滿足男爵的最小要求（9人）
+      // 檢查玩家數量是否滿足男爵的最小要求（10人）
       if (playerCount < minPlayers) {
         console.warn(`[Baron] 玩家數量不足（${playerCount} < ${minPlayers}），跳過男爵效果`);
         // 不應用男爵效果，但男爵仍然在場
@@ -526,13 +526,13 @@ if (selectedMinions.includes('baron')) {
 
 ## 測試用例
 
-### T1：9人局有男爵（正常情況）
+### T1：10人局有男爵（正常情況）
 
 ```typescript
-const playerNames = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy'];
+const playerNames = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'];
 const selectedRoles = [
-  'washerwoman', 'librarian', 'investigator', 'chef', 'empath',  // 5 townsfolk (足夠供選擇)
-  'fortuneteller', 'undertaker', 'monk',
+  'washerwoman', 'librarian', 'investigator', 'chef', 'empath',  // 6 townsfolk (足夠供選擇)
+  'fortuneteller', 'undertaker', 'monk', 'ravenkeeper',
   'butler', 'drunk', 'recluse',  // 3 outsiders (for baron effect)
   'poisoner', 'baron',  // 2 minions (baron included)
   'imp'  // 1 demon
@@ -547,8 +547,8 @@ const outsiders = players.filter(p => p.team === 'outsider');
 const minions = players.filter(p => p.team === 'minion');
 const demons = players.filter(p => p.team === 'demon');
 
-// 9人局有男爵：3鎮民、3外來者、2爪牙、1惡魔
-assert(townsfolk.length === 3);
+// 10人局有男爵：4鎮民、3外來者、2爪牙、1惡魔
+assert(townsfolk.length === 4);
 assert(outsiders.length === 3);
 assert(minions.length === 2);
 assert(demons.length === 1);
@@ -557,12 +557,14 @@ assert(demons.length === 1);
 assert(minions.some(m => m.role === 'baron'));
 ```
 
-### T2：7人局有男爵（人數不足，男爵效果不生效）
+### T2：9人局有男爵（人數不足，男爵效果不生效）
 
 ```typescript
-const playerNames = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace'];
+const playerNames = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy'];
 const selectedRoles = [
   'washerwoman', 'librarian', 'investigator', 'chef', 'empath',  // 5 townsfolk
+  'fortuneteller', 'undertaker', 'monk',
+  'butler',  // 1 outsider
   'poisoner', 'baron',  // 2 minions (baron included, but won't take effect)
   'imp'  // 1 demon
 ];
@@ -574,10 +576,10 @@ const townsfolk = players.filter(p => p.team === 'townsfolk');
 const outsiders = players.filter(p => p.team === 'outsider');
 const minions = players.filter(p => p.team === 'minion');
 
-// 7人局人數不足，男爵在場但效果不生效：5鎮民、0外來者、1爪牙、1惡魔
+// 9人局人數不足（< 10），男爵在場但效果不生效：5鎮民、1外來者、2爪牙、1惡魔
 assert(townsfolk.length === 5);
-assert(outsiders.length === 0);
-assert(minions.length === 1);
+assert(outsiders.length === 1);
+assert(minions.length === 2);
 
 // 驗證男爵仍然在場（但效果未生效）
 assert(minions.some(m => m.role === 'baron'));
