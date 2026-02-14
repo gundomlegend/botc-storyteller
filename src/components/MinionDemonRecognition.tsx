@@ -5,7 +5,7 @@ interface MinionDemonRecognitionProps {
 }
 
 export default function MinionDemonRecognition({ onComplete }: MinionDemonRecognitionProps) {
-  const { stateManager, ruleEngine } = useGameStore();
+  const { stateManager, ruleEngine, roleRegistry } = useGameStore();
 
   const result = ruleEngine.processMinionDemonRecognition(stateManager);
   const minions = stateManager.getMinionPlayers();
@@ -24,7 +24,7 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
               <span className="special-seat">{demon.seat}號</span>
               <span className="special-name">{demon.name}</span>
               <span className="special-role">
-                {ruleEngine.getPlayerRoleName(demon)}
+                {roleRegistry.getPlayerRoleName(demon)}
               </span>
               <span className="special-team-tag">惡魔</span>
             </div>
@@ -34,7 +34,7 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
               <span className="special-seat">{m.seat}號</span>
               <span className="special-name">{m.name}</span>
               <span className="special-role">
-                {ruleEngine.getPlayerRoleName(m)}
+                {roleRegistry.getPlayerRoleName(m)}
               </span>
               <span className="special-team-tag">爪牙</span>
             </div>

@@ -1,8 +1,9 @@
 import type { RoleHandler, HandlerContext, NightResult, Player, GameState } from '../types';
+import { BaseRoleHandler } from './BaseRoleHandler';
 
-export class ChefHandler implements RoleHandler {
+export class ChefHandler extends BaseRoleHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { gameState, getPlayerRoleName } = context;
+    const { gameState } = context;
 
     // 步驟 1: 僅第一晚執行
     if (gameState.night > 1) {
@@ -23,8 +24,7 @@ export class ChefHandler implements RoleHandler {
       segments,
       recluseSeats,
       spySeats,
-      gameState,
-      getPlayerRoleName
+      gameState
     );
 
     return {
@@ -47,8 +47,7 @@ export class ChefHandler implements RoleHandler {
         pairDetails,
         recluseSeats,
         spySeats,
-        gameState,
-        getPlayerRoleName
+        gameState
       ),
     };
   }
@@ -195,8 +194,7 @@ export class ChefHandler implements RoleHandler {
     segments: number[][],
     recluseSeats: number[],
     spySeats: number[],
-    gameState: GameState,
-    getPlayerRoleName: (player: Player) => string
+    gameState: GameState
   ): string {
     const notes = this.buildSpecialRoleNotes(recluseSeats, spySeats, false);
 
@@ -209,7 +207,7 @@ export class ChefHandler implements RoleHandler {
     for (const segment of segments) {
       const roles = segment.map(seat => {
         const player = gameState.players.get(seat)!;
-        return `${seat}號(${getPlayerRoleName(player)})`;
+        return `${seat}號(${this.getRoleName(player.role)})`;
       }).join('、');
 
       const pairs = segment.length - 1;
@@ -229,8 +227,7 @@ export class ChefHandler implements RoleHandler {
     pairDetails: string[],
     recluseSeats: number[],
     spySeats: number[],
-    gameState: GameState,
-    getPlayerRoleName: (player: Player) => string
+    gameState: GameState
   ): string {
     const specialNotes = this.buildSpecialRoleNotes(recluseSeats, spySeats, true);
     const specialNotesStr = specialNotes.length > 0
@@ -246,7 +243,7 @@ export class ChefHandler implements RoleHandler {
     const segmentInfo = segments.map(seg => {
       const players = seg.map(seat => {
         const player = gameState.players.get(seat)!;
-        const role = getPlayerRoleName(player);
+        const role = this.getRoleName(player.role);
         return `${seat}號 ${player.name}(${role})`;
       }).join(' - ');
       return `  • ${players}`;

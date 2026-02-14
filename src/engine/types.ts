@@ -1,5 +1,4 @@
 // ===== 資料類型 =====
-
 export interface RoleData {
   id: string;
   name: string;
@@ -125,10 +124,6 @@ export interface HandlerContext {
   gameState: GameState;
   infoReliable: boolean;
   statusReason: string;
-  /** 根據當前語系將 roleId 轉為顯示名稱 */
-  getRoleName: (roleId: string) => string;
-  /** 取得玩家的角色顯示名稱（考慮 believesRole） */
-  getPlayerRoleName: (player: Player) => string;
 }
 
 export interface RoleHandler {

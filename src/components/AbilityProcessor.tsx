@@ -9,6 +9,7 @@ import { usePlayerRealTimeStatus } from '../hooks/usePlayerRealTimeStatus';
 import { useDrunkPlayerInfo } from '../hooks/useDrunkPlayerInfo';
 import { DrunkIndicator } from './shared/DrunkIndicator';
 import { MayorBounceUI } from './mayorBounce';
+import { RoleRegistry } from '../engine/RoleRegistry';
 
 interface AbilityProcessorProps {
   item: NightOrderItem;
@@ -31,7 +32,8 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
   const [result, setResult] = useState<NightResult | null>(null);
 
   // 取得玩家資訊（檢查是否為酒鬼）
-  const { isDrunkRole, believesRole, effectiveRole, roleData } = useDrunkPlayerInfo(item);
+  const { isDrunkRole, believesRole, effectiveRole } = useDrunkPlayerInfo(item);
+  const roleData = RoleRegistry.getInstance().getRoleData(item.role);
   const needsTarget = ROLES_NEEDING_TARGET.has(effectiveRole);
 
   // 讀取玩家即時狀態

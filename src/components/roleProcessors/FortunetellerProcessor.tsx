@@ -8,14 +8,14 @@ import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
 
 export default function FortunetellerProcessor({ item, onDone }: RoleProcessorProps) {
-  const { processAbility, stateManager, ruleEngine } = useGameStore();
+  const { processAbility, roleRegistry, stateManager } = useGameStore();
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null);
   const [selectedSecondTarget, setSelectedSecondTarget] = useState<number | null>(null);
   const [result, setResult] = useState<NightResult | null>(null);
   const [storytellerAnswer, setStorytellerAnswer] = useState<boolean | null>(null);
   const [redHerringSet, setRedHerringSet] = useState(false);
 
-  const roleData = stateManager.getRoleData(item.role);
+  const roleData = roleRegistry.getRoleData(item.role);
   const isFirstNight = stateManager.getState().night === 1;
   const needsRedHerring = isFirstNight && stateManager.getRedHerring() === null && !redHerringSet;
 
@@ -97,15 +97,18 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
                   if (stateManager.getState().playerCount > 6 && p.seat === item.seat) return false;
                   return true;
                 })
-                .map((p) => (
-                  <div
-                    key={p.seat}
-                    className="player-card selectable"
-                    onClick={() => handleRedHerringSelect(p)}
-                  >
-                    <span style={{ fontWeight: 'bold' }}>{ruleEngine.getPlayerRoleName(p)}</span>
-                  </div>
-                ))}
+                .map((p) => {
+                  const roleName = roleRegistry.getPlayerRoleName(p);
+                  return (
+                    <div
+                      key={p.seat}
+                      className="player-card selectable"
+                      onClick={() => handleRedHerringSelect(p)}
+                    >
+                      <span style={{ fontWeight: 'bold' }}>{roleName}</span>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>

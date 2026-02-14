@@ -1,8 +1,9 @@
 import type { RoleHandler, HandlerContext, NightResult, Player } from '../types';
+import { BaseRoleHandler } from './BaseRoleHandler';
 
-export class FortunetellerHandler implements RoleHandler {
+export class FortunetellerHandler extends BaseRoleHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { target, secondTarget, gameState, getPlayerRoleName } = context;
+    const { target, secondTarget, gameState } = context;
 
     if (!target || !secondTarget) {
       return {
@@ -19,7 +20,7 @@ export class FortunetellerHandler implements RoleHandler {
     const t2 = this.analyzeTarget(secondTarget, redHerringSeat);
     const rawDetection = t1.triggers || t2.triggers;
 
-    const reasoning = this.buildReasoning(target, secondTarget, t1, t2, getPlayerRoleName);
+    const reasoning = this.buildReasoning(target, secondTarget, t1, t2);
 
     return {
       action: 'tell_alignment',
@@ -31,7 +32,7 @@ export class FortunetellerHandler implements RoleHandler {
       mustFollow: false,
       canLie: true,
       reasoning,
-      display: this.formatDisplay(target, secondTarget, t1, t2, rawDetection, reasoning, getPlayerRoleName),
+      display: this.formatDisplay(target, secondTarget, t1, t2, rawDetection, reasoning),
     };
   }
 
@@ -56,12 +57,11 @@ export class FortunetellerHandler implements RoleHandler {
     secondTarget: Player,
     t1: { isDemon: boolean; isRecluse: boolean; isRedHerring: boolean },
     t2: { isDemon: boolean; isRecluse: boolean; isRedHerring: boolean },
-    getPlayerRoleName: (player: Player) => string
   ): string {
     const parts: string[] = [];
 
-    if (t1.isDemon) parts.push(`${target.seat}號是惡魔（${getPlayerRoleName(target)}）`);
-    if (t2.isDemon) parts.push(`${secondTarget.seat}號是惡魔（${getPlayerRoleName(secondTarget)}）`);
+    if (t1.isDemon) parts.push(`${target.seat}號是惡魔（${this.getRoleName(target.role)}）`);
+    if (t2.isDemon) parts.push(`${secondTarget.seat}號是惡魔（${this.getRoleName(secondTarget.role)}）`);
     if (t1.isRecluse) parts.push(`${target.seat}號是陌客（正常狀態觸發偵測）`);
     if (t2.isRecluse) parts.push(`${secondTarget.seat}號是陌客（正常狀態觸發偵測）`);
     if (t1.isRedHerring && !t1.isRecluse) parts.push(`${target.seat}號是干擾項`);
@@ -79,8 +79,7 @@ export class FortunetellerHandler implements RoleHandler {
     t1: { triggers: boolean; isDemon: boolean; isRecluse: boolean; isRedHerring: boolean },
     t2: { triggers: boolean; isDemon: boolean; isRecluse: boolean; isRedHerring: boolean },
     rawDetection: boolean,
-    reasoning: string,
-    getPlayerRoleName: (player: Player) => string
+    reasoning: string
   ): string {
     const tag = (a: { isDemon: boolean; isRecluse: boolean; isRedHerring: boolean }) => {
       const tags: string[] = [];
@@ -91,8 +90,8 @@ export class FortunetellerHandler implements RoleHandler {
     };
 
     return `查驗目標：
-  1. ${target.seat}號 (${target.name}) — ${getPlayerRoleName(target)}${tag(t1)}
-  2. ${secondTarget.seat}號 (${secondTarget.name}) — ${getPlayerRoleName(secondTarget)}${tag(t2)}
+  1. ${target.seat}號 (${target.name}) — ${this.getPlayerRoleName(target)}${tag(t1)}
+  2. ${secondTarget.seat}號 (${secondTarget.name}) — ${this.getPlayerRoleName(secondTarget)}${tag(t2)}
 
 偵測結果：${rawDetection ? '偵測到惡魔' : '未偵測到惡魔'}
 

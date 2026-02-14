@@ -14,6 +14,8 @@ import { ImpHandler } from '../ImpHandler';
 import { DrunkHandler } from '../DrunkHandler';
 import { ButlerHandler } from '../ButlerHandler';
 import { InvestigatorHandler } from '../InvestigatorHandler';
+import { RoleRegistry } from '../../RoleRegistry';
+import troubleBrewingRolesData from '../../../data/roles/trouble-brewing.json';
 
 // ============================================================
 // 輔助
@@ -83,8 +85,6 @@ function makeContext(overrides: Partial<HandlerContext>): HandlerContext {
     gameState: makeGameState([]),
     infoReliable: true,
     statusReason: '',
-    getRoleName: (id: string) => id,
-    getPlayerRoleName: (player: Player) => player.role,
     ...overrides,
   };
 }
@@ -92,9 +92,11 @@ function makeContext(overrides: Partial<HandlerContext>): HandlerContext {
 // ============================================================
 // FortunetellerHandler
 // ============================================================
+const roleRegistry = RoleRegistry.getInstance();
+roleRegistry.init(troubleBrewingRolesData as RoleData[]);
 
 describe('FortunetellerHandler', () => {
-  const handler = new FortunetellerHandler();
+  const handler = new FortunetellerHandler(roleRegistry);
 
   it('無目標時要求輸入 (select_two_players)', () => {
     const result = handler.process(makeContext({ target: null }));
@@ -228,7 +230,7 @@ describe('FortunetellerHandler', () => {
 // ============================================================
 
 describe('ChefHandler', () => {
-  const handler = new ChefHandler();
+  const handler = new ChefHandler(roleRegistry);
 
   it('第一晚之後跳過', () => {
     const players = [makePlayer({ seat: 1, role: 'chef', team: 'townsfolk' })];
@@ -386,7 +388,7 @@ describe('ChefHandler', () => {
 // ============================================================
 
 describe('MonkHandler', () => {
-  const handler = new MonkHandler();
+  const handler = new MonkHandler(roleRegistry);
 
   it('無目標時要求輸入', () => {
     const result = handler.process(makeContext({ target: null }));
@@ -417,7 +419,7 @@ describe('MonkHandler', () => {
 // ============================================================
 
 describe('PoisonerHandler', () => {
-  const handler = new PoisonerHandler();
+  const handler = new PoisonerHandler(roleRegistry);
 
   it('無目標時要求輸入', () => {
     const result = handler.process(makeContext({ target: null }));
@@ -426,7 +428,7 @@ describe('PoisonerHandler', () => {
 
   it('選擇目標 → add_poison', () => {
     const target = makePlayer({ seat: 3, role: 'fortuneteller' });
-    const result = handler.process(makeContext({ target, getRoleName: (id) => id }));
+    const result = handler.process(makeContext({ target }));
 
     expect(result.action).toBe('add_poison');
     expect((result.info as any).targetSeat).toBe(3);
@@ -439,8 +441,7 @@ describe('PoisonerHandler', () => {
 // ============================================================
 
 describe('ImpHandler', () => {
-  const handler = new ImpHandler();
-
+  const handler = new ImpHandler(roleRegistry);
   const imp = makePlayer({ seat: 4, role: 'imp', team: 'demon' });
 
   it('無目標時要求輸入', () => {
@@ -541,7 +542,7 @@ describe('ImpHandler', () => {
 // ============================================================
 
 describe('DrunkHandler', () => {
-  const handler = new DrunkHandler();
+  const handler = new DrunkHandler(roleRegistry);
 
   it('永遠跳過（無夜間行動）', () => {
     const result = handler.process(makeContext({}));
@@ -555,8 +556,7 @@ describe('DrunkHandler', () => {
 // ============================================================
 
 describe('ButlerHandler', () => {
-  const handler = new ButlerHandler();
-
+  const handler = new ButlerHandler(roleRegistry);
   const butler = makePlayer({ seat: 4, role: 'butler', team: 'outsider' });
 
   it('無目標時要求輸入', () => {
@@ -588,7 +588,7 @@ describe('ButlerHandler', () => {
 // ============================================================
 
 describe('InvestigatorHandler', () => {
-  const handler = new InvestigatorHandler();
+  const handler = new InvestigatorHandler(roleRegistry);
 
   it('第一晚之後跳過', () => {
     const players = [
@@ -613,7 +613,6 @@ describe('InvestigatorHandler', () => {
     const result = handler.process(makeContext({
       player: investigator,
       gameState: gs,
-      getRoleName: (id) => id,
     }));
 
     expect(result.action).toBe('show_info');
@@ -672,7 +671,6 @@ describe('InvestigatorHandler', () => {
     const result = handler.process(makeContext({
       player: investigator,
       gameState: gs,
-      getRoleName: (id) => id,
     }));
 
     expect(result.action).toBe('show_info');
@@ -695,7 +693,6 @@ describe('InvestigatorHandler', () => {
       gameState: gs,
       infoReliable: false,
       statusReason: '中毒',
-      getRoleName: (id) => id,
     }));
 
     // 中毒不反轉，回傳實際爪牙列表
@@ -717,7 +714,6 @@ describe('InvestigatorHandler', () => {
     const result = handler.process(makeContext({
       player: investigator,
       gameState: gs,
-      getRoleName: (id) => id,
     }));
 
     expect(result.action).toBe('show_info');

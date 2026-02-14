@@ -7,13 +7,19 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameStateManager } from '../GameState';
+import { RoleRegistry } from '../RoleRegistry';
+import { RoleData } from '../types';
+import troubleBrewingRolesData from '../../data/roles/trouble-brewing.json';
 
 // ============================================================
 // 輔助：建立常用測試場景
 // ============================================================
 
+const roleRegistry = RoleRegistry.getInstance();
+roleRegistry.init(troubleBrewingRolesData as RoleData[]);
+
 function createMinimalManager() {
-  const m = new GameStateManager();
+  const m = new GameStateManager(roleRegistry);
   m.initializePlayers([
     { seat: 1, name: 'A', role: 'fortuneteller' },
     { seat: 2, name: 'B', role: 'imp' },
@@ -22,7 +28,7 @@ function createMinimalManager() {
 }
 
 function createFullManager() {
-  const m = new GameStateManager();
+  const m = new GameStateManager(roleRegistry);
   m.initializePlayers([
     { seat: 1, name: 'A', role: 'poisoner' },
     { seat: 2, name: 'B', role: 'monk' },
@@ -47,7 +53,7 @@ describe('State Contract', () => {
     });
 
     it('相同 seat 後者覆蓋前者（Map 語義）', () => {
-      const m = new GameStateManager();
+      const m = new GameStateManager(roleRegistry);
       m.initializePlayers([
         { seat: 1, name: 'A', role: 'imp' },
         { seat: 1, name: 'B', role: 'monk' },
@@ -106,7 +112,7 @@ describe('State Contract', () => {
   // Contract 6: startNight 清除 poisoned（中毒持續到隔日白天）
   describe('Contract 6: startNight 清除 poisoned', () => {
     it('N1 下毒 → D1 仍中毒 → N2 失效', () => {
-      const m = new GameStateManager();
+      const m = new GameStateManager(roleRegistry);
       m.initializePlayers([
         { seat: 1, name: 'A', role: 'poisoner' },
         { seat: 2, name: 'B', role: 'monk' },
@@ -153,7 +159,7 @@ describe('State Contract', () => {
 describe('Contract Tests (GameState.contract.md 測試用例)', () => {
   // 測試 1: 基本初始化
   it('測試 1: 基本初始化', () => {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     m.initializePlayers([
       { seat: 1, name: '測試1', role: 'fortuneteller' },
       { seat: 2, name: '測試2', role: 'imp' },
@@ -216,7 +222,7 @@ describe('Contract Tests (GameState.contract.md 測試用例)', () => {
 
   // 測試 5: Seat 唯一性（重複 seat 覆蓋）
   it('測試 5: Seat 唯一性', () => {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     m.initializePlayers([
       { seat: 1, name: 'A', role: 'imp' },
       { seat: 1, name: 'B', role: 'monk' },
@@ -254,7 +260,7 @@ describe('Contract Tests (GameState.contract.md 測試用例)', () => {
 
   // 測試 9: addStatus 記錄 sourceSeat 並支援 revokeEffectsFrom（=== AbilityInvalidation T3）
   it('測試 9: killPlayer 自動撤銷該玩家施加的持續性狀態', () => {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     m.initializePlayers([
       { seat: 1, name: 'A', role: 'poisoner' },
       { seat: 2, name: 'B', role: 'monk' },
@@ -275,7 +281,7 @@ describe('Contract Tests (GameState.contract.md 測試用例)', () => {
 
   // 測試 10: replaceRole 撤銷舊角色持續狀態（=== AbilityInvalidation T4）
   it('測試 10: replaceRole 自動撤銷舊角色持續狀態', () => {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     m.initializePlayers([
       { seat: 1, name: 'A', role: 'monk' },
       { seat: 2, name: 'B', role: 'imp' },
@@ -298,7 +304,7 @@ describe('Contract Tests (GameState.contract.md 測試用例)', () => {
 
   // 測試 11: 中毒直到下一晚失效
   it('測試 11: 中毒持續到隔日白天，進入下一夜失效', () => {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     m.initializePlayers([
       { seat: 1, name: 'A', role: 'poisoner' },
       { seat: 2, name: 'B', role: 'monk' },
@@ -401,7 +407,7 @@ describe('邊界情境', () => {
   });
 
   it('不存在的角色 — initializePlayers 拋錯', () => {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     expect(() => {
       m.initializePlayers([{ seat: 1, name: 'X', role: 'nonexistent_role' }]);
     }).toThrow('Unknown role');
@@ -463,7 +469,7 @@ describe('邊界情境', () => {
 
 describe('Butler Master 管理', () => {
   function createButlerManager() {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     m.initializePlayers([
       { seat: 1, name: 'A', role: 'butler' },
       { seat: 2, name: 'B', role: 'monk' },
@@ -510,7 +516,7 @@ describe('Butler Master 管理', () => {
   });
 
   it('無管家時 getButlerMaster 回傳 null', () => {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     m.initializePlayers([
       { seat: 1, name: 'A', role: 'monk' },
       { seat: 2, name: 'B', role: 'imp' },
@@ -534,7 +540,7 @@ describe('Butler Master 管理', () => {
 
 describe('Demon Bluffs', () => {
   it('酒鬼本身不應出現在惡魔虛張聲勢中', () => {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     m.initializePlayers([
       { seat: 1, name: 'Alice', role: 'monk' },
       { seat: 2, name: 'Bob', role: 'fortuneteller' },
@@ -554,7 +560,7 @@ describe('Demon Bluffs', () => {
   });
 
   it('酒鬼的假角色不應出現在惡魔虛張聲勢中', () => {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     m.initializePlayers([
       { seat: 1, name: 'Alice', role: 'monk' },
       { seat: 2, name: 'Bob', role: 'fortuneteller' },
@@ -581,7 +587,7 @@ describe('Demon Bluffs', () => {
   });
 
   it('酒鬼不在場時，仍然不應出現在惡魔虛張聲勢中', () => {
-    const m = new GameStateManager();
+    const m = new GameStateManager(roleRegistry);
     // 15人局，沒有酒鬼
     m.initializePlayers([
       { seat: 1, name: 'A', role: 'fortuneteller' },

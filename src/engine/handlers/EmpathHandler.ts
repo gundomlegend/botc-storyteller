@@ -1,8 +1,9 @@
 import type { RoleHandler, HandlerContext, NightResult, Player, GameState } from '../types';
+import { BaseRoleHandler } from './BaseRoleHandler';
 
-export class EmpathHandler implements RoleHandler {
+export class EmpathHandler extends BaseRoleHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { player, gameState, getPlayerRoleName } = context;
+    const { player, gameState } = context;
 
     // 步驟 1: 找出左右相鄰且存活的玩家
     const { left, right } = this.findAliveNeighbors(player, gameState);
@@ -32,7 +33,7 @@ export class EmpathHandler implements RoleHandler {
     // 步驟 3: 回傳結果
     const reasoning = this.buildReasoning(
       left, right, leftIsEvil, rightIsEvil,
-      recluseSeats, spySeats, getPlayerRoleName
+      recluseSeats, spySeats
     );
 
     return {
@@ -60,7 +61,7 @@ export class EmpathHandler implements RoleHandler {
       reasoning,
       display: this.formatDisplay(
         left, right, leftIsEvil, rightIsEvil,
-        actualEvilCount, recluseSeats, spySeats, getPlayerRoleName
+        actualEvilCount, recluseSeats, spySeats
       ),
       gesture: 'none',
     };
@@ -139,16 +140,15 @@ export class EmpathHandler implements RoleHandler {
     leftIsEvil: boolean,
     rightIsEvil: boolean,
     recluseSeats: number[],
-    spySeats: number[],
-    getPlayerRoleName: (player: Player) => string
+    spySeats: number[]
   ): string {
     const parts: string[] = [];
 
     if (leftIsEvil) {
-      parts.push(`左邊鄰居 ${left.seat}號 ${getPlayerRoleName(left)} 是邪惡`);
+      parts.push(`左邊鄰居 ${left.seat}號 ${this.getPlayerRoleName(left)} 是邪惡`);
     }
     if (rightIsEvil) {
-      parts.push(`右邊鄰居 ${right.seat}號 ${getPlayerRoleName(right)} 是邪惡`);
+      parts.push(`右邊鄰居 ${right.seat}號 ${this.getPlayerRoleName(right)} 是邪惡`);
     }
 
     // 添加特殊角色說明（無 emoji）
@@ -164,8 +164,7 @@ export class EmpathHandler implements RoleHandler {
     rightIsEvil: boolean,
     actualEvilCount: number,
     recluseSeats: number[],
-    spySeats: number[],
-    getPlayerRoleName: (player: Player) => string
+    spySeats: number[]
   ): string {
     const leftTag = leftIsEvil ? ' [邪惡]' : '';
     const rightTag = rightIsEvil ? ' [邪惡]' : '';
@@ -178,7 +177,7 @@ export class EmpathHandler implements RoleHandler {
 
     return `共情者資訊：${actualEvilCount} 位相鄰邪惡玩家
 
-左邊鄰居：${left.seat}號 ${left.name}（${getPlayerRoleName(left)}）${leftTag}
-右邊鄰居：${right.seat}號 ${right.name}（${getPlayerRoleName(right)}）${rightTag}${specialNotesStr}`;
+左邊鄰居：${left.seat}號 ${left.name}（${this.getRoleName(left.role)}）${leftTag}
+右邊鄰居：${right.seat}號 ${right.name}（${this.getRoleName(right.role)}）${rightTag}${specialNotesStr}`;
   }
 }

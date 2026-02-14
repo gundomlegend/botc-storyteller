@@ -1,60 +1,14 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { t } from '../engine/locale';
-import type { RoleData } from '../engine/types';
-import rolesData from '../data/roles/trouble-brewing.json';
-
-const roles = rolesData as RoleData[];
-const rolesByTeam = {
-  townsfolk: roles.filter((r) => r.team === 'townsfolk'),
-  outsider: roles.filter((r) => r.team === 'outsider'),
-  minion: roles.filter((r) => r.team === 'minion'),
-  demon: roles.filter((r) => r.team === 'demon'),
-};
-
-// DATA_FORMAT.md 人數配置表
-const PLAYER_DISTRIBUTION: Record<number, { townsfolk: number; outsider: number; minion: number; demon: number }> = {
-  5:  { townsfolk: 3, outsider: 0, minion: 1, demon: 1 },
-  6:  { townsfolk: 3, outsider: 1, minion: 1, demon: 1 },
-  7:  { townsfolk: 5, outsider: 0, minion: 1, demon: 1 },
-  8:  { townsfolk: 5, outsider: 1, minion: 1, demon: 1 },
-  9:  { townsfolk: 5, outsider: 2, minion: 1, demon: 1 },
-  10: { townsfolk: 7, outsider: 0, minion: 2, demon: 1 },
-  11: { townsfolk: 7, outsider: 1, minion: 2, demon: 1 },
-  12: { townsfolk: 7, outsider: 2, minion: 2, demon: 1 },
-  13: { townsfolk: 9, outsider: 0, minion: 3, demon: 1 },
-  14: { townsfolk: 9, outsider: 1, minion: 3, demon: 1 },
-  15: { townsfolk: 9, outsider: 2, minion: 3, demon: 1 },
-};
-
-function shuffle<T>(arr: T[]): T[] {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
-function randomizeRoles(count: number): string[] {
-  const dist = PLAYER_DISTRIBUTION[count];
-  if (!dist) return [];
-  const picked: string[] = [];
-  picked.push(...shuffle(rolesByTeam.townsfolk).slice(0, dist.townsfolk).map((r) => r.id));
-  picked.push(...shuffle(rolesByTeam.outsider).slice(0, dist.outsider).map((r) => r.id));
-  picked.push(...shuffle(rolesByTeam.minion).slice(0, dist.minion).map((r) => r.id));
-  picked.push(...shuffle(rolesByTeam.demon).slice(0, dist.demon).map((r) => r.id));
-
-  return shuffle(picked);
-}
+import { getPlayerDestribution, RoleRegistry } from '../engine/RoleRegistry';
 
 export default function SetupView() {
-  const { initGame, startNight } = useGameStore();
+  const { initGame, startNight, roleRegistry } = useGameStore();
   const [playerCount, setPlayerCount] = useState(7);
   const [names, setNames] = useState<string[]>(() => Array(7).fill(''));
   const [assignedRoles, setAssignedRoles] = useState<string[] | null>(null);
 
-  const dist = PLAYER_DISTRIBUTION[playerCount];
+  const dist = getPlayerDestribution(playerCount);
 
   const handleCountChange = (count: number) => {
     setPlayerCount(count);
@@ -74,7 +28,7 @@ export default function SetupView() {
   const canStart = names.every((n) => n.trim());
 
   const handleStart = () => {
-    const roleIds = randomizeRoles(playerCount);
+    const roleIds = RoleRegistry.getInstance().randomizeRoles(playerCount);
     setAssignedRoles(roleIds);
     console.log('Starting game with roleIds:', roleIds);
 
@@ -82,17 +36,13 @@ export default function SetupView() {
       seat: i + 1,
       name: name.trim(),
       role: roleIds[i],
+      roleName: roleRegistry.getRoleName(roleIds[i]),
     }));
 
     console.log('Starting game with players:', players);
 
     initGame(players);
     startNight();
-  };
-
-  const getRoleName = (roleId: string) => {
-    const r = roles.find((role) => role.id === roleId);
-    return r ? t(r, 'name') : roleId;
   };
 
   return (
@@ -129,7 +79,7 @@ export default function SetupView() {
               onChange={(e) => updateName(i, e.target.value)}
             />
             {assignedRoles && assignedRoles[i] && (
-              <span className="assigned-role">{getRoleName(assignedRoles[i])}</span>
+              <span className="assigned-role">{roleRegistry.getRoleName(assignedRoles[i])}</span>
             )}
           </div>
         ))}
