@@ -8,6 +8,7 @@ import { FortunetellerHandler } from './handlers/FortunetellerHandler';
 import { ChefHandler } from './handlers/ChefHandler';
 import { EmpathHandler } from './handlers/EmpathHandler';
 import { InvestigatorHandler } from './handlers/InvestigatorHandler';
+import { LibrarianHandler } from './handlers/LibrarianHandler';
 import { MonkHandler } from './handlers/MonkHandler';
 import { PoisonerHandler } from './handlers/PoisonerHandler';
 import { ImpHandler } from './handlers/ImpHandler';
@@ -32,6 +33,7 @@ export class RuleEngine {
       ['chef', new ChefHandler(roleRegistry)],
       ['empath', new EmpathHandler(roleRegistry)],
       ['investigator', new InvestigatorHandler(roleRegistry)],
+      ['librarian', new LibrarianHandler(roleRegistry)],
       ['monk', new MonkHandler(roleRegistry)],
       ['poisoner', new PoisonerHandler(roleRegistry)],
       ['imp', new ImpHandler(roleRegistry)],

@@ -14,6 +14,7 @@ import { ImpHandler } from '../ImpHandler';
 import { DrunkHandler } from '../DrunkHandler';
 import { ButlerHandler } from '../ButlerHandler';
 import { InvestigatorHandler } from '../InvestigatorHandler';
+import { LibrarianHandler } from '../LibrarianHandler';
 import { RoleRegistry } from '../../RoleRegistry';
 import troubleBrewingRolesData from '../../../data/roles/trouble-brewing.json';
 
@@ -721,5 +722,254 @@ describe('InvestigatorHandler', () => {
     const minionRoles = (result.info as any).minions.map((m: any) => m.role);
     expect(minionRoles).toContain('poisoner');
     expect(minionRoles).toContain('baron');
+  });
+});
+
+// ============================================================
+// LibrarianHandler
+// ============================================================
+describe('LibrarianHandler', () => {
+  const handler = new LibrarianHandler(roleRegistry);
+
+  it('第一晚之後跳過', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'butler', team: 'outsider' }),
+    ];
+    const gs = makeGameState(players);
+    gs.night = 2;
+    const result = handler.process(makeContext({ gameState: gs, player: players[0] }));
+    expect(result.skip).toBe(true);
+    expect(result.skipReason).toContain('第一晚');
+  });
+
+  it('T1: 標準情況（有外來者，能力正常）', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' });
+    const butler = makePlayer({ seat: 2, role: 'butler', team: 'outsider' });
+    const recluse = makePlayer({ seat: 3, role: 'recluse', team: 'outsider' });
+    const monk = makePlayer({ seat: 4, role: 'monk', team: 'townsfolk' });
+    const players = [librarian, butler, recluse, monk];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    // Butler 在主列表，Recluse 在特殊列表
+    expect((result.info as any).outsiders).toHaveLength(1);
+    expect((result.info as any).outsiders[0].role).toBe('butler');
+    expect((result.info as any).recluses).toHaveLength(1);
+    expect((result.info as any).recluses[0].role).toBe('recluse');
+    expect((result.info as any).hasRecluse).toBe(true);
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+
+  it('T2: 無外來者（7人局）', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' });
+    const monk = makePlayer({ seat: 2, role: 'monk', team: 'townsfolk' });
+    const chef = makePlayer({ seat: 3, role: 'chef', team: 'townsfolk' });
+    const players = [librarian, monk, chef];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).noOutsiderInGame).toBe(true);
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+
+  it('T3: 只有間諜（能力正常）- 可選擇給假資訊', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' });
+    const spy = makePlayer({ seat: 2, role: 'spy', team: 'minion' });
+    const imp = makePlayer({ seat: 3, role: 'imp', team: 'demon' });
+    const players = [librarian, spy, imp];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).onlySpyInGame).toBe(true);
+    expect((result.info as any).spy.seat).toBe(2);
+    expect((result.info as any).spy.role).toBe('spy');
+    // 與調查員不同：圖書管理員可選擇給假資訊或「無外來者」
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+
+  it('T4: 間諜中毒（不能視為外來者）', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' });
+    const spy = makePlayer({ seat: 2, role: 'spy', team: 'minion', isPoisoned: true });
+    const imp = makePlayer({ seat: 3, role: 'imp', team: 'demon' });
+    const players = [librarian, spy, imp];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).noOutsiderInGame).toBe(true);
+    // 間諜中毒，不能視為外來者
+  });
+
+  it('T5: 圖書管理員中毒（能力不可靠）', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk', isPoisoned: true });
+    const butler = makePlayer({ seat: 2, role: 'butler', team: 'outsider' });
+    const recluse = makePlayer({ seat: 3, role: 'recluse', team: 'outsider' });
+    const players = [librarian, butler, recluse];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+      infoReliable: false,
+      statusReason: '中毒',
+    }));
+
+    // 中毒時仍回傳實際外來者列表，但 reliable: false
+    expect((result.info as any).outsiders).toHaveLength(1);
+    expect((result.info as any).outsiders[0].role).toBe('butler');
+    expect((result.info as any).reliable).toBe(false);
+    expect((result.info as any).statusReason).toBe('中毒');
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+
+  it('T6: 酒鬼（告知真實角色 drunk）', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' });
+    const drunk = makePlayer({ seat: 2, role: 'drunk', team: 'outsider', believesRole: 'butler' });
+    const monk = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const players = [librarian, drunk, monk];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).outsiders).toHaveLength(1);
+    expect((result.info as any).outsiders[0].role).toBe('drunk');
+    // 注意：告知真實角色 'drunk'，不是 believesRole 'butler'
+  });
+
+  it('T7: 陌客（能力正常）- 獨立列表', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' });
+    const recluse = makePlayer({ seat: 2, role: 'recluse', team: 'outsider' });
+    const monk = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const players = [librarian, recluse, monk];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).outsiders).toHaveLength(0); // 陌客不在主列表
+    expect((result.info as any).recluses).toHaveLength(1); // 陌客在特殊列表
+    expect((result.info as any).recluses[0].role).toBe('recluse');
+    expect((result.info as any).hasRecluse).toBe(true);
+    expect(result.mustFollow).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+
+  it('T8: 陌客 + 其他外來者 + 間諜', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' });
+    const butler = makePlayer({ seat: 2, role: 'butler', team: 'outsider' });
+    const recluse = makePlayer({ seat: 3, role: 'recluse', team: 'outsider' });
+    const spy = makePlayer({ seat: 4, role: 'spy', team: 'minion' });
+    const players = [librarian, butler, recluse, spy];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    // Butler + Spy 在主列表
+    expect((result.info as any).outsiders).toHaveLength(2);
+    const outsiderRoles = (result.info as any).outsiders.map((o: any) => o.role);
+    expect(outsiderRoles).toContain('butler');
+    expect(outsiderRoles).toContain('spy');
+    // Recluse 在特殊列表
+    expect((result.info as any).recluses).toHaveLength(1);
+    expect((result.info as any).hasSpy).toBe(true);
+    expect((result.info as any).hasRecluse).toBe(true);
+  });
+
+  it('T9: 陌客中毒（必須視為外來者）', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' });
+    const recluse = makePlayer({ seat: 2, role: 'recluse', team: 'outsider', isPoisoned: true });
+    const monk = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const players = [librarian, recluse, monk];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    // 陌客中毒，必須在主列表
+    expect((result.info as any).outsiders).toHaveLength(1);
+    expect((result.info as any).outsiders[0].role).toBe('recluse');
+    // 不在特殊列表
+    expect((result.info as any).recluses).toHaveLength(0);
+    expect((result.info as any).hasRecluse).toBe(false);
+  });
+
+  it('陌客醉酒（必須視為外來者）', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' });
+    const recluse = makePlayer({ seat: 2, role: 'recluse', team: 'outsider', isDrunk: true });
+    const monk = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+    const players = [librarian, recluse, monk];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    // 陌客醉酒，必須在主列表
+    expect((result.info as any).outsiders).toHaveLength(1);
+    expect((result.info as any).outsiders[0].role).toBe('recluse');
+    expect((result.info as any).recluses).toHaveLength(0);
+  });
+
+  it('間諜 + 陌客（都能力正常）', () => {
+    const librarian = makePlayer({ seat: 1, role: 'librarian', team: 'townsfolk' });
+    const spy = makePlayer({ seat: 2, role: 'spy', team: 'minion' });
+    const recluse = makePlayer({ seat: 3, role: 'recluse', team: 'outsider' });
+    const players = [librarian, spy, recluse];
+    const gs = makeGameState(players);
+
+    const result = handler.process(makeContext({
+      player: librarian,
+      gameState: gs,
+    }));
+
+    expect(result.action).toBe('show_info');
+    // Spy 在主列表（可視為外來者）
+    expect((result.info as any).outsiders).toHaveLength(1);
+    expect((result.info as any).outsiders[0].role).toBe('spy');
+    // Recluse 在特殊列表（可選擇不視為外來者）
+    expect((result.info as any).recluses).toHaveLength(1);
+    expect((result.info as any).recluses[0].role).toBe('recluse');
+    expect((result.info as any).hasSpy).toBe(true);
+    expect((result.info as any).hasRecluse).toBe(true);
   });
 });
