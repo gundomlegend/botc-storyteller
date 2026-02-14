@@ -9,6 +9,7 @@
 - 不是夜間能力，沒有任何夜間行動（firstNight: 0, otherNight: 0）
 - 影響角色池的組成，不影響玩家數量
 - 必須在角色分配前就確定是否有男爵
+- **僅在 9 人及以上的局才會出現**（遊戲平衡限制）
 
 ---
 
@@ -28,7 +29,8 @@
   "otherNightReminder": "",
   "reminders": [],
   "setup": true,
-  "setupAbility": "add_outsiders"
+  "setupAbility": "add_outsiders",
+  "minPlayers": 9
 }
 ```
 
@@ -37,6 +39,7 @@
 **重要屬性**：
 - `setup: true` - 標記此角色具有設置時能力
 - `setupAbility: "add_outsiders"` - 具體的設置能力類型
+- `minPlayers: 9` - 最小玩家數量限制（9人及以上才能使用）
 
 ---
 
@@ -51,15 +54,23 @@ Baron 引入了全新的 **Setup Ability** 系統，用於處理在遊戲初始�
 2. **影響分配比例**：Setup Ability 可以改變角色分配的數量比例
 3. **不可逆轉**：一旦 Setup Ability 生效，無法在遊戲中途改變
 4. **對玩家透明**：玩家只看到最終的角色分配，不知道是否有 Setup Ability 生效
+5. **玩家數量限制**：某些 Setup Ability 角色有最小玩家數量要求
 
 ### Baron 的具體效果
 
+**玩家數量限制**：
+- **Baron 僅在 9 人及以上的局才會出現**
+- 原因：7 人局只有 5 個鎮民，若 Baron 生效（-2 鎮民）會導致只剩 3 個鎮民，遊戲平衡性過差
+- 實作：
+  - UI 層：人數 < 9 時，Baron 在角色選擇列表中禁用或隱藏
+  - 邏輯層：若意外選中 Baron 但人數 < 9，跳過 Baron 效果並記錄警告
+
 **基礎分配規則**（無男爵）：
 ```
-7人局：
+9人局：
 - 鎮民：5
-- 外來者：0
-- 爪牙：1
+- 外來者：1
+- 爪牙：2
 - 惡魔：1
 
 13人局：
@@ -69,12 +80,12 @@ Baron 引入了全新的 **Setup Ability** 系統，用於處理在遊戲初始�
 - 惡魔：1
 ```
 
-**男爵生效後**：
+**男爵生效後**（9人及以上）：
 ```
-7人局（有男爵）：
+9人局（有男爵）：
 - 鎮民：5 - 2 = 3
-- 外來者：0 + 2 = 2
-- 爪牙：1（含男爵）
+- 外來者：1 + 2 = 3
+- 爪牙：2（含男爵）
 - 惡魔：1
 
 13人局（有男爵）：
@@ -85,8 +96,8 @@ Baron 引入了全新的 **Setup Ability** 系統，用於處理在遊戲初始�
 ```
 
 **特殊情況處理**：
-- 若鎮民數量 < 2，則只減少現有數量，外來者增加相同數量
-- 例如：5人局（3鎮民、0外來者、1爪牙、1惡魔）→ 有男爵後變成（1鎮民、2外來者、1爪牙、1惡魔）
+- 若人數 < 9：跳過 Baron 效果，記錄警告日誌
+- 若鎮民數量 < 2：只減少現有數量，外來者增加相同數量（理論上不會發生，因為 9 人以上必有足夠鎮民）
 
 ---
 
@@ -157,9 +168,11 @@ static initializeGame(
   // ═════════════════════════════════════════
   const finalDistribution = roleRegistry.applySetupAbilities(
     [...selectedMinions, ...selectedDemons],
-    baseDistribution
+    baseDistribution,
+    playerCount  // 傳入玩家數量，用於檢查 minPlayers 限制
   );
-  // 若有男爵：finalDistribution = { townsfolk: 5, outsiders: 4, minions: 3, demons: 1 }
+  // 若有男爵且人數 >= 9：finalDistribution = { townsfolk: 5, outsiders: 4, minions: 3, demons: 1 }
+  // 若有男爵但人數 < 9：跳過男爵效果，記錄警告
   // 若無男爵：finalDistribution = baseDistribution（不變）
 
   // ═════════════════════════════════════════
@@ -337,23 +350,34 @@ export class RoleRegistry {
    *
    * @param selectedRoles - 已選中的爪牙和惡魔角色
    * @param baseDistribution - 基礎角色分配
+   * @param playerCount - 玩家數量（用於檢查角色的 minPlayers 限制）
    * @returns 調整後的角色分配
    */
   applySetupAbilities(
     selectedRoles: string[],
-    baseDistribution: RoleDistribution
+    baseDistribution: RoleDistribution,
+    playerCount: number
   ): RoleDistribution {
     const finalDistribution = { ...baseDistribution };
 
     // 檢查是否有男爵
     if (selectedRoles.includes('baron')) {
-      // 男爵效果：外來者 +2，鎮民 -2
-      const townfolkReduction = Math.min(2, finalDistribution.townsfolk);
+      const baronData = this.getRoleData('baron');
+      const minPlayers = baronData?.minPlayers ?? 0;
 
-      finalDistribution.townsfolk -= townfolkReduction;
-      finalDistribution.outsiders += townfolkReduction;
+      // 檢查玩家數量是否滿足男爵的最小要求（9人）
+      if (playerCount < minPlayers) {
+        console.warn(`[Baron] 玩家數量不足（${playerCount} < ${minPlayers}），跳過男爵效果`);
+        // 不應用男爵效果，但男爵仍然在場
+      } else {
+        // 男爵效果：外來者 +2，鎮民 -2
+        const townfolkReduction = Math.min(2, finalDistribution.townsfolk);
 
-      console.log(`[Baron] 男爵生效：鎮民 ${baseDistribution.townsfolk} → ${finalDistribution.townsfolk}，外來者 ${baseDistribution.outsiders} → ${finalDistribution.outsiders}`);
+        finalDistribution.townsfolk -= townfolkReduction;
+        finalDistribution.outsiders += townfolkReduction;
+
+        console.log(`[Baron] 男爵生效：鎮民 ${baseDistribution.townsfolk} → ${finalDistribution.townsfolk}，外來者 ${baseDistribution.outsiders} → ${finalDistribution.outsiders}`);
+      }
     }
 
     // 未來可擴展：檢查其他 Setup Ability 角色
@@ -502,13 +526,14 @@ if (selectedMinions.includes('baron')) {
 
 ## 測試用例
 
-### T1：7人局有男爵
+### T1：9人局有男爵（正常情況）
 
 ```typescript
-const playerNames = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace'];
+const playerNames = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy'];
 const selectedRoles = [
-  'washerwoman', 'librarian', 'investigator', 'chef', 'empath',  // 5 townsfolk
-  'butler', 'drunk',  // 2 outsiders (for baron effect)
+  'washerwoman', 'librarian', 'investigator', 'chef', 'empath',  // 5 townsfolk (足夠供選擇)
+  'fortuneteller', 'undertaker', 'monk',
+  'butler', 'drunk', 'recluse',  // 3 outsiders (for baron effect)
   'poisoner', 'baron',  // 2 minions (baron included)
   'imp'  // 1 demon
 ];
@@ -522,19 +547,46 @@ const outsiders = players.filter(p => p.team === 'outsider');
 const minions = players.filter(p => p.team === 'minion');
 const demons = players.filter(p => p.team === 'demon');
 
-// 7人局有男爵：3鎮民、2外來者、1爪牙、1惡魔
+// 9人局有男爵：3鎮民、3外來者、2爪牙、1惡魔
 assert(townsfolk.length === 3);
-assert(outsiders.length === 2);
-assert(minions.length === 1);
+assert(outsiders.length === 3);
+assert(minions.length === 2);
 assert(demons.length === 1);
 
 // 驗證男爵確實被選中
 assert(minions.some(m => m.role === 'baron'));
 ```
 
-### T2：7人局無男爵
+### T2：7人局有男爵（人數不足，男爵效果不生效）
 
 ```typescript
+const playerNames = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace'];
+const selectedRoles = [
+  'washerwoman', 'librarian', 'investigator', 'chef', 'empath',  // 5 townsfolk
+  'poisoner', 'baron',  // 2 minions (baron included, but won't take effect)
+  'imp'  // 1 demon
+];
+
+const gameState = GameStateManager.createGame(roleRegistry, playerNames, selectedRoles);
+
+const players = gameState.getAllPlayers();
+const townsfolk = players.filter(p => p.team === 'townsfolk');
+const outsiders = players.filter(p => p.team === 'outsider');
+const minions = players.filter(p => p.team === 'minion');
+
+// 7人局人數不足，男爵在場但效果不生效：5鎮民、0外來者、1爪牙、1惡魔
+assert(townsfolk.length === 5);
+assert(outsiders.length === 0);
+assert(minions.length === 1);
+
+// 驗證男爵仍然在場（但效果未生效）
+assert(minions.some(m => m.role === 'baron'));
+```
+
+### T3：7人局無男爵（標準情況）
+
+```typescript
+const playerNames = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace'];
 const selectedRoles = [
   'washerwoman', 'librarian', 'investigator', 'chef', 'empath',  // 5 townsfolk
   'poisoner',  // 1 minion (no baron)
@@ -552,7 +604,7 @@ assert(townsfolk.length === 5);
 assert(outsiders.length === 0);
 ```
 
-### T3：13人局有男爵
+### T4：13人局有男爵
 
 ```typescript
 const playerNames = Array.from({ length: 13 }, (_, i) => `Player${i + 1}`);
@@ -580,7 +632,7 @@ assert(minions.length === 3);
 assert(minions.some(m => m.role === 'baron'));
 ```
 
-### T4：角色池不足的情況
+### T5：角色池不足的情況
 
 ```typescript
 const selectedRoles = [
@@ -597,7 +649,7 @@ const townsfolk = gameState.getAllPlayers().filter(p => p.team === 'townsfolk');
 assert(townsfolk.length === 2);  // 只能選 2 個，因為池中只有 2 個
 ```
 
-### T5：與酒鬼和惡魔虛張聲勢的整合
+### T6：與酒鬼和惡魔虛張聲勢的整合
 
 ```typescript
 const gameState = GameStateManager.createGame(roleRegistry, playerNames, selectedRoles);
