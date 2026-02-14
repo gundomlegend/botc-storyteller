@@ -4,6 +4,7 @@ import FortunetellerProcessor from './FortunetellerProcessor';
 import ChefProcessor from './ChefProcessor';
 import EmpathProcessor from './EmpathProcessor';
 import InvestigatorProcessor from './InvestigatorProcessor';
+import LibrarianProcessor from './LibrarianProcessor';
 
 export interface RoleProcessorProps {
   item: NightOrderItem;
@@ -20,4 +21,5 @@ export const ROLE_PROCESSORS: Record<string, ComponentType<RoleProcessorProps>> 
   chef: ChefProcessor,
   empath: EmpathProcessor,
   investigator: InvestigatorProcessor,
+  librarian: LibrarianProcessor,
 };
