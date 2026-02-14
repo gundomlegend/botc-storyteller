@@ -28,7 +28,7 @@ export default function SetupView() {
   const canStart = names.every((n) => n.trim());
 
   const handleStart = () => {
-    const roleIds = RoleRegistry.getInstance().randomizeRoles(playerCount);
+    const roleIds = RoleRegistry.getInstance().randomizeRolesWithSetup(playerCount);
     setAssignedRoles(roleIds);
     console.log('Starting game with roleIds:', roleIds);
 

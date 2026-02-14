@@ -60,6 +60,10 @@ export class RoleRegistry {
     }
 
 
+    /**
+     * 舊的隨機角色分配方法（向後兼容）
+     * @deprecated 使用 randomizeRolesWithSetup 以支援 Setup Ability
+     */
     randomizeRoles(count: number): string[] {
         const dist = PLAYER_DISTRIBUTION[count];
         if (!dist) return [];
@@ -70,6 +74,54 @@ export class RoleRegistry {
         picked.push(...this.shuffle(this.rolesByTeams.demon).slice(0, dist.demon).map((r) => r.id));
 
         return this.shuffle(picked);
+    }
+
+    /**
+     * 使用 Phased Initialization 隨機分配角色（支援 Setup Ability）
+     *
+     * @param playerCount - 玩家數量
+     * @returns 隨機分配的角色列表
+     */
+    randomizeRolesWithSetup(playerCount: number): string[] {
+        // Phase 1: 取得基礎分配
+        const baseDistribution = this.getBaseDistribution(playerCount);
+
+        // Phase 2: 抽選爪牙和惡魔（先過濾 minPlayers 限制）
+        const allMinions = this.rolesByTeams.minion.map(r => r.id);
+        const allDemons = this.rolesByTeams.demon.map(r => r.id);
+
+        const filteredMinions = this.filterRolesByPlayerCount(allMinions, playerCount);
+        const filteredDemons = this.filterRolesByPlayerCount(allDemons, playerCount);
+
+        const selectedMinions = this.randomPick(filteredMinions, baseDistribution.minions, false);
+        const selectedDemons = this.randomPick(filteredDemons, baseDistribution.demons, false);
+
+        // Phase 3: 應用 Setup Abilities
+        const finalDistribution = this.applySetupAbilities(
+            [...selectedMinions, ...selectedDemons],
+            baseDistribution,
+            playerCount
+        );
+
+        // Phase 4: 抽選鎮民和外來者
+        const allTownsfolk = this.rolesByTeams.townsfolk.map(r => r.id);
+        const allOutsiders = this.rolesByTeams.outsider.map(r => r.id);
+
+        const filteredTownsfolk = this.filterRolesByPlayerCount(allTownsfolk, playerCount);
+        const filteredOutsiders = this.filterRolesByPlayerCount(allOutsiders, playerCount);
+
+        const selectedTownsfolk = this.randomPick(filteredTownsfolk, finalDistribution.townsfolk, false);
+        const selectedOutsiders = this.randomPick(filteredOutsiders, finalDistribution.outsiders, false);
+
+        // Phase 5: 組合並洗牌
+        const allRoles = [
+            ...selectedTownsfolk,
+            ...selectedOutsiders,
+            ...selectedMinions,
+            ...selectedDemons
+        ];
+
+        return this.shuffle(allRoles);
     }
 
     getRoleData(roleId: string): RoleData | undefined {
