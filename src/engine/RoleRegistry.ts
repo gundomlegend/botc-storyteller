@@ -153,6 +153,24 @@ export class RoleRegistry {
     }
 
     /**
+     * 根據玩家數量過濾角色池，移除不符合 minPlayers 限制的角色
+     */
+    filterRolesByPlayerCount(roleIds: string[], playerCount: number): string[] {
+        return roleIds.filter(roleId => {
+            const roleData = this.getRoleData(roleId);
+            if (!roleData) return true; // 未知角色保留
+
+            const minPlayers = roleData.minPlayers ?? 0;
+            if (minPlayers > 0 && playerCount < minPlayers) {
+                console.log(`[RoleFilter] 移除 ${roleId}（需要 ${minPlayers} 人，當前 ${playerCount} 人）`);
+                return false; // 不符合最小玩家數量要求
+            }
+
+            return true;
+        });
+    }
+
+    /**
      * 從角色池中隨機選擇指定數量的角色
      */
     randomPick(
