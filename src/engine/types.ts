@@ -14,6 +14,8 @@ export interface RoleData {
   otherNightReminder_cn: string;
   reminders: string[];
   setup: boolean;
+  setupAbility?: string; // Setup Ability 類型 (如 'add_outsiders')
+  minPlayers?: number;   // 最小玩家數量限制
   affectedByPoison: boolean;
   affectedByDrunk: boolean;
   worksWhenDead: boolean;
@@ -24,6 +26,24 @@ export interface Jinx {
   role1: string;
   role2: string;
   reason: string;
+}
+
+// ===== Setup Ability 相關 =====
+
+/** 角色分配數量 */
+export interface RoleDistribution {
+  townsfolk: number;
+  outsiders: number;
+  minions: number;
+  demons: number;
+}
+
+/** 按陣營分類的角色 ID 列表 */
+export interface CategorizedRoles {
+  townsfolk: string[];
+  outsiders: string[];
+  minions: string[];
+  demons: string[];
 }
 
 // ===== 狀態效果 =====
