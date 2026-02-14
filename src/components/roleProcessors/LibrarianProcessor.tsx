@@ -58,23 +58,13 @@ export default function LibrarianProcessor({ item, onDone }: RoleProcessorProps)
     if (info.noOutsiderInGame) return;
 
     // 只有間諜的特殊情況：不預選（與調查員不同，這裡給說書人完全自由）
-    if (info.onlySpyInGame) {
-      setSelectedOutsiderRole('');
-      setSelectedPlayer1(null);
-      setSelectedPlayer2(null);
-      return;
-    }
+    if (info.onlySpyInGame) return;
 
     const outsiders = (info.outsiders as Array<{ seat: number; role: string; name: string }>) || [];
     const recluses = (info.recluses as Array<{ seat: number; role: string; name: string }>) || [];
 
-    // 不可靠時不預選
-    if (!isReliable) {
-      setSelectedOutsiderRole('');
-      setSelectedPlayer1(null);
-      setSelectedPlayer2(null);
-      return;
-    }
+    // 不可靠時不預選（但不清空用戶選擇）
+    if (!isReliable) return;
 
     // 可靠時預選邏輯：優先預選真實外來者 > 間諜 > 陌客
     if (outsiders.length > 0) {
