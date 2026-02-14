@@ -1,21 +1,34 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useGameStore } from '../../store/gameStore';
-import type { NightResult } from '../../engine/types';
+import type { NightResult, Player } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import AbilityHeader from '../shared/AbilityHeader';
 import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
 import DrunkRoleIndicator from '../shared/DrunkRoleIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
 import rolesData from '../../data/roles/trouble-brewing.json';
+import { RoleRegistry } from '../../engine/RoleRegistry';
+
+/**
+ * 格式化玩家選項文字（包含座號、名稱、角色、狀態圖示）
+ */
+function formatPlayerOption(player: Player, roleRegistry: RoleRegistry): string {
+  const statusIcons = [];
+  if (player.isPoisoned) statusIcons.push('🧪');
+  if (player.isDrunk) statusIcons.push('🍺');
+  if (player.isProtected) statusIcons.push('🛡️');
+  const statusStr = statusIcons.length > 0 ? ` ${statusIcons.join('')}` : '';
+  return `${player.seat}號 - ${player.name} - ${roleRegistry.getPlayerRoleName(player)}${statusStr}`;
+}
 
 export default function InvestigatorProcessor({ item, onDone }: RoleProcessorProps) {
-  const { processAbility, stateManager, ruleEngine } = useGameStore();
+  const { processAbility, stateManager, roleRegistry } = useGameStore();
   const [result, setResult] = useState<NightResult | null>(null);
   const [selectedMinionRole, setSelectedMinionRole] = useState<string>('');
   const [selectedPlayer1, setSelectedPlayer1] = useState<number | null>(null);
   const [selectedPlayer2, setSelectedPlayer2] = useState<number | null>(null);
 
-  const roleData = stateManager.getRoleData(item.role);
+  const roleData = roleRegistry.getRoleData(item.role);
 
   // 從角色數據中過濾出 Trouble Brewing 爪牙角色
   const minionRoles = useMemo(() => {
@@ -89,7 +102,7 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
 
   const handleConfirm = () => {
     // 記錄說書人選擇
-    const selectedRoleData = stateManager.getRoleData(selectedMinionRole);
+    const selectedRoleData = roleRegistry.getRoleData(selectedMinionRole);
     const roleName = selectedRoleData?.name_cn || selectedMinionRole;
 
     stateManager.logEvent({
@@ -219,7 +232,7 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
           <option value="">-- 請選擇 --</option>
           {minionRoles.map(role => (
             <option key={role.id} value={role.id}>
-              {role.name_cn}
+              {roleRegistry.getRoleName(role.id)}
             </option>
           ))}
         </select>
@@ -239,7 +252,7 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
             .filter(p => p.seat !== item.seat)
             .map(p => (
               <option key={p.seat} value={p.seat}>
-                {p.seat}號 {p.name} ({ruleEngine.getPlayerRoleName(p)})
+                {formatPlayerOption(p, roleRegistry)}
               </option>
             ))}
         </select>
@@ -258,7 +271,7 @@ export default function InvestigatorProcessor({ item, onDone }: RoleProcessorPro
             .filter(p => p.seat !== item.seat && p.seat !== selectedPlayer1)
             .map(p => (
               <option key={p.seat} value={p.seat}>
-                {p.seat}號 {p.name} ({ruleEngine.getPlayerRoleName(p)})
+                {formatPlayerOption(p, roleRegistry)}
               </option>
             ))}
         </select>

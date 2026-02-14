@@ -1,9 +1,12 @@
 import { create } from 'zustand';
 import { GameStateManager } from '../engine/GameState';
 import { RuleEngine } from '../engine/RuleEngine';
-import type { Player, NightOrderItem, NightResult, GameEvent, StatusEffectType } from '../engine/types';
+import type { Player, NightOrderItem, NightResult, GameEvent, StatusEffectType, RoleData } from '../engine/types';
+import { RoleRegistry } from '../engine/RoleRegistry';
+import rolesData from '../data/roles/trouble-brewing.json';
 
 interface GameStore {
+  roleRegistry: RoleRegistry;
   stateManager: GameStateManager;
   ruleEngine: RuleEngine;
 
@@ -17,7 +20,7 @@ interface GameStore {
   history: GameEvent[];
 
   // 動作
-  initGame: (players: Array<{ seat: number; name: string; role: string }>) => void;
+  initGame: (players: Array<{ seat: number; name: string; role: string, roleName: string }>) => void;
   startNight: () => void;
   startDay: () => void;
   processAbility: (playerSeat: number, targetSeat: number | null, secondTargetSeat?: number | null) => NightResult;
@@ -32,8 +35,9 @@ interface GameStore {
 }
 
 export const useGameStore = create<GameStore>((set) => {
-  const stateManager = new GameStateManager();
-  const ruleEngine = new RuleEngine();
+  const roleRegistry = RoleRegistry.getInstance();
+  const stateManager = new GameStateManager(roleRegistry);
+  const ruleEngine = new RuleEngine(roleRegistry);
 
   const refresh = () => {
     const state = stateManager.getState();
@@ -50,6 +54,7 @@ export const useGameStore = create<GameStore>((set) => {
   return {
     stateManager,
     ruleEngine,
+    roleRegistry,
 
     phase: 'setup',
     night: 0,
@@ -60,6 +65,7 @@ export const useGameStore = create<GameStore>((set) => {
     history: [],
 
     initGame: (players) => {
+      roleRegistry.init(rolesData as RoleData[]);
       stateManager.initializePlayers(players);
       refresh();
     },

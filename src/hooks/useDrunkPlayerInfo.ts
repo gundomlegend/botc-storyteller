@@ -6,7 +6,7 @@ import type { NightOrderItem } from '../engine/types';
  * 處理酒鬼角色的檢測和有效角色計算
  */
 export function useDrunkPlayerInfo(item: NightOrderItem) {
-  const stateManager = useGameStore((s) => s.stateManager);
+  const { stateManager, roleRegistry } = useGameStore();
 
   const player = stateManager.getPlayer(item.seat);
   const isDrunkRole = player?.role === 'drunk';
@@ -14,7 +14,7 @@ export function useDrunkPlayerInfo(item: NightOrderItem) {
 
   // 酒鬼使用假角色的資料
   const effectiveRole = isDrunkRole && believesRole ? believesRole : item.role;
-  const roleData = stateManager.getRoleData(effectiveRole);
+  const roleData = roleRegistry.getRoleData(effectiveRole);
 
   return {
     player,

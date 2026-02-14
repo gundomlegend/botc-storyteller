@@ -1,6 +1,7 @@
 import type { RoleHandler, HandlerContext, NightResult } from '../types';
+import { BaseRoleHandler } from './BaseRoleHandler';
 
-export class ButlerHandler implements RoleHandler {
+export class ButlerHandler extends BaseRoleHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
     const { player, target } = context;
 

@@ -11,14 +11,20 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameStateManager } from '../GameState';
 import { RuleEngine } from '../RuleEngine';
+import { RoleRegistry } from '../RoleRegistry';
+import roleData from '../../data/roles/trouble-brewing.json';
+import { RoleData } from '../types';
 
 describe('Ability Invalidation — RuleEngine 層', () => {
+  let r: RoleRegistry;
   let m: GameStateManager;
   let engine: RuleEngine;
 
   beforeEach(() => {
-    m = new GameStateManager();
-    engine = new RuleEngine();
+    r = RoleRegistry.getInstance();
+    r.init(roleData as RoleData[]);
+    m = new GameStateManager(r);
+    engine = new RuleEngine(r);
   });
 
   // T1: poisoned Monk 保護 → effectNullified: true

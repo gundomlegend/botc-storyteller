@@ -7,11 +7,11 @@ import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
 
 export default function EmpathProcessor({ item, onDone }: RoleProcessorProps) {
-  const { processAbility, stateManager } = useGameStore();
+  const { processAbility, roleRegistry, stateManager } = useGameStore();
   const [result, setResult] = useState<NightResult | null>(null);
   const [toldEvilCount, setToldEvilCount] = useState<string>('');
 
-  const roleData = stateManager.getRoleData(item.role);
+  const roleData = roleRegistry.getRoleData(item.role);
 
   // 讀取玩家即時狀態
   const { isPoisoned, isDrunk, isProtected, isDead } = usePlayerRealTimeStatus(item);

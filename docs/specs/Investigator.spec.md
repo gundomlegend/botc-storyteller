@@ -159,6 +159,53 @@ if (minions.length === 1 && minions[0].role === 'spy') {
 - RuleEngine 步驟 7 標記 `effectNullified: true`
 - UI 顯示酒鬼警告，說書人可給予任意假資訊
 
+### 能力失效（中毒/醉酒）的特殊互動
+
+#### Spy 間諜中毒/醉酒
+
+**規則**：
+- 間諜即使中毒或醉酒，仍然是爪牙陣營
+- **特殊情況**：「只有間諜」的特殊規則僅在間諜能力正常時生效
+  - 間諜能力正常 → 告知「場上無爪牙」（間諜特殊規則）
+  - 間諜中毒/醉酒 → 能力失效，正常顯示間諜（不適用特殊規則）
+
+**實作**：
+```typescript
+// 只有間諜的情況，需檢查間諜是否中毒/醉酒
+if (minions.length === 1 && minions[0].role === 'spy' &&
+    !minions[0].isPoisoned && !minions[0].isDrunk) {
+  return {
+    action: 'show_info',
+    display: '場上只有間諜，告知調查員：場上無任何爪牙角色',
+    info: { onlySpyInGame: true, noMinionToShow: true },
+    mustFollow: true,
+    canLie: false
+  };
+}
+```
+
+**範例場景**：
+- 場上只有間諜，且間諜**未**中毒/醉酒 → 告知「無爪牙」
+- 場上只有間諜，但間諜**已**中毒/醉酒 → 正常顯示間諜選項
+
+#### Recluse 陌客中毒/醉酒
+
+**規則**：
+- 陌客的「可能登記為爪牙」能力在中毒/醉酒時失效
+- 中毒/醉酒的陌客**不應**被視為可疑目標
+
+**實作**：
+```typescript
+// 檢查陌客時需同時檢查能力是否有效
+const hasRecluse = allPlayers.some(p =>
+  p.role === 'recluse' && p.isAlive && !p.isPoisoned && !p.isDrunk
+);
+```
+
+**範例場景**：
+- 陌客能力正常 → 可作為調查員的候選目標，UI 預選陌客
+- 陌客中毒/醉酒 → 不應出現在候選名單中
+
 ---
 
 ## Handler 實作規格

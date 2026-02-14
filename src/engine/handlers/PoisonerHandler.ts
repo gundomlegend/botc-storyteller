@@ -1,8 +1,9 @@
 import type { RoleHandler, HandlerContext, NightResult } from '../types';
+import { BaseRoleHandler } from './BaseRoleHandler';
 
-export class PoisonerHandler implements RoleHandler {
+export class PoisonerHandler extends BaseRoleHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
-    const { target, getPlayerRoleName } = context;
+    const { target } = context;
 
     if (!target) {
       return {
@@ -20,7 +21,7 @@ export class PoisonerHandler implements RoleHandler {
         targetName: target.name,
         targetRole: target.role,
       },
-      display: `投毒者下毒 ${target.seat}號 (${target.name})\n角色：${getPlayerRoleName(target)}\n該玩家今晚和明天早上的能力將失效`,
+      display: `投毒者下毒 ${target.seat}號 (${target.name})\n角色：${this.getPlayerRoleName(target)}\n該玩家今晚和明天早上的能力將失效`,
       gesture: 'none',
     };
   }

@@ -1,6 +1,7 @@
 import type { RoleHandler, HandlerContext, NightResult } from '../types';
+import { BaseRoleHandler } from './BaseRoleHandler';
 
-export class DrunkHandler implements RoleHandler {
+export class DrunkHandler extends BaseRoleHandler implements RoleHandler {
   process(_context: HandlerContext): NightResult {
     return {
       skip: true,

@@ -1,16 +1,17 @@
-import type { RoleData, Player, GameState, GameEvent, NightOrderItem, StatusEffect, StatusEffectType } from './types';
+import type { Player, GameState, GameEvent, NightOrderItem, StatusEffect, StatusEffectType } from './types';
 import { t } from './locale';
-import rolesData from '../data/roles/trouble-brewing.json';
+import { RoleRegistry } from './RoleRegistry';
 
 let eventCounter = 0;
 
 export class GameStateManager {
   private state: GameState;
-  private roleRegistry: Map<string, RoleData>;
   private poisonExpiresAtNight: Map<number, number> = new Map();
   private statusSources: StatusEffect[] = [];
+  private roleRegistry: RoleRegistry;
 
-  constructor() {
+  constructor(roleRegistry: RoleRegistry) {
+    this.roleRegistry = roleRegistry;
     this.state = {
       night: 0,
       day: 0,
@@ -23,25 +24,16 @@ export class GameStateManager {
       demonBluffs: [],
       redHerringSeat: null,
     };
-
-    this.roleRegistry = new Map();
-    (rolesData as RoleData[]).forEach((role) => {
-      this.roleRegistry.set(role.id, role);
-    });
   }
 
   initializePlayers(
-    players: Array<{ seat: number; name: string; role: string }>
+    players: Array<{ seat: number; name: string; role: string; }>
   ): void {
     this.state.players.clear();
 
-    // 收集已分配的角色（用於酒鬼假角色選擇）
-    const assignedRoles = new Set(players.map(p => p.role));
-    console.log('[InitPlayers] 已分配角色:', Array.from(assignedRoles));
-
     for (const p of players) {
       console.log(`[InitPlayers] 處理玩家 ${p.seat}號 ${p.name} - 角色: ${p.role}`);
-      const roleData = this.roleRegistry.get(p.role);
+      const roleData = this.roleRegistry.getRoleData(p.role);
       if (!roleData) {
         throw new Error(`Unknown role: ${p.role}`);
       }
@@ -55,21 +47,13 @@ export class GameStateManager {
         isPoisoned: false,
         isDrunk: false, // 初始狀態為無醉酒（即使是酒鬼角色）
         isProtected: false,
-        believesRole: null, // 酒鬼的假角色會在後續步驟設定
+        believesRole: null, // 酒鬼的假角色會在 initializeDrunkPlayers() 中設定
         masterSeat: null,
         abilityUsed: false,
         deathCause: null,
         deathNight: null,
         deathDay: null,
       };
-
-      // 酒鬼：隨機選擇一個未分配的村民角色作為假角色
-      if (p.role === 'drunk') {
-        console.log(`[Drunk] 檢測到酒鬼玩家 ${p.seat}號 ${p.name}`);
-        player.believesRole = this.selectRandomTownsfolkForDrunk(assignedRoles);
-        console.log(`[Drunk] ${player.seat}號 ${player.name} 是酒鬼，以為自己是 ${player.believesRole}`);
-        console.log(`[Drunk] believesRole 已設定:`, player.believesRole);
-      }
 
       this.state.players.set(p.seat, player);
     }
@@ -117,7 +101,7 @@ export class GameStateManager {
     }
 
     // 取得所有鎮民角色
-    const allTownfolkRoles = Array.from(this.roleRegistry.values())
+    const allTownfolkRoles = this.roleRegistry.getAllRoles()
       .filter(r => r.team === 'townsfolk')
       .map(r => r.id);
 
@@ -158,7 +142,7 @@ export class GameStateManager {
       // 從可用清單中移除，避免多個酒鬼假冒同一角色
       availableRoles.splice(randomIndex, 1);
 
-      const roleData = this.getRoleData(selectedRole);
+      const roleData = this.roleRegistry.getRoleData(selectedRole);
       const roleName = roleData ? t(roleData, 'name') : selectedRole;
 
       this.logEvent({
@@ -195,10 +179,6 @@ export class GameStateManager {
 
   getAlignment(player: Player): 'good' | 'evil' {
     return player.team === 'minion' || player.team === 'demon' ? 'evil' : 'good';
-  }
-
-  getRoleData(roleId: string): RoleData | undefined {
-    return this.roleRegistry.get(roleId);
   }
 
   addStatus(seat: number, type: StatusEffectType, sourceSeat: number, data?: { believesRole?: string }): void {
@@ -324,7 +304,7 @@ export class GameStateManager {
     const player = this.state.players.get(seat);
     if (!player) return;
 
-    const roleData = this.roleRegistry.get(newRole);
+    const roleData = this.roleRegistry.getRoleData(newRole);
     if (!roleData) {
       throw new Error(`Unknown role: ${newRole}`);
     }
@@ -394,29 +374,6 @@ export class GameStateManager {
 
   getRedHerring(): number | null {
     return this.state.redHerringSeat;
-  }
-
-  private selectRandomTownsfolkForDrunk(assignedRoles: Set<string>): string {
-    console.log('[SelectDrunkRole] 開始選擇酒鬼的假角色...');
-    console.log('[SelectDrunkRole] 已分配角色:', Array.from(assignedRoles));
-
-    // 獲取所有未分配的村民角色（排除已在場的角色）
-    const availableTownsfolk = (rolesData as RoleData[])
-      .filter(r => r.team === 'townsfolk' && !assignedRoles.has(r.id))
-      .map(r => r.id);
-
-    console.log('[SelectDrunkRole] 可用村民角色數量:', availableTownsfolk.length);
-    console.log('[SelectDrunkRole] 可用村民角色:', availableTownsfolk);
-
-    if (availableTownsfolk.length === 0) {
-      throw new Error('無可用的村民角色供酒鬼使用（這不應該發生）');
-    }
-
-    // 隨機選擇一個未分配的村民角色
-    const randomIndex = Math.floor(Math.random() * availableTownsfolk.length);
-    const selected = availableTownsfolk[randomIndex];
-    console.log('[SelectDrunkRole] 選擇的假角色:', selected);
-    return selected;
   }
 
   startNight(): void {
@@ -492,7 +449,7 @@ export class GameStateManager {
 
     console.log('[DemonBluffs] After drunk handling:', Array.from(assignedRoles));
 
-    const goodRoles = (rolesData as RoleData[]).filter(
+    const goodRoles = this.roleRegistry.getAllRoles().filter(
       (r) => (r.team === 'townsfolk' || r.team === 'outsider') &&
              !assignedRoles.has(r.id) &&
              r.id !== 'drunk'  // 排除酒鬼：惡魔不會宣稱自己是酒鬼
@@ -542,7 +499,7 @@ export class GameStateManager {
         ? player.believesRole
         : player.role;
 
-      const roleData = this.roleRegistry.get(effectiveRole);
+      const roleData = this.roleRegistry.getRoleData(effectiveRole);
       if (!roleData) continue;
 
       const priority = isFirstNight ? roleData.firstNight : roleData.otherNight;

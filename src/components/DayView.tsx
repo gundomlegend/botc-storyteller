@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { useRoleHelpers } from '../hooks/useRoleHelpers';
 import type { Player } from '../engine/types';
 import PlayerSelector from './PlayerSelector';
 
 export default function DayView() {
-  const { day, players, alivePlayers, killPlayer, startNight, stateManager } = useGameStore();
-  const { getPlayerRoleDisplayName } = useRoleHelpers();
+  const { day, players, alivePlayers, killPlayer, startNight, stateManager, roleRegistry} = useGameStore();
 
   const [nominatorSeat, setNominatorSeat] = useState<number | null>(null);
   const [nomineeSeat, setNomineeSeat] = useState<number | null>(null);
@@ -74,7 +72,7 @@ export default function DayView() {
             >
               <span className="ps-seat">{p.seat}</span>
               <span className="ps-name">{p.name}</span>
-              <span className="ps-role">{getPlayerRoleDisplayName(p)}</span>
+              <span className="ps-role">{roleRegistry.getPlayerRoleName(p)}</span>
               <span className="ps-alive">{p.isAlive ? '存活' : '死亡'}</span>
             </div>
           ))}

@@ -6,7 +6,7 @@ interface DemonBluffsProps {
 }
 
 export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
-  const { stateManager, ruleEngine } = useGameStore();
+  const { stateManager, roleRegistry } = useGameStore();
   const [bluffs, setBluffs] = useState<string[]>([]);
 
   const demon = stateManager.getDemonPlayer();
@@ -24,7 +24,7 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
         {demon && (
           <p className="special-step">
             讓 {demon.seat}號 {demon.name}（
-            {ruleEngine.getPlayerRoleName(demon)}）睜眼
+            {roleRegistry.getPlayerRoleName(demon)}）睜眼
           </p>
         )}
 
@@ -32,10 +32,10 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
 
         <div className="bluff-tokens">
           {bluffs.map((roleId) => {
-            const roleData = ruleEngine.getRoleData(roleId);
+            const roleData = roleRegistry.getRoleData(roleId);
             return (
               <div key={roleId} className="bluff-token">
-                <div className="bluff-name-cn">{ruleEngine.getRoleName(roleId)}</div>
+                <div className="bluff-name-cn">{roleRegistry.getRoleName(roleId)}</div>
                 <div className="bluff-name-en">{roleData?.name ?? roleId}</div>
               </div>
             );

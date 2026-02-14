@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { Player } from '../engine/types';
 import { useGameStore } from '../store/gameStore';
-import { useRoleHelpers } from '../hooks/useRoleHelpers';
 
 interface PlayerSelectorProps {
   mode?: 'single' | 'double' | 'multiple' | 'display';
@@ -40,8 +39,7 @@ export function PlayerSelector({
   onSelect,
   onError,
 }: PlayerSelectorProps) {
-  const players = useGameStore((s) => s.players);
-  const { getPlayerRoleDisplayName } = useRoleHelpers();
+  const { players, roleRegistry } = useGameStore();
   const [selected, setSelected] = useState<number[]>([]);
 
   const selectablePlayers = useMemo(() => {
@@ -158,9 +156,7 @@ export function PlayerSelector({
               {showUsers && <div className="player-name">{player.name}</div>}
 
               {showRoles && (
-                <div className="player-role">
-                  {getPlayerRoleDisplayName(player)}
-                </div>
+                <div className="player-role">{roleRegistry.getPlayerRoleName(player)}</div>
               )}
 
               {showStatus && (
