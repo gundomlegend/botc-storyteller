@@ -212,13 +212,32 @@ export default function TwoPlayerInfoProcessor({
   // ============================================================
   // Step 5: 執行配置策略 - 取得動態內容
   // ============================================================
-  const targets = (config.targetTeam === 'outsider'
-    ? (info.outsiders as TargetPlayerInfo[])
-    : (info.minions as TargetPlayerInfo[])) || [];
+  let targets: TargetPlayerInfo[] = [];
+  let specialPlayers: SpecialPlayerInfo[] = [];
 
-  const specialPlayers = (config.targetTeam === 'outsider'
-    ? (info.recluses as SpecialPlayerInfo[])
-    : []) || [];
+  if (config.targetTeam === 'outsider') {
+    // 圖書管理員邏輯：調整顯示列表
+    const outsiders = (info.outsiders as TargetPlayerInfo[]) || [];
+    const recluses = (info.recluses as SpecialPlayerInfo[]) || [];
+
+    // 主列表：真實外來者（排除間諜）+ 陌客
+    const realOutsiders = outsiders.filter(o => o.role !== 'spy');
+    const reclusesAsTargets: TargetPlayerInfo[] = recluses.map(r => ({
+      seat: r.seat,
+      name: r.name,
+      role: r.role,
+      roleName: r.roleName || '',
+    }));
+    targets = [...realOutsiders, ...reclusesAsTargets];
+
+    // 特殊列表：間諜
+    const spies = outsiders.filter(o => o.role === 'spy');
+    specialPlayers = spies;
+  } else {
+    // 調查員邏輯：保持原樣
+    targets = (info.minions as TargetPlayerInfo[]) || [];
+    specialPlayers = [];
+  }
 
   const unreliableWarning = config.getUnreliableWarning?.(context);
   const hints = config.getHints?.(context) || [];
@@ -272,21 +291,25 @@ export default function TwoPlayerInfoProcessor({
             {targets.map(t => (
               <li style={{ color: '#ff6b6b' }} key={t.seat}>
                 {t.seat}號 {t.name}（{t.roleName}）
-                {t.role === 'spy' && <span style={{ color: '#ff6b6b' }}> [可視為{config.targetTeam === 'outsider' ? '外來者' : '爪牙'}]</span>}
+                {t.role === 'recluse' && config.targetTeam === 'outsider' && <span style={{ color: '#ff6b6b' }}> [可不視為外來者]</span>}
+                {t.role === 'recluse' && config.targetTeam === 'minion' && <span style={{ color: '#ff6b6b' }}> [可視為爪牙]</span>}
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* 顯示特殊玩家列表（陌客等） */}
+      {/* 顯示特殊玩家列表（間諜等） */}
       {specialPlayers.length > 0 && (
         <div className="result-info" style={{ marginBottom: '1rem', padding: '0.5rem', background: '#fff3cd', borderRadius: '4px' }}>
-          <strong style={{ color: '#ff6b6b' }}>陌客（可選擇不視為外來者）：</strong>
+          <strong style={{ color: '#ff6b6b' }}>
+            {config.targetTeam === 'outsider' ? '間諜（可視為外來者）' : '特殊角色'}：
+          </strong>
           <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
             {specialPlayers.map(sp => (
               <li style={{ color: '#ff6b6b' }} key={sp.seat}>
                 {sp.seat}號 {sp.name}
+                {sp.roleName && `（${sp.roleName}）`}
               </li>
             ))}
           </ul>

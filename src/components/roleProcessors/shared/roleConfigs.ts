@@ -134,11 +134,11 @@ export const librarianConfig: RoleProcessorConfig = {
     }
 
     if (info.hasSpy && !info.onlySpyInGame) {
-      hints.push('間諜在場，可選擇間諜作為外來者');
+      hints.push('間諜可視為外來者');
     }
 
     if (info.hasRecluse) {
-      hints.push('陌客能力正常，可選擇不視為外來者');
+      hints.push('陌客可不視為外來者');
     }
 
     return hints;
