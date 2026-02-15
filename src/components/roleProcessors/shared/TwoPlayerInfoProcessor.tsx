@@ -234,9 +234,15 @@ export default function TwoPlayerInfoProcessor({
     const spies = outsiders.filter(o => o.role === 'spy');
     specialPlayers = spies;
   } else {
-    // 調查員邏輯：保持原樣
-    targets = (info.minions as TargetPlayerInfo[]) || [];
-    specialPlayers = [];
+    // 調查員邏輯：調整顯示列表
+    const minions = (info.minions as TargetPlayerInfo[]) || [];
+    const recluses = (info.recluses as SpecialPlayerInfo[]) || [];
+
+    // 主列表：所有爪牙（包含間諜）
+    targets = minions;
+
+    // 特殊列表：陌客
+    specialPlayers = recluses;
   }
 
   const unreliableWarning = config.getUnreliableWarning?.(context);
@@ -293,7 +299,7 @@ export default function TwoPlayerInfoProcessor({
               <li style={{ color: '#ff6b6b' }} key={t.seat}>
                 {t.seat}號 - {t.name} - {t.roleName}
                 {t.role === 'recluse' && config.targetTeam === 'outsider' && <span style={{ color: '#ff6b6b' }}> [可不視為外來者]</span>}
-                {t.role === 'recluse' && config.targetTeam === 'minion' && <span style={{ color: '#ff6b6b' }}> [可視為爪牙]</span>}
+                {t.role === 'spy' && config.targetTeam === 'minion' && <span style={{ color: '#ff6b6b' }}> [可不視為爪牙]</span>}
               </li>
             ))}
           </ul>

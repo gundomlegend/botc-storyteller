@@ -55,26 +55,37 @@ export class InvestigatorHandler extends BaseRoleHandler implements RoleHandler 
       roleName: this.getPlayerRoleName(m),
     }));
 
-    // 步驟 6: 檢查是否有陌客（供 UI 層參考）
+    // 步驟 6: 收集陌客資訊（能力正常，可視為爪牙）
     // 陌客中毒或醉酒時，能力失效，不應視為可疑目標
-    const hasRecluse = allPlayers.some(p =>
+    const recluses = allPlayers.filter(p =>
       p.role === 'recluse' && p.isAlive && !p.isPoisoned && !p.isDrunk
     );
-    const recluse = hasRecluse
-      ? allPlayers.find(p => p.role === 'recluse' && p.isAlive && !p.isPoisoned && !p.isDrunk)
-      : null;
 
-    // 步驟 7: 返回資訊，讓說書人在 UI 中選擇
+    const recluseList = recluses.map(r => ({
+      seat: r.seat,
+      name: r.name,
+      role: r.role,
+      roleName: this.getPlayerRoleName(r),
+    }));
+
+    const hasRecluse = recluses.length > 0;
+
+    // 步驟 7: 檢查是否有間諜（供 UI 層參考）
+    const hasSpy = minions.some(m =>
+      m.role === 'spy' && !m.isPoisoned && !m.isDrunk
+    );
+
+    // 步驟 8: 返回資訊，讓說書人在 UI 中選擇
     return {
       action: 'show_info',
       display: `調查員資訊獲取\n場上爪牙角色：${minionList.map(m => `${m.seat}號 ${m.name}(${m.roleName})`).join('、')}`,
       info: {
         // 在場爪牙列表（供 UI 選擇）
         minions: minionList,
-        // 陌客資訊（供 UI 預選使用）
+        // 陌客列表（能力正常，可視為爪牙）
+        recluses: recluseList,
+        hasSpy,
         hasRecluse,
-        recluseSeat: recluse?.seat ?? null,
-        recluseName: recluse?.name ?? null,
         // 可靠性資訊
         reliable: infoReliable,
         statusReason,

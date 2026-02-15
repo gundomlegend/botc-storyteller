@@ -275,8 +275,12 @@ export const investigatorConfig: RoleProcessorConfig = {
       hints.push('只有間諜在場，必須告知「無爪牙」');
     }
 
+    if (info.hasSpy && !info.onlySpyInGame) {
+      hints.push('可以不將間諜視為爪牙，和其他爪牙或陌客做搭配');
+    }
+
     if (info.hasRecluse) {
-      hints.push('陌客能力正常，可選擇陌客作為爪牙');
+      hints.push('可以將陌客視為爪牙，和一般鎮民做搭配');
     }
 
     return hints;
