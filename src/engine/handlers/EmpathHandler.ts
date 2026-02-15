@@ -177,7 +177,7 @@ export class EmpathHandler extends BaseRoleHandler implements RoleHandler {
 
     return `共情者資訊：${actualEvilCount} 位相鄰邪惡玩家
 
-左邊鄰居：${left.seat}號 ${left.name}（${this.getRoleName(left.role)}）${leftTag}
-右邊鄰居：${right.seat}號 ${right.name}（${this.getRoleName(right.role)}）${rightTag}${specialNotesStr}`;
+左邊鄰居：${left.seat}號 - ${left.name} - ${this.getRoleName(left.role)} - ${leftTag}
+右邊鄰居：${right.seat}號 - ${right.name} - ${this.getRoleName(right.role)} - ${rightTag}${specialNotesStr}`;
   }
 }
