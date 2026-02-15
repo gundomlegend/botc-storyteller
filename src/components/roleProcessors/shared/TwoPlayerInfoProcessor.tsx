@@ -12,17 +12,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { useGameStore } from '../../../store/gameStore';
 import type { NightResult } from '../../../engine/types';
 import type { RoleProcessorProps } from '../index';
-import type {
-  RoleProcessorConfig,
-  ProcessorContext,
-  TargetPlayerInfo,
-  SpecialPlayerInfo,
-} from './types';
 import AbilityHeader from '../../shared/AbilityHeader';
 import AbilityStatusIndicator from '../../shared/AbilityStatusIndicator';
 import DrunkRoleIndicator from '../../shared/DrunkRoleIndicator';
 import { usePlayerRealTimeStatus } from '../../../hooks/usePlayerRealTimeStatus';
 import rolesData from '../../../data/roles/trouble-brewing.json';
+import { ProcessorContext, RoleProcessorConfig } from '../../roleConfigs/shared/type';
 
 /**
  * 格式化玩家選項文字（包含座號、名稱、角色、狀態圖示）
@@ -36,24 +31,26 @@ function formatPlayerOption(player: any, roleRegistry: any): string {
   return `${player.seat}號 - ${player.name} - ${roleRegistry.getPlayerRoleName(player)}${statusStr}`;
 }
 
-export interface TwoPlayerInfoProcessorProps extends RoleProcessorProps {
-  config: RoleProcessorConfig;
+export interface TwoPlayerInfoProcessorProps<THandlerInfo = unknown> extends RoleProcessorProps {
+  config: RoleProcessorConfig<THandlerInfo>;
 }
 
 /**
- * 通用雙玩家資訊處理器元件
+ * 通用雙玩家資訊處理器元件（泛型版本）
  *
  * Template Method Pattern 實作：
  * 1. 獲取資料（process Handler）
  * 2. 建立上下文（context）
  * 3. 執行配置策略（preselection, hints, warnings）
  * 4. 渲染 UI（固定結構，動態內容）
+ *
+ * @template THandlerInfo - Handler 返回的 info 型別
  */
-export default function TwoPlayerInfoProcessor({
+export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
   item,
   onDone,
   config,
-}: TwoPlayerInfoProcessorProps) {
+}: TwoPlayerInfoProcessorProps<THandlerInfo>) {
   const { processAbility, stateManager, roleRegistry } = useGameStore();
   const [result, setResult] = useState<NightResult | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('');
@@ -86,12 +83,12 @@ export default function TwoPlayerInfoProcessor({
   // ============================================================
   // Step 2: 建立上下文（提供給配置函數使用）
   // ============================================================
-  const context: ProcessorContext = useMemo(() => {
+  const context: ProcessorContext<THandlerInfo> = useMemo(() => {
     if (!result) {
-      return {} as ProcessorContext; // 暫時返回空上下文
+      return {} as ProcessorContext<THandlerInfo>; // 暫時返回空上下文
     }
     return {
-      result,
+      result: result as NightResult<THandlerInfo>,
       isReliable,
       isDrunkRole,
       isPoisoned,
@@ -212,38 +209,8 @@ export default function TwoPlayerInfoProcessor({
   // ============================================================
   // Step 5: 執行配置策略 - 取得動態內容
   // ============================================================
-  let targets: TargetPlayerInfo[] = [];
-  let specialPlayers: SpecialPlayerInfo[] = [];
-
-  if (config.targetTeam === 'outsider') {
-    // 圖書管理員邏輯：調整顯示列表
-    const outsiders = (info.outsiders as TargetPlayerInfo[]) || [];
-    const recluses = (info.recluses as SpecialPlayerInfo[]) || [];
-
-    // 主列表：真實外來者（排除間諜）+ 陌客
-    const realOutsiders = outsiders.filter(o => o.role !== 'spy');
-    const reclusesAsTargets: TargetPlayerInfo[] = recluses.map(r => ({
-      seat: r.seat,
-      name: r.name,
-      role: r.role,
-      roleName: r.roleName || '',
-    }));
-    targets = [...realOutsiders, ...reclusesAsTargets];
-
-    // 特殊列表：間諜
-    const spies = outsiders.filter(o => o.role === 'spy');
-    specialPlayers = spies;
-  } else {
-    // 調查員邏輯：調整顯示列表
-    const minions = (info.minions as TargetPlayerInfo[]) || [];
-    const recluses = (info.recluses as SpecialPlayerInfo[]) || [];
-
-    // 主列表：所有爪牙（包含間諜）
-    targets = minions;
-
-    // 特殊列表：陌客
-    specialPlayers = recluses;
-  }
+  const targets = config.getTargets(context);
+  const specialPlayers = config.getSpecialPlayers(context);
 
   const unreliableWarning = config.getUnreliableWarning?.(context);
   const hints = config.getHints?.(context) || [];

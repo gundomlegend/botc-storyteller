@@ -114,14 +114,19 @@ export interface NightOrderItem {
   reminder: string;
 }
 
-export interface NightResult {
+/**
+ * 夜晚行動結果（泛型版本）
+ *
+ * @template TInfo - Handler 返回的 info 資料型別
+ */
+export interface NightResult<TInfo = unknown> {
   action?: 'show_info' | 'tell_alignment' | 'tell_number' | 'add_protection' | 'add_poison' | 'kill' | 'set_master' | 'mayor_bounce';
   skip?: boolean;
   skipReason?: string;
   needInput?: boolean;
   inputType?: 'select_player' | 'select_two_players';
   inputPrompt?: string;
-  info?: string | Record<string, unknown>;
+  info?: TInfo; // 使用泛型，預設為 unknown
   gesture?: 'nod' | 'shake' | 'none';
   mustFollow?: boolean;
   canLie?: boolean;
