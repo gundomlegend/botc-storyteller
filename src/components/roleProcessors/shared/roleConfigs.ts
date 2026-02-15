@@ -272,11 +272,11 @@ export const investigatorConfig: RoleProcessorConfig = {
     const hints: string[] = [];
 
     if (info.onlySpyInGame && info.noMinionToShow) {
-      hints.push('只有間諜在場，必須告知「無爪牙」');
+      hints.push('只有間諜在場，可告知「無爪牙」');
     }
 
     if (info.hasSpy && !info.onlySpyInGame) {
-      hints.push('可以不將間諜視為爪牙，和其他爪牙或陌客做搭配');
+      hints.push('可以不將間諜視為爪牙，讓其他爪牙和鎮民做搭配');
     }
 
     if (info.hasRecluse) {
@@ -288,7 +288,7 @@ export const investigatorConfig: RoleProcessorConfig = {
 
   /**
    * 調查員是否顯示「無爪牙」按鈕：
-   * 無爪牙、或能力不可靠時
+   * 無爪牙、只有間諜、或能力不可靠時
    */
   shouldShowNoTargetButton: (context: ProcessorContext): boolean => {
     const { result, isReliable } = context;
@@ -296,6 +296,7 @@ export const investigatorConfig: RoleProcessorConfig = {
 
     return !!(
       info.noMinionInGame ||
+      info.onlySpyInGame ||
       !isReliable
     );
   },

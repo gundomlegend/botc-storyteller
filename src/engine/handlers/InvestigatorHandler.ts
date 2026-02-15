@@ -33,17 +33,31 @@ export class InvestigatorHandler extends BaseRoleHandler implements RoleHandler 
 
     // 步驟 4: 只有間諜的特殊情況（僅在間諜能力正常時適用）
     // 如果間諜中毒或醉酒，能力失效，不適用特殊規則
+    // 說書人可選擇告知「無爪牙」或給予假資訊
     if (minions.length === 1 && minions[0].role === 'spy' &&
         !minions[0].isPoisoned && !minions[0].isDrunk) {
+      const spyInfo = {
+        seat: minions[0].seat,
+        name: minions[0].name,
+        role: minions[0].role,
+        roleName: this.getPlayerRoleName(minions[0]),
+      };
+
       return {
         action: 'show_info',
-        display: '場上只有間諜（能力正常），告知調查員：場上無任何爪牙角色',
+        display: '場上只有間諜（能力正常），可告知調查員：場上無任何爪牙角色',
         info: {
           onlySpyInGame: true,
           noMinionToShow: true,
+          minions: [spyInfo], // 提供間諜資料供 UI 顯示
+          recluses: [],
+          hasSpy: true,
+          hasRecluse: false,
+          reliable: infoReliable,
+          statusReason,
         },
-        mustFollow: true, // 必須遵守（間諜特殊規則）
-        canLie: false,
+        mustFollow: false, // 說書人可自行決定
+        canLie: true,
       };
     }
 
