@@ -243,6 +243,7 @@ export default function TwoPlayerInfoProcessor({
   const hints = config.getHints?.(context) || [];
   const shouldShowNoTargetButton = config.shouldShowNoTargetButton?.(context) || false;
   const targetListLabel = config.getTargetListLabel?.(context) || '場上目標';
+  const suspectedListLabel = config.getSuspectedListLabel?.(context) || '可疑目標';
   const noTargetButtonText = config.getNoTargetButtonText?.(context) || '給予「無目標」資訊';
 
   const isSelectionComplete = selectedRole !== '' && selectedPlayer1 !== null && selectedPlayer2 !== null;
@@ -290,7 +291,7 @@ export default function TwoPlayerInfoProcessor({
           <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
             {targets.map(t => (
               <li style={{ color: '#ff6b6b' }} key={t.seat}>
-                {t.seat}號 {t.name}（{t.roleName}）
+                {t.seat}號 - {t.name} - {t.roleName}
                 {t.role === 'recluse' && config.targetTeam === 'outsider' && <span style={{ color: '#ff6b6b' }}> [可不視為外來者]</span>}
                 {t.role === 'recluse' && config.targetTeam === 'minion' && <span style={{ color: '#ff6b6b' }}> [可視為爪牙]</span>}
               </li>
@@ -302,14 +303,11 @@ export default function TwoPlayerInfoProcessor({
       {/* 顯示特殊玩家列表（間諜等） */}
       {specialPlayers.length > 0 && (
         <div className="result-info" style={{ marginBottom: '1rem', padding: '0.5rem', background: '#fff3cd', borderRadius: '4px' }}>
-          <strong style={{ color: '#ff6b6b' }}>
-            {config.targetTeam === 'outsider' ? '間諜（可視為外來者）' : '特殊角色'}：
-          </strong>
+          <strong style={{ color: '#ff6b6b' }}>{suspectedListLabel}：</strong>
           <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
             {specialPlayers.map(sp => (
               <li style={{ color: '#ff6b6b' }} key={sp.seat}>
-                {sp.seat}號 {sp.name}
-                {sp.roleName && `（${sp.roleName}）`}
+                {sp.seat}號 - {sp.name} - {sp.roleName}
               </li>
             ))}
           </ul>

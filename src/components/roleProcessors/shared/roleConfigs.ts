@@ -134,11 +134,11 @@ export const librarianConfig: RoleProcessorConfig = {
     }
 
     if (info.hasSpy && !info.onlySpyInGame) {
-      hints.push('間諜可視為外來者');
+      hints.push('可以將間諜視為外來者，和一般鎮民做搭配');
     }
 
     if (info.hasRecluse) {
-      hints.push('陌客可不視為外來者');
+      hints.push('可以不將陌客視為外來者，和其他外來者或間諜做搭配');
     }
 
     return hints;
@@ -164,6 +164,8 @@ export const librarianConfig: RoleProcessorConfig = {
   getTargetListLabel: () => '場上外來者',
 
   getNoTargetButtonText: () => '給予「無外來者」資訊',
+
+  getSuspectedListLabel: () => '疑似外來者',
 
   getConfirmEventDescription: (context, selectedRole, player1, player2) => {
     const selectedRoleData = context.roleRegistry.getRoleData(selectedRole);
@@ -297,6 +299,8 @@ export const investigatorConfig: RoleProcessorConfig = {
   getTargetListLabel: () => '場上爪牙',
 
   getNoTargetButtonText: () => '告知「無爪牙」',
+
+  getSuspectedListLabel: () => '疑似爪牙',
 
   getConfirmEventDescription: (context, selectedRole, player1, player2) => {
     const selectedRoleData = context.roleRegistry.getRoleData(selectedRole);

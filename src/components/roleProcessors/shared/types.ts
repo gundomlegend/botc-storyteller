@@ -84,6 +84,12 @@ export interface RoleProcessorConfig {
    */
   getTargetListLabel?: (context: ProcessorContext) => string;
 
+    /**
+   * 取得特殊列表標籤（Strategy）
+   * 例如：「疑似外來者」或「疑似爪牙」
+   */
+  getSuspectedListLabel?: (context: ProcessorContext) => string;
+
   /**
    * 取得「無目標」按鈕文字（Strategy）
    * 例如：「給予『無外來者』資訊」或「告知『無爪牙』」
