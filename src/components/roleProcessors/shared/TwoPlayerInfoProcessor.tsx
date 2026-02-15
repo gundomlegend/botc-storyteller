@@ -17,7 +17,7 @@ import AbilityStatusIndicator from '../../shared/AbilityStatusIndicator';
 import DrunkRoleIndicator from '../../shared/DrunkRoleIndicator';
 import { usePlayerRealTimeStatus } from '../../../hooks/usePlayerRealTimeStatus';
 import rolesData from '../../../data/roles/trouble-brewing.json';
-import { ProcessorContext, RoleProcessorConfig } from '../../roleConfigs/shared/type';
+import type { ProcessorContext, RoleProcessorConfig, TargetPlayerInfo, SpecialPlayerInfo } from './types';
 
 /**
  * 格式化玩家選項文字（包含座號、名稱、角色、狀態圖示）
@@ -172,12 +172,14 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
     );
   }
 
-  const info = result.info as Record<string, unknown>;
+  // 使用型別斷言來處理不同 Handler Info 的聯合型別
+  type HandlerInfoUnion = { noOutsiderInGame?: boolean; noMinionInGame?: boolean; onlySpyInGame?: boolean };
+  const info = result.info as THandlerInfo & HandlerInfoUnion;
 
   // ============================================================
   // 特殊情況：無目標（無外來者/無爪牙）
   // ============================================================
-  if (info.noOutsiderInGame || info.noMinionInGame) {
+  if (info?.noOutsiderInGame || info?.noMinionInGame) {
     return (
       <div className="ability-processor">
         <AbilityHeader
@@ -221,7 +223,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
 
   const isSelectionComplete = selectedRole !== '' && selectedPlayer1 !== null && selectedPlayer2 !== null;
 
-  const onlySpyInGame = info.onlySpyInGame as boolean;
+  const onlySpyInGame = info?.onlySpyInGame ?? false;
 
   // ============================================================
   // Step 6: 渲染 UI（Template Method - 固定結構）
@@ -262,7 +264,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
         <div className="result-info" style={{ marginBottom: '1rem', padding: '0.5rem', background: '#f0f0f0', borderRadius: '4px' }}>
           <strong style={{ color: '#ff6b6b' }}>{targetListLabel}：</strong>
           <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
-            {targets.map(t => (
+            {targets.map((t: TargetPlayerInfo) => (
               <li style={{ color: '#ff6b6b' }} key={t.seat}>
                 {t.seat}號 - {t.name} - {t.roleName}
                 {t.role === 'recluse' && config.targetTeam === 'outsider' && <span style={{ color: '#ff6b6b' }}> [可不視為外來者]</span>}
@@ -278,7 +280,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
         <div className="result-info" style={{ marginBottom: '1rem', padding: '0.5rem', background: '#fff3cd', borderRadius: '4px' }}>
           <strong style={{ color: '#ff6b6b' }}>{suspectedListLabel}：</strong>
           <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
-            {specialPlayers.map(sp => (
+            {specialPlayers.map((sp: SpecialPlayerInfo) => (
               <li style={{ color: '#ff6b6b' }} key={sp.seat}>
                 {sp.seat}號 - {sp.name} - {sp.roleName}
               </li>
@@ -288,7 +290,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
       )}
 
       {/* 提示訊息（Strategy） */}
-      {hints.length > 0 && hints.map((hint, index) => (
+      {hints.length > 0 && hints.map((hint: string, index: number) => (
         <div
           key={index}
           className={onlySpyInGame ? 'result-hint' : 'result-hint'}
@@ -313,10 +315,10 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
           style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
         >
           <option value="">-- 請選擇 --</option>
-          {targetRoles.map(role => (
+          {targetRoles.map((role: any) => (
             <option key={role.id} value={role.id}>
               {roleRegistry.getRoleName(role.id)}
-              {!targets.some(t => t.role === role.id) && !specialPlayers.some(sp => sp.role === role.id) && ' (不在場)'}
+              {!targets.some((t: TargetPlayerInfo) => t.role === role.id) && !specialPlayers.some((sp: SpecialPlayerInfo) => sp.role === role.id) && ' (不在場)'}
             </option>
           ))}
         </select>

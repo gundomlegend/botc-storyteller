@@ -7,9 +7,9 @@
  */
 
 import TwoPlayerInfoProcessor from './shared/TwoPlayerInfoProcessor';
-import { librarianConfig } from './configs/LibrarianConfig';
-import type { LibrarianHandlerInfo } from './shared/types';
+import { librarianConfig } from './shared/roleConfigs';
 import type { RoleProcessorProps } from './index';
+import type { LibrarianHandlerInfo } from './shared/types';
 
 export default function LibrarianProcessor(props: RoleProcessorProps) {
   return <TwoPlayerInfoProcessor<LibrarianHandlerInfo> {...props} config={librarianConfig} />;

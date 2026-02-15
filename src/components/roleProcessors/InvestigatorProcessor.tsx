@@ -7,9 +7,9 @@
  */
 
 import TwoPlayerInfoProcessor from './shared/TwoPlayerInfoProcessor';
-import { investigatorConfig } from './configs/InvestigatorConfig';
-import type { InvestigatorHandlerInfo } from './shared/types';
+import { investigatorConfig } from './shared/roleConfigs';
 import type { RoleProcessorProps } from './index';
+import type { InvestigatorHandlerInfo } from './shared/types';
 
 export default function InvestigatorProcessor(props: RoleProcessorProps) {
   return <TwoPlayerInfoProcessor<InvestigatorHandlerInfo> {...props} config={investigatorConfig} />;
