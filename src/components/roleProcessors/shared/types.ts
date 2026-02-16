@@ -65,6 +65,17 @@ export interface InvestigatorHandlerInfo {
   statusReason: string;
 }
 
+/**
+ * 洗衣婦 Handler 返回的 Info 型別
+ */
+export interface WasherwomanHandlerInfo {
+  townsfolk: TargetPlayerInfo[];
+  hasSpy: boolean;
+  onlySpyInGame?: boolean;
+  reliable: boolean;
+  statusReason: string;
+}
+
 // ============================================================
 // Processor 通用型別定義
 // ============================================================
@@ -119,6 +130,13 @@ export interface RoleProcessorConfig<THandlerInfo = unknown> {
   targetTeam: 'minion' | 'outsider' | 'townsfolk';
 
   /**
+   * 是否在玩家列表中包含自己
+   * - true: 玩家可以選擇自己（如洗衣婦在「只有自己是鎮民」時）
+   * - false: 玩家列表排除自己（預設行為）
+   */
+  includeSelfInPlayerList?: boolean;
+
+  /**
    * 取得預選邏輯（Strategy）
    * 不同角色有不同的預選策略
    */
@@ -141,6 +159,13 @@ export interface RoleProcessorConfig<THandlerInfo = unknown> {
    * 例如：只有間諜、只有陌客、或能力不可靠時
    */
   shouldShowNoTargetButton?: (context: ProcessorContext<THandlerInfo>) => boolean;
+
+  /**
+   * 取得角色列表標題（Strategy）
+   * 例如：選擇展示的「爪牙」或「外來者」或「[鎮民」角色
+   */
+  getTargetRoleLabel?: (context: ProcessorContext<THandlerInfo>) => string;
+
 
   /**
    * 取得目標列表標籤（Strategy）

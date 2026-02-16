@@ -220,6 +220,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
   const targetListLabel = config.getTargetListLabel?.(context) || '場上目標';
   const suspectedListLabel = config.getSuspectedListLabel?.(context) || '可疑目標';
   const noTargetButtonText = config.getNoTargetButtonText?.(context) || '給予「無目標」資訊';
+  const targetRole = config.getTargetRoleLabel?.(context) || '目標';
 
   const isSelectionComplete = selectedRole !== '' && selectedPlayer1 !== null && selectedPlayer2 !== null;
 
@@ -307,7 +308,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
 
       {/* 選擇角色 */}
       <div className="ability-target">
-        <label htmlFor="role-select">選擇展示的{config.targetTeam === 'outsider' ? '外來者' : '爪牙'}角色：</label>
+        <label htmlFor="role-select">選擇展示的{targetRole}角色：</label>
         <select
           id="role-select"
           value={selectedRole}
@@ -335,7 +336,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
         >
           <option value="">-- 請選擇 --</option>
           {stateManager.getAlivePlayers()
-            .filter(p => p.seat !== item.seat)
+            .filter(p => config.includeSelfInPlayerList === true || p.seat !== item.seat)
             .map(p => (
               <option key={p.seat} value={p.seat}>
                 {formatPlayerOption(p, roleRegistry)}
@@ -354,7 +355,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
         >
           <option value="">-- 請選擇 --</option>
           {stateManager.getAlivePlayers()
-            .filter(p => p.seat !== item.seat && p.seat !== selectedPlayer1)
+            .filter(p => p.seat !== selectedPlayer1)
             .map(p => (
               <option key={p.seat} value={p.seat}>
                 {formatPlayerOption(p, roleRegistry)}
