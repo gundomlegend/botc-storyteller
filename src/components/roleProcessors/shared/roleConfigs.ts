@@ -15,6 +15,7 @@ import type {
   SpecialPlayerInfo,
   LibrarianHandlerInfo,
   InvestigatorHandlerInfo,
+  WasherwomanHandlerInfo,
 } from './types';
 
 // ============================================================
@@ -24,6 +25,7 @@ import type {
 export const librarianConfig: RoleProcessorConfig<LibrarianHandlerInfo> = {
   roleId: 'librarian',
   targetTeam: 'outsider',
+  includeSelfInPlayerList: false,
 
   /**
    * 圖書管理員預選邏輯：
@@ -119,7 +121,7 @@ export const librarianConfig: RoleProcessorConfig<LibrarianHandlerInfo> = {
 
     return {
       message: '圖書管理員中毒/醉酒（能力不可靠），說書人可給予任意資訊',
-      recommendation: '推薦：給予正確資訊，避免暴露投毒者',
+      recommendation: '推薦：大多數角色對，人錯，偶爾全真或是半真，避免暴露投毒者',
     };
   },
 
@@ -164,6 +166,8 @@ export const librarianConfig: RoleProcessorConfig<LibrarianHandlerInfo> = {
       !isReliable
     );
   },
+
+  getTargetRoleLabel: () => '外來者',
 
   getTargetListLabel: () => '場上外來者',
 
@@ -221,6 +225,7 @@ export const librarianConfig: RoleProcessorConfig<LibrarianHandlerInfo> = {
 export const investigatorConfig: RoleProcessorConfig<InvestigatorHandlerInfo> = {
   roleId: 'investigator',
   targetTeam: 'minion',
+  includeSelfInPlayerList: false,
 
   /**
    * 調查員預選邏輯：
@@ -297,7 +302,7 @@ export const investigatorConfig: RoleProcessorConfig<InvestigatorHandlerInfo> = 
 
     return {
       message: '調查員中毒/醉酒（能力不可靠），說書人可給予任意資訊',
-      recommendation: '推薦：給予正確資訊，避免暴露投毒者',
+      recommendation: '推薦：大多數角色對，人錯，偶爾全真或是半真，避免暴露投毒者',
     };
   },
 
@@ -343,6 +348,8 @@ export const investigatorConfig: RoleProcessorConfig<InvestigatorHandlerInfo> = 
     );
   },
 
+  getTargetRoleLabel: () => '爪牙',
+
   getTargetListLabel: () => '場上爪牙',
 
   getNoTargetButtonText: () => '告知「無爪牙」',
@@ -381,10 +388,205 @@ export const investigatorConfig: RoleProcessorConfig<InvestigatorHandlerInfo> = 
 };
 
 // ============================================================
+// 洗衣婦配置
+// ============================================================
+
+export const washerwomanConfig: RoleProcessorConfig<WasherwomanHandlerInfo> = {
+  roleId: 'washerwoman',
+  targetTeam: 'townsfolk',
+  includeSelfInPlayerList: true,
+
+  /**
+   * 洗衣婦預選邏輯：
+   * 1. 只有自己是鎮民 → 預選自己
+   * 2. 只有間諜 → 不預選角色，預選間諜作為第一位玩家
+   * 3. 能力不可靠 → 不預選
+   * 4. 可靠時 → 優先選擇其他鎮民 > 間諜 > 自己
+   */
+  getPreselection: (context: ProcessorContext<WasherwomanHandlerInfo>): PreselectionResult => {
+    const { result, isReliable, stateManager, currentPlayerSeat } = context;
+    const info = result.info;
+    if (!info) return { role: null, player1: null, player2: null };
+
+    // 只有間諜的情況：不預選角色，預選間諜作為第一位玩家
+    if (info.onlySpyInGame) {
+      const spy = info.townsfolk.find(t => t.role === 'spy');
+      if (spy) {
+        const otherPlayers = stateManager.getAlivePlayers()
+          .filter(p => p.seat !== spy.seat && p.seat !== currentPlayerSeat);
+        const randomOther = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+        return {
+          role: null,
+          player1: spy.seat,
+          player2: randomOther?.seat ?? null,
+        };
+      }
+      return { role: null, player1: null, player2: null };
+    }
+
+    // 不可靠時不預選
+    if (!isReliable) {
+      return { role: null, player1: null, player2: null };
+    }
+
+    const allPlayers = stateManager.getAlivePlayers();
+    const townsfolk = info.townsfolk || [];
+
+    // 只有自己是鎮民：預選自己
+    if (townsfolk.length === 0) {
+      const self = allPlayers.find(p => p.seat === currentPlayerSeat);
+      if (self) {
+        const otherPlayers = allPlayers.filter(p => p.seat !== currentPlayerSeat && p.team !== 'townsfolk');
+        const randomOther = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+        return {
+          role: self.role,
+          player1: self.seat,
+          player2: randomOther?.seat ?? null,
+        };
+      }
+      return { role: null, player1: null, player2: null };
+    }
+
+    // 優先選擇：真實鎮民（非間諜）> 間諜
+    const realTownsfolk = townsfolk.filter(t => t.role !== 'spy');
+    const firstTownsfolk = realTownsfolk.length > 0 ? realTownsfolk[0] : townsfolk[0];
+
+    if (!firstTownsfolk) {
+      return { role: null, player1: null, player2: null };
+    }
+
+    // 選擇第二位玩家：非該鎮民的玩家（優先選擇非鎮民）
+    const otherPlayers = allPlayers.filter(p =>
+      p.seat !== firstTownsfolk.seat &&
+      p.seat !== currentPlayerSeat &&
+      (p.team !== 'townsfolk' || p.role === 'spy')
+    );
+
+    const randomOther = otherPlayers.length > 0
+      ? otherPlayers[Math.floor(Math.random() * otherPlayers.length)]
+      : allPlayers.find(p => p.seat !== firstTownsfolk.seat && p.seat !== currentPlayerSeat);
+
+    return {
+      role: firstTownsfolk.role,
+      player1: firstTownsfolk.seat,
+      player2: randomOther?.seat ?? null,
+    };
+  },
+
+  /**
+   * 洗衣婦提示訊息
+   */
+  getHints: (context: ProcessorContext<WasherwomanHandlerInfo>): string[] => {
+    const { result } = context;
+    const info = result.info;
+    if (!info) return [];
+
+    const hints: string[] = [];
+
+    // 只有間諜在場
+    if (info.onlySpyInGame) {
+      hints.push('只有間諜在場，可給予間諜資訊或給予自己資訊');
+    }
+    // 間諜在場
+    else if (info.hasSpy) {
+      hints.push('間諜在場，可選擇間諜作為鎮民');
+    }
+
+    // 只有自己是鎮民
+    if (info.townsfolk.length === 0 && !info.onlySpyInGame) {
+      hints.push('場上只有自己是鎮民，可給予自己的資訊');
+    }
+
+    return hints;
+  },
+
+  /**
+   * 洗衣婦不可靠警告
+   */
+  getUnreliableWarning: (context: ProcessorContext<WasherwomanHandlerInfo>): UnreliableWarning | null => {
+    const { isReliable, isDrunkRole, isPoisoned, isDrunk } = context;
+
+    if (isDrunkRole) {
+      return {
+        message: '此玩家實際上是酒鬼，能力無效',
+        recommendation: '給予假鎮民角色，挑選兩個反差大的玩家',
+      };
+    }
+
+    if (!isReliable) {
+      const reason = isPoisoned ? '中毒' : isDrunk ? '醉酒' : '能力不可靠';
+      return {
+        message: `洗衣婦${reason}，能力不可靠`,
+        recommendation: '推薦：大多數角色對，人錯，偶爾全真或是半真，避免暴露投毒者',
+      };
+    }
+
+    return null;
+  },
+
+  getTargetRoleLabel: () => '鎮民',
+
+  /**
+   * 取得目標列表標籤
+   */
+  getTargetListLabel: (_context: ProcessorContext<WasherwomanHandlerInfo>): string => {
+    return '場上鎮民';
+  },
+
+  /**
+   * 取得特殊列表標籤
+   */
+  getSuspectedListLabel: (_context: ProcessorContext<WasherwomanHandlerInfo>): string => {
+    return '疑似鎮民';
+  },
+
+  /**
+   * 取得目標玩家列表：鎮民（包含洗衣婦自己）
+   */
+  getTargets: (context: ProcessorContext<WasherwomanHandlerInfo>): TargetPlayerInfo[] => {
+    const { result, stateManager, roleRegistry, currentPlayerSeat } = context;
+    const info = result.info;
+    if (!info) return [];
+
+    // 返回真實鎮民（排除間諜）
+    const otherTownsfolk = info.townsfolk.filter(t => t.role !== 'spy');
+
+    // 加上洗衣婦自己
+    const washerwoman = stateManager.getPlayer(currentPlayerSeat);
+    if (washerwoman && washerwoman.team === 'townsfolk') {
+      const washerwomanInfo: TargetPlayerInfo = {
+        seat: washerwoman.seat,
+        name: washerwoman.name,
+        role: washerwoman.role,
+        roleName: roleRegistry.getRoleName(washerwoman.role),
+        isPoisoned: washerwoman.isPoisoned,
+        isDrunk: washerwoman.isDrunk,
+      };
+      return [washerwomanInfo, ...otherTownsfolk];
+    }
+
+    return otherTownsfolk;
+  },
+
+  /**
+   * 取得特殊玩家列表：間諜
+   */
+  getSpecialPlayers: (context: ProcessorContext<WasherwomanHandlerInfo>): SpecialPlayerInfo[] => {
+    const { result } = context;
+    const info = result.info;
+    if (!info) return [];
+
+    // 返回間諜
+    return info.townsfolk.filter(t => t.role === 'spy');
+  },
+};
+
+// ============================================================
 // 配置註冊表
 // ============================================================
 
 export const ROLE_CONFIGS: Record<string, RoleProcessorConfig<any>> = {
   librarian: librarianConfig,
   investigator: investigatorConfig,
+  washerwoman: washerwomanConfig,
 };

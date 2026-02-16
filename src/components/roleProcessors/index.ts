@@ -5,6 +5,7 @@ import ChefProcessor from './ChefProcessor';
 import EmpathProcessor from './EmpathProcessor';
 import InvestigatorProcessor from './InvestigatorProcessor';
 import LibrarianProcessor from './LibrarianProcessor';
+import WasherwomanProcessor from './WasherwomanProcessor';
 
 export interface RoleProcessorProps {
   item: NightOrderItem;
@@ -22,4 +23,5 @@ export const ROLE_PROCESSORS: Record<string, ComponentType<RoleProcessorProps>> 
   empath: EmpathProcessor,
   investigator: InvestigatorProcessor,
   librarian: LibrarianProcessor,
+  washerwoman: WasherwomanProcessor,
 };
