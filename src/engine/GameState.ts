@@ -23,6 +23,7 @@ export class GameStateManager {
       selectedRoles: [],
       demonBluffs: [],
       redHerringSeat: null,
+      executedToday: null,
     };
   }
 
@@ -405,11 +406,48 @@ export class GameStateManager {
     this.state.day += 1;
     this.state.phase = 'day';
 
+    // 重置今天的處決記錄
+    this.state.executedToday = null;
+
     this.logEvent({
       type: 'phase_change',
       description: `第 ${this.state.day} 天開始`,
       details: { day: this.state.day },
     });
+  }
+
+  /**
+   * 記錄今天被處決的玩家
+   */
+  executePlayer(seat: number): void {
+    const player = this.getPlayer(seat);
+    if (!player) {
+      console.error(`executePlayer: 玩家 ${seat} 不存在`);
+      return;
+    }
+
+    this.state.executedToday = seat;
+
+    this.logEvent({
+      type: 'death',
+      description: `${player.seat}號 ${player.name}（${this.roleRegistry.getRoleName(player.role)}）被處決`,
+      details: {
+        seat,
+        name: player.name,
+        role: player.role,
+        cause: 'execution',
+      },
+    });
+  }
+
+  /**
+   * 取得今天被處決的玩家
+   */
+  getExecutedPlayerToday(): Player | null {
+    if (this.state.executedToday === null) {
+      return null;
+    }
+    return this.getPlayer(this.state.executedToday) || null;
   }
 
   getMinionPlayers(): Player[] {

@@ -76,6 +76,26 @@ export interface WasherwomanHandlerInfo {
   statusReason: string;
 }
 
+/**
+ * 送葬者 Handler 返回的 Info 型別
+ */
+export interface UndertakerHandlerInfo {
+  executedPlayer: {
+    seat: number;
+    name: string;
+    role: string;           // 真實角色
+    roleName: string;
+    believesRole?: string;  // 以為自己是（酒鬼情況）
+    isDrunk: boolean;       // 是否為酒鬼
+    isPoisoned: boolean;    // 是否中毒
+  };
+  isRecluse: boolean;       // 是否為能力正常的陌客
+  isSpy: boolean;           // 是否為能力正常的間諜
+  selectableRoles: string[]; // 可選擇的角色列表（陌客/間諜/不可靠時）
+  reliable: boolean;
+  statusReason: string;
+}
+
 // ============================================================
 // Processor 通用型別定義
 // ============================================================

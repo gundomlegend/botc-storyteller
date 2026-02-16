@@ -88,6 +88,7 @@ export interface GameState {
   selectedRoles: string[];
   demonBluffs: string[];
   redHerringSeat: number | null;
+  executedToday: number | null; // 今天被處決的玩家座號
 }
 
 export interface GameEvent {
