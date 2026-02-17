@@ -266,6 +266,10 @@ export class GameStateManager {
       player.deathDay = this.state.day;
     }
 
+    if (cause === 'execution') {
+      this.state.executedToday = seat;
+    }
+
     this.logEvent({
       type: 'death',
       description: `${player.seat}號 ${player.name} 死亡（${cause}）`,
