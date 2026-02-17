@@ -75,6 +75,7 @@ function makeGameState(players: Player[], redHerringSeat: number | null = null):
     selectedRoles: players.map(p => p.role),
     demonBluffs: [],
     redHerringSeat,
+    executedToday: null,
   };
 }
 

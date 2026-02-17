@@ -39,7 +39,9 @@ export class UndertakerHandler extends BaseRoleHandler implements RoleHandler {
     }
 
     // 步驟 3: 檢查今天是否有處決
-    const executedPlayer = gameState.getExecutedPlayerToday();
+    const executedPlayer = gameState.executedToday !== null
+      ? gameState.players.get(gameState.executedToday) ?? null
+      : null;
     if (!executedPlayer) {
       return {
         skip: true,
@@ -50,7 +52,7 @@ export class UndertakerHandler extends BaseRoleHandler implements RoleHandler {
 
     // 步驟 4: 取得被處決玩家的真實角色
     const executedRole = executedPlayer.role;
-    const executedRoleName = this.roleRegistry.getRoleName(executedRole);
+    const executedRoleName = this.ruleRegistry.getRoleName(executedRole);
 
     // 步驟 5: 檢查陌客/間諜特殊情況
     const isRecluse = executedRole === 'recluse' && !executedPlayer.isPoisoned && !executedPlayer.isDrunk;

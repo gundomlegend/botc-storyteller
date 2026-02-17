@@ -5,17 +5,45 @@
  * UI 結構：顯示處決資訊 + 角色選擇（特殊情況）+ 確認
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import type { NightResult } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import type { UndertakerHandlerInfo } from './shared/types';
 import { useGameStore } from '../../store/gameStore';
 
 export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps) {
-  const { result } = item;
-  const stateManager = useGameStore((state) => state.stateManager);
-  const roleRegistry = useGameStore((state) => state.roleRegistry);
+  const { processAbility, stateManager, roleRegistry } = useGameStore();
+  const [result, setResult] = useState<NightResult | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string>('');
 
-  // 型別斷言
+  useEffect(() => {
+    if (!result) {
+      const r = processAbility(item.seat, null);
+      setResult(r);
+    }
+  }, [result, processAbility, item.seat]);
+
+  // 當 result 取得後，設定初始的 selectedRole
+  useEffect(() => {
+    if (!result) return;
+    const info = result.info as UndertakerHandlerInfo | undefined;
+    if (!info) return;
+
+    const { executedPlayer, isRecluse, isSpy, selectableRoles, reliable } = info;
+    const needRoleSelection = isRecluse || isSpy || !reliable;
+
+    if (needRoleSelection && selectableRoles.length > 0) {
+      // 陌客/間諜不預選；不可靠時預選真實角色
+      setSelectedRole(isRecluse || isSpy ? '' : executedPlayer.role);
+    } else {
+      setSelectedRole(executedPlayer.role);
+    }
+  }, [result]);
+
+  if (!result) {
+    return <div className="ability-processor"><p>載入中...</p></div>;
+  }
+
   const info = result.info as UndertakerHandlerInfo | undefined;
 
   // 如果跳過或沒有資訊，顯示簡單的確認按鈕
@@ -43,13 +71,6 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
 
   // 判斷是否需要角色選擇
   const needRoleSelection = isRecluse || isSpy || !reliable;
-
-  // 狀態：選擇的角色
-  const [selectedRole, setSelectedRole] = useState<string>(
-    needRoleSelection && selectableRoles.length > 0
-      ? (isRecluse || isSpy ? '' : executedPlayer.role) // 陌客/間諜不預選，不可靠時預選真實角色
-      : executedPlayer.role
-  );
 
   // 能力狀態顯示
   const getStatusDisplay = () => {
@@ -103,7 +124,6 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
 
   // 確認處理
   const handleConfirm = () => {
-    // 記錄事件
     const roleName = roleRegistry?.getRoleName(selectedRole) || selectedRole;
     const description = `送葬者得知：${executedPlayer.seat}號 ${executedPlayer.name} 的角色是【${roleName}】`;
 
@@ -194,12 +214,7 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
               style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
             >
               <option value="">-- 請選擇 --</option>
-              {isRecluse && (
-                <option value={executedPlayer.role}>
-                  {executedPlayer.roleName}（真實角色）
-                </option>
-              )}
-              {isSpy && (
+              {(isRecluse || isSpy) && (
                 <option value={executedPlayer.role}>
                   {executedPlayer.roleName}（真實角色）
                 </option>
