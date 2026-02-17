@@ -143,27 +143,12 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
     onDone();
   };
 
-  // 給予「沒有處決」資訊
-  const handleNoExecution = () => {
-    stateManager?.logEvent({
-      type: 'ability_use',
-      description: `送葬者被告知：今天沒有處決`,
-      details: {
-        role: 'undertaker',
-        undertakerSeat: item.seat,
-        shownAsNoExecution: true,
-      },
-    });
-
-    onDone();
-  };
-
   return (
     <div className="ability-processor">
       {/* 標題 */}
       <div className="ability-header">
         <h3>送葬者（{item.seat}號 {stateManager?.getPlayer(item.seat)?.name}）</h3>
-        <div className="ability-status">
+        <div className="ability-status" >
           能力狀態：{getStatusDisplay()}
         </div>
         {statusReason && (
@@ -182,9 +167,9 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
           borderRadius: '4px',
           marginBottom: '1rem'
         }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{warning.message}</div>
+          <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: '#ff6b6b' }}>{warning.message}</div>
           {warning.recommendation && (
-            <div style={{ fontSize: '0.9em' }}>{warning.recommendation}</div>
+            <div style={{ fontSize: '0.9em', color: '#ff6b6b' }}>{warning.recommendation}</div>
           )}
         </div>
       )}
@@ -256,16 +241,6 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
         >
           確認
         </button>
-
-        {/* 給予「沒有處決」資訊按鈕（能力不可靠時） */}
-        {!reliable && (
-          <button
-            className="btn-secondary"
-            onClick={handleNoExecution}
-          >
-            給予「沒有處決」資訊
-          </button>
-        )}
       </div>
     </div>
   );
