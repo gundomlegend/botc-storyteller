@@ -89,6 +89,9 @@ export interface GameState {
   demonBluffs: string[];
   redHerringSeat: number | null;
   executedToday: number | null; // 今天被處決的玩家座號
+  gameOver: boolean;
+  winner: 'good' | 'evil' | null;
+  gameOverReason: string | null;
 }
 
 export interface GameEvent {
@@ -96,7 +99,7 @@ export interface GameEvent {
   timestamp: number;
   night: number;
   day: number;
-  type: 'role_change' | 'death' | 'poison' | 'protection' | 'ability_use' | 'nomination' | 'vote' | 'phase_change' | 'init' | 'revoke' | 'butler_master';
+  type: 'role_change' | 'death' | 'poison' | 'protection' | 'ability_use' | 'nomination' | 'vote' | 'phase_change' | 'init' | 'revoke' | 'butler_master' | 'game_end';
   description: string;
   details: Record<string, unknown>;
 }

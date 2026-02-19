@@ -76,6 +76,9 @@ function makeGameState(players: Player[], redHerringSeat: number | null = null):
     demonBluffs: [],
     redHerringSeat,
     executedToday: null,
+    gameOver: false,
+    winner: null,
+    gameOverReason: null,
   };
 }
 

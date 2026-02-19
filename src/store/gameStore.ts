@@ -18,6 +18,9 @@ interface GameStore {
   alivePlayers: Player[];
   nightOrder: NightOrderItem[];
   history: GameEvent[];
+  gameOver: boolean;
+  winner: 'good' | 'evil' | null;
+  gameOverReason: string | null;
 
   // 動作
   initGame: (players: Array<{ seat: number; name: string; role: string, roleName: string }>) => void;
@@ -29,6 +32,7 @@ interface GameStore {
   killPlayer: (seat: number, cause: 'demon_kill' | 'execution' | 'virgin_ability' | 'other') => void;
   setButlerMaster: (masterSeat: number) => void;
   setRedHerring: (seat: number) => void;
+  endGame: (winner: 'good' | 'evil', reason: string) => void;
 
   // 內部刷新
   _refresh: () => void;
@@ -48,6 +52,9 @@ export const useGameStore = create<GameStore>((set) => {
       players: stateManager.getAllPlayers(),
       alivePlayers: stateManager.getAlivePlayers(),
       history: stateManager.getHistory(),
+      gameOver: state.gameOver,
+      winner: state.winner,
+      gameOverReason: state.gameOverReason,
     });
   };
 
@@ -63,6 +70,9 @@ export const useGameStore = create<GameStore>((set) => {
     alivePlayers: [],
     nightOrder: [],
     history: [],
+    gameOver: false,
+    winner: null,
+    gameOverReason: null,
 
     initGame: (players) => {
       roleRegistry.init(rolesData as RoleData[]);
@@ -132,6 +142,11 @@ export const useGameStore = create<GameStore>((set) => {
 
     setRedHerring: (seat) => {
       stateManager.setRedHerring(seat);
+      refresh();
+    },
+
+    endGame: (winner, reason) => {
+      stateManager.endGame(winner, reason);
       refresh();
     },
 
