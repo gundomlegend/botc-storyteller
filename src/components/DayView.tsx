@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import type { Player } from '../engine/types';
+import { checkVirginAbility, type VirginCheckResult } from '../engine/VirginAbility';
 import PlayerSelector from './PlayerSelector';
+
+type VirginDialogState =
+  | { type: 'none' }
+  | { type: 'triggered'; nominator: Player; virgin: Player }
+  | { type: 'not_triggered'; nominator: Player; virgin: Player; result: VirginCheckResult }
+  | { type: 'spy_choice'; nominator: Player; virgin: Player };
 
 export default function DayView() {
   const { day, players, alivePlayers, killPlayer, startNight, stateManager, roleRegistry} = useGameStore();
@@ -10,6 +17,7 @@ export default function DayView() {
   const [nomineeSeat, setNomineeSeat] = useState<number | null>(null);
   const [votes, setVotes] = useState<Set<number>>(new Set());
   const [showVoting, setShowVoting] = useState(false);
+  const [virginDialog, setVirginDialog] = useState<VirginDialogState>({ type: 'none' });
 
   const nominee = nomineeSeat != null ? players.find((p) => p.seat === nomineeSeat) : null;
   const voteThreshold = Math.ceil(alivePlayers.length / 2);
@@ -24,11 +32,87 @@ export default function DayView() {
   const masterSeat = stateManager.getButlerMaster();
   const masterVoted = masterSeat != null && votes.has(masterSeat);
 
+  /**
+   * 檢查被提名者是否為貞潔者（或酒鬼以為自己是貞潔者）
+   */
+  const isVirginNominee = (player: Player): boolean => {
+    return player.role === 'virgin'
+      || (player.role === 'drunk' && player.believesRole === 'virgin');
+  };
+
   const handleNominate = () => {
-    if (nominatorSeat != null && nomineeSeat != null) {
-      setShowVoting(true);
-      setVotes(new Set());
+    if (nominatorSeat == null || nomineeSeat == null) return;
+
+    const nominator = players.find((p) => p.seat === nominatorSeat);
+    const nomineePlayer = players.find((p) => p.seat === nomineeSeat);
+    if (!nominator || !nomineePlayer) return;
+
+    // 檢查貞潔者能力
+    if (isVirginNominee(nomineePlayer) && nomineePlayer.isAlive) {
+      const result = checkVirginAbility(nomineePlayer, nominator);
+
+      if (result.reason === '能力已使用') {
+        // 能力已消耗，當作普通提名
+        setShowVoting(true);
+        setVotes(new Set());
+        return;
+      }
+
+      // 標記能力已使用
+      stateManager.markAbilityUsed(nomineePlayer.seat);
+
+      if (result.triggered) {
+        setVirginDialog({ type: 'triggered', nominator, virgin: nomineePlayer });
+        return;
+      }
+
+      if (result.spyCanRegisterAsTownsfolk) {
+        setVirginDialog({ type: 'spy_choice', nominator, virgin: nomineePlayer });
+        return;
+      }
+
+      // 能力未觸發（非鎮民、中毒/醉酒）
+      setVirginDialog({ type: 'not_triggered', nominator, virgin: nomineePlayer, result });
+      return;
     }
+
+    // 普通提名
+    setShowVoting(true);
+    setVotes(new Set());
+  };
+
+  /**
+   * 貞潔者觸發：處決提名者，進入夜間
+   */
+  const handleVirginExecute = () => {
+    if (virginDialog.type !== 'triggered' && virginDialog.type !== 'spy_choice') return;
+    const { nominator, virgin } = virginDialog;
+
+    killPlayer(nominator.seat, 'virgin_ability');
+
+    stateManager.logEvent({
+      type: 'ability_use',
+      description: `貞潔者能力觸發：${nominator.seat}號 ${nominator.name} 被立即處決`,
+      details: {
+        role: 'virgin',
+        virginSeat: virgin.seat,
+        nominatorSeat: nominator.seat,
+        nominatorRole: nominator.role,
+      },
+    });
+
+    setVirginDialog({ type: 'none' });
+    resetNomination();
+    startNight();
+  };
+
+  /**
+   * 貞潔者未觸發 / 間諜選擇不觸發：進入投票
+   */
+  const handleVirginContinueVoting = () => {
+    setVirginDialog({ type: 'none' });
+    setShowVoting(true);
+    setVotes(new Set());
   };
 
   const toggleVote = (seat: number) => {
@@ -79,8 +163,18 @@ export default function DayView() {
         </div>
       </div>
 
+      {/* 貞潔者判定對話框 */}
+      {virginDialog.type !== 'none' && (
+        <VirginDialog
+          state={virginDialog}
+          roleRegistry={roleRegistry}
+          onExecute={handleVirginExecute}
+          onContinueVoting={handleVirginContinueVoting}
+        />
+      )}
+
       {/* 提名區域 */}
-      {!showVoting && (
+      {!showVoting && virginDialog.type === 'none' && (
         <div className="day-nomination">
           <h3>提名</h3>
           <div className="nomination-selectors">
@@ -165,6 +259,120 @@ export default function DayView() {
       <div className="day-footer">
         <button className="btn-primary" onClick={startNight}>
           進入夜晚
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 貞潔者判定對話框
+ */
+function VirginDialog({
+  state,
+  roleRegistry,
+  onExecute,
+  onContinueVoting,
+}: {
+  state: Exclude<VirginDialogState, { type: 'none' }>;
+  roleRegistry: { getRoleName: (roleId: string) => string; getPlayerRoleName: (player: Player) => string };
+  onExecute: () => void;
+  onContinueVoting: () => void;
+}) {
+  const { nominator, virgin } = state;
+  const nominatorRoleName = roleRegistry.getRoleName(nominator.role);
+  const virginRoleName = virgin.role === 'drunk'
+    ? `酒鬼（以為自己是${roleRegistry.getRoleName(virgin.believesRole ?? 'virgin')}）`
+    : roleRegistry.getRoleName(virgin.role);
+
+  // 能力觸發
+  if (state.type === 'triggered') {
+    return (
+      <div className="virgin-dialog" style={{
+        backgroundColor: '#fff3cd',
+        border: '2px solid #ffc107',
+        padding: '1rem',
+        borderRadius: '8px',
+        marginBottom: '1rem',
+      }}>
+        <h3 style={{ color: '#856404' }}>⚡ 貞潔者能力觸發！</h3>
+        <p style={{ color: '#000000'}}>{virgin.seat}號 {virgin.name}（{virginRoleName}）被提名</p>
+        <p style={{ color: '#000000'}}>提名者：{nominator.seat}號 {nominator.name}（{nominatorRoleName}）← 鎮民</p>
+        <p style={{ fontWeight: 'bold', marginTop: '0.5rem', color: '#ff6b6b' }}>
+          → {nominator.seat}號 {nominator.name} 將被立即處決
+        </p>
+        <p style={{ fontWeight: 'bold', color: '#ff6b6b' }}>→ 直接進入夜間階段</p>
+        <div style={{ marginTop: '1rem' }}>
+          <button className="btn-danger" onClick={onExecute}>
+            確認處決，進入夜間
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 間諜選擇
+  if (state.type === 'spy_choice') {
+    return (
+      <div className="virgin-dialog" style={{
+        backgroundColor: '#e8f4fd',
+        border: '2px solid #0d6efd',
+        padding: '1rem',
+        borderRadius: '8px',
+        marginBottom: '1rem',
+      }}>
+        <h3 style={{ color: '#ff6b6b'}}>貞潔者被提名</h3>
+        <p style={{ color: '#000000'}}>{virgin.seat}號 {virgin.name}（{virginRoleName}）被提名</p>
+        <p style={{ color: '#000000'}}>提名者：{nominator.seat}號 {nominator.name}（{nominatorRoleName}，能力正常）</p>
+        <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+          <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>選擇判定：</p>
+          <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
+            <button className="btn-danger" onClick={onExecute}>
+              間諜被視為鎮民 → 觸發處決，進入夜間
+            </button>
+            <button className="btn-secondary" onClick={onContinueVoting}>
+              間諜保持爪牙身份 → 不觸發，正常投票
+            </button>
+          </div>
+        </div>
+        <div style={{ marginTop: '0.75rem', fontSize: '0.9em', color: '#666' }}>
+          ℹ️ 提示：間諜能力正常，可以被認定為善良角色
+        </div>
+      </div>
+    );
+  }
+
+  // 能力未觸發
+  const { result } = state;
+  const isDrunk = virgin.role === 'drunk';
+  const isMalfunctioned = result.abilityMalfunctioned;
+
+  return (
+    <div className="virgin-dialog" style={{
+      backgroundColor: '#f8f9fa',
+      border: '1px solid #dee2e6',
+      padding: '1rem',
+      borderRadius: '8px',
+      marginBottom: '1rem',
+    }}>
+      <h3 style={{ color: '#ff6b6b'}}>貞潔者被提名</h3>
+      <p style={{ color: '#000000' }}>{virgin.seat}號 {virgin.name}（{virginRoleName}）被提名</p>
+      {isMalfunctioned && (
+        <p style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+          {isDrunk ? '🍺 實際上是酒鬼（無能力）' : '⚠️ 中毒（能力失效）'}
+        </p>
+      )}
+      {!isDrunk && (
+        <p style={{ color: '#000000'}}>提名者：{nominator.seat}號 {nominator.name}（{nominatorRoleName}）
+          {nominator.team !== 'townsfolk' ? '← 非鎮民' : '← 鎮民'}
+        </p>
+      )}
+      <p style={{ marginTop: '0.5rem', color: '#ff6b6b' }}>
+        → 能力未觸發，正常進入投票（貞潔者能力已消耗）
+      </p>
+      <div style={{ marginTop: '1rem' }}>
+        <button className="btn-primary" onClick={onContinueVoting}>
+          確認，進入投票
         </button>
       </div>
     </div>

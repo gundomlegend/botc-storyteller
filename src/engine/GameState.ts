@@ -266,7 +266,7 @@ export class GameStateManager {
       player.deathDay = this.state.day;
     }
 
-    if (cause === 'execution') {
+    if (cause === 'execution' || cause === 'virgin_ability') {
       this.state.executedToday = seat;
     }
 
