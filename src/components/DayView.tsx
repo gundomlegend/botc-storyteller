@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import type { Player } from '../engine/types';
 import { checkVirginAbility, type VirginCheckResult } from '../engine/VirginAbility';
+import { checkSaintExecution, type SaintCheckResult } from '../engine/SaintAbility';
 import PlayerSelector from './PlayerSelector';
 
 type VirginDialogState =
@@ -10,14 +11,20 @@ type VirginDialogState =
   | { type: 'not_triggered'; nominator: Player; virgin: Player; result: VirginCheckResult }
   | { type: 'spy_choice'; nominator: Player; virgin: Player };
 
+type SaintDialogState =
+  | { type: 'none' }
+  | { type: 'game_ending'; player: Player; result: SaintCheckResult & { isSaint: true } }
+  | { type: 'ability_failed'; player: Player; result: SaintCheckResult & { isSaint: true } };
+
 export default function DayView() {
-  const { day, players, alivePlayers, killPlayer, startNight, stateManager, roleRegistry} = useGameStore();
+  const { day, players, alivePlayers, killPlayer, startNight, stateManager, roleRegistry, endGame, gameOver, winner, gameOverReason } = useGameStore();
 
   const [nominatorSeat, setNominatorSeat] = useState<number | null>(null);
   const [nomineeSeat, setNomineeSeat] = useState<number | null>(null);
   const [votes, setVotes] = useState<Set<number>>(new Set());
   const [showVoting, setShowVoting] = useState(false);
   const [virginDialog, setVirginDialog] = useState<VirginDialogState>({ type: 'none' });
+  const [saintDialog, setSaintDialog] = useState<SaintDialogState>({ type: 'none' });
 
   const nominee = nomineeSeat != null ? players.find((p) => p.seat === nomineeSeat) : null;
   const voteThreshold = Math.ceil(alivePlayers.length / 2);
@@ -128,10 +135,63 @@ export default function DayView() {
   };
 
   const handleExecute = () => {
-    if (nomineeSeat != null) {
-      killPlayer(nomineeSeat, 'execution');
-      resetNomination();
+    if (nomineeSeat == null) return;
+    const nomineePlayer = players.find((p) => p.seat === nomineeSeat);
+    if (!nomineePlayer) return;
+
+    // 聖徒檢查
+    const saintResult = checkSaintExecution(nomineePlayer);
+    if (saintResult.isSaint) {
+      setSaintDialog({
+        type: saintResult.abilityWorks ? 'game_ending' : 'ability_failed',
+        player: nomineePlayer,
+        result: saintResult,
+      });
+      return;
     }
+
+    killPlayer(nomineeSeat, 'execution');
+    resetNomination();
+  };
+
+  /**
+   * 聖徒能力正常 → 處決 + 遊戲結束
+   */
+  const handleSaintConfirmExecute = () => {
+    if (saintDialog.type !== 'game_ending') return;
+    const { player } = saintDialog;
+
+    killPlayer(player.seat, 'execution');
+
+    stateManager.logEvent({
+      type: 'ability_use',
+      description: `聖徒能力觸發：善良陣營落敗`,
+      details: { role: 'saint', saintSeat: player.seat },
+    });
+
+    endGame('evil', `聖徒（${player.seat}號 ${player.name}）被處決`);
+
+    setSaintDialog({ type: 'none' });
+    resetNomination();
+  };
+
+  /**
+   * 聖徒能力失效 → 正常處決
+   */
+  const handleSaintExecuteNormal = () => {
+    if (saintDialog.type !== 'ability_failed') return;
+    const { player } = saintDialog;
+
+    killPlayer(player.seat, 'execution');
+    setSaintDialog({ type: 'none' });
+    resetNomination();
+  };
+
+  /**
+   * 取消處決（說書人改變主意）
+   */
+  const handleSaintCancel = () => {
+    setSaintDialog({ type: 'none' });
   };
 
   const resetNomination = () => {
@@ -163,6 +223,35 @@ export default function DayView() {
         </div>
       </div>
 
+      {/* 遊戲結束畫面 */}
+      {gameOver && (
+        <div style={{
+          backgroundColor: winner === 'evil' ? '#f8d7da' : '#d4edda',
+          border: `2px solid ${winner === 'evil' ? '#f5c6cb' : '#c3e6cb'}`,
+          padding: '1.5rem',
+          borderRadius: '8px',
+          marginBottom: '1rem',
+          textAlign: 'center',
+        }}>
+          <h2>遊戲結束</h2>
+          <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: winner === 'evil' ? '#721c24' : '#155724' }}>
+            {winner === 'evil' ? '邪惡陣營獲勝！' : '善良陣營獲勝！'}
+          </p>
+          {gameOverReason && <p style={{ color: '#333' }}>{gameOverReason}</p>}
+        </div>
+      )}
+
+      {/* 聖徒判定對話框 */}
+      {saintDialog.type !== 'none' && (
+        <SaintDialog
+          state={saintDialog}
+          roleRegistry={roleRegistry}
+          onConfirmExecute={handleSaintConfirmExecute}
+          onExecuteNormal={handleSaintExecuteNormal}
+          onCancel={handleSaintCancel}
+        />
+      )}
+
       {/* 貞潔者判定對話框 */}
       {virginDialog.type !== 'none' && (
         <VirginDialog
@@ -174,7 +263,7 @@ export default function DayView() {
       )}
 
       {/* 提名區域 */}
-      {!showVoting && virginDialog.type === 'none' && (
+      {!showVoting && !gameOver && virginDialog.type === 'none' && saintDialog.type === 'none' && (
         <div className="day-nomination">
           <h3>提名</h3>
           <div className="nomination-selectors">
@@ -209,7 +298,7 @@ export default function DayView() {
       )}
 
       {/* 投票區域 */}
-      {showVoting && nominee && (
+      {showVoting && !gameOver && nominee && (
         <div className="day-voting">
           <h3>
             投票 — {nominee.name}（{nominee.seat}號）
@@ -256,11 +345,13 @@ export default function DayView() {
         </div>
       )}
 
-      <div className="day-footer">
-        <button className="btn-primary" onClick={startNight}>
-          進入夜晚
-        </button>
-      </div>
+      {!gameOver && (
+        <div className="day-footer">
+          <button className="btn-primary" onClick={startNight}>
+            進入夜晚
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -373,6 +464,91 @@ function VirginDialog({
       <div style={{ marginTop: '1rem' }}>
         <button className="btn-primary" onClick={onContinueVoting}>
           確認，進入投票
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 聖徒判定對話框
+ */
+function SaintDialog({
+  state,
+  roleRegistry,
+  onConfirmExecute,
+  onExecuteNormal,
+  onCancel,
+}: {
+  state: Exclude<SaintDialogState, { type: 'none' }>;
+  roleRegistry: { getRoleName: (roleId: string) => string; getPlayerRoleName: (player: Player) => string };
+  onConfirmExecute: () => void;
+  onExecuteNormal: () => void;
+  onCancel: () => void;
+}) {
+  const { player, result } = state;
+  const roleName = player.role === 'drunk'
+    ? `酒鬼（以為自己是${roleRegistry.getRoleName(player.believesRole ?? 'saint')}）`
+    : roleRegistry.getRoleName(player.role);
+
+  // 能力正常 → 處決將導致善良落敗
+  if (state.type === 'game_ending') {
+    return (
+      <div className="saint-dialog" style={{
+        backgroundColor: '#f8d7da',
+        border: '2px solid #f5c6cb',
+        padding: '1rem',
+        borderRadius: '8px',
+        marginBottom: '1rem',
+      }}>
+        <h3 style={{ color: '#721c24' }}>⚠️ 即將處決聖徒！</h3>
+        <p style={{ color: '#000000' }}>{player.seat}號 {player.name}（{roleName}）即將被處決</p>
+        <p style={{ color: '#000000' }}>能力狀態：✅ 能力正常</p>
+        <p style={{ fontWeight: 'bold', marginTop: '0.5rem', color: '#721c24' }}>
+          → 若處決聖徒，善良陣營立即落敗！
+        </p>
+        <p style={{ fontWeight: 'bold', color: '#721c24' }}>
+          → 邪惡陣營獲勝，遊戲結束
+        </p>
+        <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
+          <button className="btn-danger" onClick={onConfirmExecute}>
+            確認處決 → 邪惡獲勝
+          </button>
+          <button className="btn-secondary" onClick={onCancel}>
+            取消
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 能力失效（中毒/酒鬼）
+  const isDrunk = player.role === 'drunk';
+
+  return (
+    <div className="saint-dialog" style={{
+      backgroundColor: '#fff3cd',
+      border: '2px solid #ffc107',
+      padding: '1rem',
+      borderRadius: '8px',
+      marginBottom: '1rem',
+    }}>
+      <h3 style={{ color: '#856404' }}>
+        {isDrunk ? '「聖徒」即將被處決' : '即將處決聖徒'}
+      </h3>
+      <p style={{ color: '#000000' }}>{player.seat}號 {player.name}（{roleName}）即將被處決</p>
+      <p style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+        {isDrunk ? '🍺 實際上是酒鬼（無能力）' : `⚠️ ${result.reason}`}
+      </p>
+      <p style={{ marginTop: '0.5rem', color: '#000000' }}>
+        → {isDrunk ? '無聖徒能力，正常處決' : '聖徒中毒，處決不會導致善良陣營落敗'}
+      </p>
+      <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
+        <button className="btn-primary" onClick={onExecuteNormal}>
+          確認處決
+        </button>
+        <button className="btn-secondary" onClick={onCancel}>
+          取消
         </button>
       </div>
     </div>

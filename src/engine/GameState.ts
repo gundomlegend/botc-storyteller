@@ -24,6 +24,9 @@ export class GameStateManager {
       demonBluffs: [],
       redHerringSeat: null,
       executedToday: null,
+      gameOver: false,
+      winner: null,
+      gameOverReason: null,
     };
   }
 
@@ -452,6 +455,18 @@ export class GameStateManager {
       return null;
     }
     return this.getPlayer(this.state.executedToday) || null;
+  }
+
+  endGame(winner: 'good' | 'evil', reason: string): void {
+    this.state.gameOver = true;
+    this.state.winner = winner;
+    this.state.gameOverReason = reason;
+
+    this.logEvent({
+      type: 'game_end',
+      description: `遊戲結束：${winner === 'good' ? '善良' : '邪惡'}陣營獲勝（${reason}）`,
+      details: { winner, reason },
+    });
   }
 
   getMinionPlayers(): Player[] {
