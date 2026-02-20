@@ -15,18 +15,18 @@ type StateSelector = (state: GameStore) => unknown;
  * 每個階段定義自己需要的資料片段
  */
 const displayStateSelectors: Record<string, StateSelector> = {
-  setup: (state) => ({
+  setup: (state: GameStore) => ({
     phase: state.phase,
     playerCount: state.players.length,
   }),
 
-  night: (state) => ({
+  night: (state: GameStore) => ({
     phase: state.phase,
     night: state.night,
     displayState: state.displayState,
   }),
 
-  day: (state) => ({
+  day: (state: GameStore) => ({
     phase: state.phase,
     day: state.day,
     alivePlayers: state.alivePlayers.map((p) => ({
@@ -37,7 +37,7 @@ const displayStateSelectors: Record<string, StateSelector> = {
     displayState: state.displayState,
   }),
 
-  game_over: (state) => ({
+  game_over: (state: GameStore) => ({
     phase: state.phase,
     gameOver: state.gameOver,
     winner: state.winner,
@@ -52,7 +52,7 @@ const displayStateSelectors: Record<string, StateSelector> = {
     })),
   }),
 
-  history: (state) => ({
+  history: (state: GameStore) => ({
     phase: state.phase,
     history: state.history.filter((event) => {
       // 只同步玩家可見的事件

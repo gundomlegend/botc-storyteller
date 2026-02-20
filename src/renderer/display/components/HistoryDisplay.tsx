@@ -2,7 +2,6 @@
  * History Display - 遊戲復盤顯示
  */
 
-import React from 'react';
 import { BaseDisplay } from '../BaseDisplay';
 
 interface GameEvent {

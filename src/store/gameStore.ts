@@ -7,7 +7,7 @@ import rolesData from '../data/roles/trouble-brewing.json';
 import { ElectronIPCService } from '../services/IPCService';
 import { createStateSyncMiddleware } from './middleware/stateSyncMiddleware';
 
-interface DisplayState {
+export interface DisplayState {
   nightAction: {
     index: number;
     seat: number;
@@ -26,7 +26,7 @@ interface DisplayState {
   } | null;
 }
 
-interface GameStore {
+export interface GameStore {
   roleRegistry: RoleRegistry;
   stateManager: GameStateManager;
   ruleEngine: RuleEngine;

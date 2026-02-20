@@ -2,7 +2,6 @@
  * Setup Display - 等待遊戲開始
  */
 
-import React from 'react';
 import { BaseDisplay } from '../BaseDisplay';
 
 interface SetupDisplayProps {

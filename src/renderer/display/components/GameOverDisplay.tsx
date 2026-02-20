@@ -2,7 +2,6 @@
  * Game Over Display - 遊戲結束顯示
  */
 
-import React from 'react';
 import { BaseDisplay } from '../BaseDisplay';
 
 interface Player {

@@ -26,7 +26,7 @@ export class ElectronIPCService implements IPCService {
     }
   }
 
-  removeListener(channel: string, callback: (data: unknown) => void): void {
+  removeListener(_channel: string, _callback: (data: unknown) => void): void {
     // Electron IPC 的 removeListener 需要透過 ipcRenderer
     // 目前 preload.ts 沒有暴露 removeListener，暫時留空
     // TODO: Phase 2 - 如需要可在 preload.ts 新增 removeListener

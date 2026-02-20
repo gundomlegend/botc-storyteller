@@ -2,7 +2,6 @@
  * Day Display - 白天階段顯示
  */
 
-import React from 'react';
 import { BaseDisplay } from '../BaseDisplay';
 
 interface Nomination {

@@ -2,7 +2,6 @@
  * Night Display - 夜間階段顯示
  */
 
-import React from 'react';
 import { BaseDisplay } from '../BaseDisplay';
 
 interface NightAction {

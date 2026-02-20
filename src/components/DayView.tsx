@@ -17,7 +17,7 @@ type SaintDialogState =
   | { type: 'ability_failed'; player: Player; result: SaintCheckResult & { isSaint: true } };
 
 export default function DayView() {
-  const { day, players, alivePlayers, killPlayer, startNight, stateManager, roleRegistry, endGame, gameOver, winner, gameOverReason, setDisplayNomination, setDisplayVoting, clearDisplayState } = useGameStore();
+  const { day, players, alivePlayers, killPlayer, startNight, stateManager, roleRegistry, endGame, gameOver, winner, gameOverReason, setDisplayNomination, setDisplayVoting } = useGameStore();
 
   const [nominatorSeat, setNominatorSeat] = useState<number | null>(null);
   const [nomineeSeat, setNomineeSeat] = useState<number | null>(null);
@@ -30,8 +30,6 @@ export default function DayView() {
   const voteThreshold = Math.ceil(alivePlayers.length / 2);
   const voteCount = votes.size;
   const votePassed = voteCount >= voteThreshold;
-
-  const nominator = nominatorSeat != null ? players.find((p) => p.seat === nominatorSeat) : null;
 
   // 管家投票警告：票數照算，但提醒說書人主人是否投票
   // 中毒時能力失效，可自由投票，不顯示警告

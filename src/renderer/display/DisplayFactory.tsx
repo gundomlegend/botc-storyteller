@@ -3,15 +3,12 @@
  * 根據階段動態選擇對應的 Display 元件
  */
 
-import React from 'react';
 import { useDisplayStore } from './useDisplayStore';
 import { SetupDisplay } from './components/SetupDisplay';
 import { NightDisplay } from './components/NightDisplay';
 import { DayDisplay } from './components/DayDisplay';
 import { GameOverDisplay } from './components/GameOverDisplay';
 import { HistoryDisplay } from './components/HistoryDisplay';
-
-type DisplayPhase = 'setup' | 'night' | 'day' | 'game_over' | 'history';
 
 /**
  * Display Factory
