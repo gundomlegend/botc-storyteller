@@ -46,7 +46,7 @@ const displayStateSelectors: Record<string, StateSelector> = {
       seat: p.seat,
       name: p.name,
       role: p.role,
-      roleName: p.roleName,
+      roleName: state.roleRegistry.getRoleName(p.role),
       team: p.team,
       isAlive: p.isAlive,
     })),
