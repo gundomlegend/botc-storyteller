@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import AbilityProcessor from './AbilityProcessor';
 import MinionDemonRecognition from './MinionDemonRecognition';
@@ -9,19 +9,40 @@ function isSpecialPhase(role: string): boolean {
 }
 
 export default function NightView() {
-  const { night, nightOrder, startDay } = useGameStore();
+  const { night, nightOrder, startDay, setDisplayNightAction, clearDisplayState } = useGameStore();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const currentItem = nightOrder[currentIndex] ?? null;
 
+  // Update Display state when currentIndex changes
+  useEffect(() => {
+    if (!currentItem || isSpecialPhase(currentItem.role)) {
+      // Special phases or no item: all sleeping
+      setDisplayNightAction(null);
+      return;
+    }
+
+    // Regular role: set to 'waking' phase
+    setDisplayNightAction({
+      index: currentIndex,
+      seat: currentItem.seat,
+      roleName: currentItem.roleName,
+      phase: 'waking',
+    });
+  }, [currentIndex, currentItem, setDisplayNightAction]);
+
   const handleDone = () => {
     if (currentIndex < nightOrder.length - 1) {
       setCurrentIndex(currentIndex + 1);
+    } else {
+      // All done: all sleeping
+      setDisplayNightAction(null);
     }
   };
 
   const handleEndNight = () => {
     setCurrentIndex(0);
+    clearDisplayState(); // Clear all display state when ending night
     startDay();
   };
 
