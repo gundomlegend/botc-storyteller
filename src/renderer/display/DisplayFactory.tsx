@@ -15,60 +15,46 @@ import { HistoryDisplay } from './components/HistoryDisplay';
  * 集中管理所有階段的 Display 元件
  */
 export function DisplayFactory() {
-  try {
-    const store = useDisplayStore();
-    const { phase } = store;
+  const store = useDisplayStore();
+  const { phase } = store;
 
-    console.log('DisplayFactory rendering, phase:', phase, 'store:', store);
+  // Factory Pattern: 根據 phase 選擇元件
+  switch (phase) {
+    case 'setup':
+      return <SetupDisplay playerCount={store.playerCount} />;
 
-    // Factory Pattern: 根據 phase 選擇元件
-    switch (phase) {
-      case 'setup':
-        return <SetupDisplay playerCount={store.playerCount} />;
+    case 'night':
+      return (
+        <NightDisplay
+          night={store.night}
+          nightAction={store.displayState.nightAction}
+        />
+      );
 
-      case 'night':
-        return (
-          <NightDisplay
-            night={store.night}
-            nightAction={store.displayState.nightAction}
-          />
-        );
+    case 'day':
+      return (
+        <DayDisplay
+          day={store.day}
+          alivePlayers={store.alivePlayers}
+          nomination={store.displayState.nomination}
+          voting={store.displayState.voting}
+        />
+      );
 
-      case 'day':
-        return (
-          <DayDisplay
-            day={store.day}
-            alivePlayers={store.alivePlayers}
-            nomination={store.displayState.nomination}
-            voting={store.displayState.voting}
-          />
-        );
+    case 'game_over':
+      return (
+        <GameOverDisplay
+          winner={store.winner}
+          gameOverReason={store.gameOverReason}
+          players={store.players}
+        />
+      );
 
-      case 'game_over':
-        return (
-          <GameOverDisplay
-            winner={store.winner}
-            gameOverReason={store.gameOverReason}
-            players={store.players}
-          />
-        );
+    case 'history':
+      return <HistoryDisplay history={store.history} />;
 
-      case 'history':
-        return <HistoryDisplay history={store.history} />;
-
-      default:
-        // Fallback to setup
-        return <SetupDisplay playerCount={0} />;
-    }
-  } catch (error) {
-    console.error('DisplayFactory error:', error);
-    return (
-      <div style={{ padding: '2rem', color: 'white', background: '#1a1a2e', minHeight: '100vh' }}>
-        <h1>Display Factory 錯誤</h1>
-        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-          {String(error)}
-        </pre>
-      </div>
-    );
+    default:
+      // Fallback to setup
+      return <SetupDisplay playerCount={0} />;
   }
 }

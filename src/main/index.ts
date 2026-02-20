@@ -15,12 +15,13 @@ function createMainWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: process.env.NODE_ENV === 'production', // 開發模式禁用 webSecurity
+      devTools: true,
     },
   });
 
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
@@ -39,6 +40,8 @@ function createDisplayWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: process.env.NODE_ENV === 'production', // 開發模式禁用 webSecurity
+      devTools: true,
     },
   });
 
