@@ -17,7 +17,7 @@ type SaintDialogState =
   | { type: 'ability_failed'; player: Player; result: SaintCheckResult & { isSaint: true } };
 
 export default function DayView() {
-  const { day, players, alivePlayers, killPlayer, startNight, stateManager, roleRegistry, endGame, gameOver, winner, gameOverReason } = useGameStore();
+  const { day, players, alivePlayers, killPlayer, startNight, stateManager, roleRegistry, endGame, gameOver, winner, gameOverReason, setDisplayNomination, setDisplayVoting } = useGameStore();
 
   const [nominatorSeat, setNominatorSeat] = useState<number | null>(null);
   const [nomineeSeat, setNomineeSeat] = useState<number | null>(null);
@@ -54,6 +54,12 @@ export default function DayView() {
     const nomineePlayer = players.find((p) => p.seat === nomineeSeat);
     if (!nominator || !nomineePlayer) return;
 
+    // Update Display: show nomination
+    setDisplayNomination({
+      nominatorName: `${nominator.name} (${nominator.seat}號)`,
+      nomineeName: `${nomineePlayer.name} (${nomineePlayer.seat}號)`,
+    });
+
     // 檢查貞潔者能力
     if (isVirginNominee(nomineePlayer) && nomineePlayer.isAlive) {
       const result = checkVirginAbility(nomineePlayer, nominator);
@@ -62,6 +68,7 @@ export default function DayView() {
         // 能力已消耗，當作普通提名
         setShowVoting(true);
         setVotes(new Set());
+        startVoting(nomineePlayer);
         return;
       }
 
@@ -86,6 +93,17 @@ export default function DayView() {
     // 普通提名
     setShowVoting(true);
     setVotes(new Set());
+    startVoting(nomineePlayer);
+  };
+
+  const startVoting = (nomineePlayer: Player) => {
+    // Update Display: start voting
+    setDisplayVoting({
+      nomineeName: `${nomineePlayer.name} (${nomineePlayer.seat}號)`,
+      voteCount: 0,
+      threshold: voteThreshold,
+      voters: [],
+    });
   };
 
   /**
@@ -120,6 +138,9 @@ export default function DayView() {
     setVirginDialog({ type: 'none' });
     setShowVoting(true);
     setVotes(new Set());
+    if (nominee) {
+      startVoting(nominee);
+    }
   };
 
   const toggleVote = (seat: number) => {
@@ -130,6 +151,21 @@ export default function DayView() {
       } else {
         next.add(seat);
       }
+
+      // Update Display: real-time vote count
+      if (nominee) {
+        const voterNames = Array.from(next)
+          .map((s) => players.find((p) => p.seat === s)?.name)
+          .filter((n): n is string => n != null);
+
+        setDisplayVoting({
+          nomineeName: `${nominee.name} (${nominee.seat}號)`,
+          voteCount: next.size,
+          threshold: voteThreshold,
+          voters: voterNames,
+        });
+      }
+
       return next;
     });
   };
@@ -199,6 +235,10 @@ export default function DayView() {
     setNomineeSeat(null);
     setVotes(new Set());
     setShowVoting(false);
+
+    // Clear Display state
+    setDisplayNomination(null);
+    setDisplayVoting(null);
   };
 
   return (

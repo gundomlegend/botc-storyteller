@@ -27,7 +27,7 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
   }
 
   // ─── 以下為通用流程 ───
-  const { processAbility } = useGameStore();
+  const { processAbility, setDisplayNightAction, displayState } = useGameStore();
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null);
   const [result, setResult] = useState<NightResult | null>(null);
 
@@ -42,17 +42,42 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
   const handleProcess = () => {
     const r = processAbility(item.seat, selectedTarget);
     setResult(r);
+
+    // Update Display: ability being processed → 'awake' phase
+    if (displayState.nightAction) {
+      setDisplayNightAction({
+        ...displayState.nightAction,
+        phase: 'awake',
+      });
+    }
   };
 
   const handleReset = () => {
     setSelectedTarget(null);
     setResult(null);
+
+    // Reset Display back to 'waking'
+    if (displayState.nightAction) {
+      setDisplayNightAction({
+        ...displayState.nightAction,
+        phase: 'waking',
+      });
+    }
   };
 
   const handleConfirm = () => {
+    // Update Display: closing phase
+    if (displayState.nightAction) {
+      setDisplayNightAction({
+        ...displayState.nightAction,
+        phase: 'closing',
+      });
+    }
+
     // effectNullified: 中毒/醉酒導致效果不落地，跳過狀態變更
     if (result?.effectNullified) {
-      onDone();
+      // Brief delay to show 'closing' message before moving on
+      setTimeout(onDone, 800);
       return;
     }
 
@@ -82,7 +107,9 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
         useGameStore.getState().killPlayer(selectedTarget, 'demon_kill');
       }
     }
-    onDone();
+
+    // Brief delay to show 'closing' message before moving on
+    setTimeout(onDone, 800);
   };
 
   const isTargetReady = !needsTarget || selectedTarget != null;
