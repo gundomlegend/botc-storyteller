@@ -4,6 +4,27 @@ import { RuleEngine } from '../engine/RuleEngine';
 import type { Player, NightOrderItem, NightResult, GameEvent, StatusEffectType, RoleData } from '../engine/types';
 import { RoleRegistry } from '../engine/RoleRegistry';
 import rolesData from '../data/roles/trouble-brewing.json';
+import { ElectronIPCService } from '../services/IPCService';
+import { createStateSyncMiddleware } from './middleware/stateSyncMiddleware';
+
+interface DisplayState {
+  nightAction: {
+    index: number;
+    seat: number;
+    roleName: string;
+    phase: 'waking' | 'awake' | 'closing';
+  } | null;
+  nomination: {
+    nominatorName: string;
+    nomineeName: string;
+  } | null;
+  voting: {
+    nomineeName: string;
+    voteCount: number;
+    threshold: number;
+    voters: string[];
+  } | null;
+}
 
 interface GameStore {
   roleRegistry: RoleRegistry;
@@ -22,6 +43,9 @@ interface GameStore {
   winner: 'good' | 'evil' | null;
   gameOverReason: string | null;
 
+  // Display 控制狀態
+  displayState: DisplayState;
+
   // 動作
   initGame: (players: Array<{ seat: number; name: string; role: string, roleName: string }>) => void;
   startNight: () => void;
@@ -34,14 +58,25 @@ interface GameStore {
   setRedHerring: (seat: number) => void;
   endGame: (winner: 'good' | 'evil', reason: string) => void;
 
+  // Display 控制
+  setDisplayNightAction: (action: DisplayState['nightAction']) => void;
+  setDisplayNomination: (nomination: DisplayState['nomination']) => void;
+  setDisplayVoting: (voting: DisplayState['voting']) => void;
+  clearDisplayState: () => void;
+
   // 內部刷新
   _refresh: () => void;
 }
 
-export const useGameStore = create<GameStore>((set) => {
-  const roleRegistry = RoleRegistry.getInstance();
-  const stateManager = new GameStateManager(roleRegistry);
-  const ruleEngine = new RuleEngine(roleRegistry);
+// Initialize IPC service for state sync
+const ipcService = new ElectronIPCService();
+
+export const useGameStore = create<GameStore>(
+  createStateSyncMiddleware(ipcService)(
+    (set) => {
+      const roleRegistry = RoleRegistry.getInstance();
+      const stateManager = new GameStateManager(roleRegistry);
+      const ruleEngine = new RuleEngine(roleRegistry);
 
   const refresh = () => {
     const state = stateManager.getState();
@@ -73,6 +108,13 @@ export const useGameStore = create<GameStore>((set) => {
     gameOver: false,
     winner: null,
     gameOverReason: null,
+
+    // Display 控制狀態
+    displayState: {
+      nightAction: null,
+      nomination: null,
+      voting: null,
+    },
 
     initGame: (players) => {
       roleRegistry.init(rolesData as RoleData[]);
@@ -150,6 +192,45 @@ export const useGameStore = create<GameStore>((set) => {
       refresh();
     },
 
-    _refresh: refresh,
-  };
-});
+    // Display 控制
+    setDisplayNightAction: (action) => {
+      set((state) => ({
+        displayState: {
+          ...state.displayState,
+          nightAction: action,
+        },
+      }));
+    },
+
+    setDisplayNomination: (nomination) => {
+      set((state) => ({
+        displayState: {
+          ...state.displayState,
+          nomination,
+        },
+      }));
+    },
+
+    setDisplayVoting: (voting) => {
+      set((state) => ({
+        displayState: {
+          ...state.displayState,
+          voting,
+        },
+      }));
+    },
+
+    clearDisplayState: () => {
+      set({
+        displayState: {
+          nightAction: null,
+          nomination: null,
+          voting: null,
+        },
+      });
+    },
+
+      _refresh: refresh,
+    };
+  })
+);
