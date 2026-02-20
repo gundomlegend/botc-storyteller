@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 
 let mainWindow: BrowserWindow | null = null;
@@ -69,5 +69,13 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (mainWindow === null) {
     createMainWindow();
+  }
+});
+
+// IPC Relay - Phase 1: State Sync
+// 純轉發，無業務邏輯
+ipcMain.on('state-sync', (_event, state) => {
+  if (displayWindow && !displayWindow.isDestroyed()) {
+    displayWindow.webContents.send('state-update', state);
   }
 });
