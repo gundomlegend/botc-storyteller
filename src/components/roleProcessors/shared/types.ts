@@ -96,6 +96,25 @@ export interface UndertakerHandlerInfo {
   statusReason: string;
 }
 
+/**
+ * 守鴉人 Handler 返回的 Info 型別
+ */
+export interface RavenkeeperHandlerInfo {
+  targetPlayer: {
+    seat: number;
+    name: string;
+    role: string;           // 真實角色
+    roleName: string;
+    believesRole: string | null;  // 以為自己是（酒鬼情況）
+    isDrunk: boolean;       // 是否為酒鬼
+  };
+  isRecluse: boolean;       // 目標是否為能力正常的陌客
+  isSpy: boolean;           // 目標是否為能力正常的間諜
+  selectableRoles: string[]; // 可選擇的角色列表（陌客/間諜/不可靠時）
+  reliable: boolean;
+  statusReason: string;
+}
+
 // ============================================================
 // Processor 通用型別定義
 // ============================================================

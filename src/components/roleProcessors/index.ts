@@ -7,6 +7,7 @@ import InvestigatorProcessor from './InvestigatorProcessor';
 import LibrarianProcessor from './LibrarianProcessor';
 import WasherwomanProcessor from './WasherwomanProcessor';
 import UndertakerProcessor from './UndertakerProcessor';
+import RavenkeeperProcessor from './RavenkeeperProcessor';
 
 export interface RoleProcessorProps {
   item: NightOrderItem;
@@ -26,4 +27,5 @@ export const ROLE_PROCESSORS: Record<string, ComponentType<RoleProcessorProps>> 
   librarian: LibrarianProcessor,
   washerwoman: WasherwomanProcessor,
   undertaker: UndertakerProcessor,
+  ravenkeeper: RavenkeeperProcessor,
 };
