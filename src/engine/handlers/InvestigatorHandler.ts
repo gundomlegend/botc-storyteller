@@ -56,8 +56,8 @@ export class InvestigatorHandler extends BaseRoleHandler implements RoleHandler 
           reliable: infoReliable,
           statusReason,
         },
-        mustFollow: false, // 說書人可自行決定
-        canLie: true,
+        mustFollow: true, // 間諜視為善良，調查員必須得知「無爪牙」
+        canLie: false,
       };
     }
 
@@ -98,6 +98,7 @@ export class InvestigatorHandler extends BaseRoleHandler implements RoleHandler 
         minions: minionList,
         // 陌客列表（能力正常，可視為爪牙）
         recluses: recluseList,
+        recluseSeat: recluses.length > 0 ? recluses[0].seat : undefined,
         hasSpy,
         hasRecluse,
         // 可靠性資訊
