@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MockIPCService, ElectronIPCService } from '../IPCService';
 
 describe('MockIPCService', () => {
@@ -9,7 +10,7 @@ describe('MockIPCService', () => {
 
   describe('send and receive', () => {
     it('should send and receive messages', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       mockIPC.on('test-channel', callback);
       mockIPC.send('test-channel', { foo: 'bar' });
@@ -19,7 +20,7 @@ describe('MockIPCService', () => {
     });
 
     it('should handle string data', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       mockIPC.on('string-channel', callback);
       mockIPC.send('string-channel', 'hello world');
@@ -28,7 +29,7 @@ describe('MockIPCService', () => {
     });
 
     it('should handle number data', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       mockIPC.on('number-channel', callback);
       mockIPC.send('number-channel', 42);
@@ -37,7 +38,7 @@ describe('MockIPCService', () => {
     });
 
     it('should not call callback for different channel', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       mockIPC.on('channel-a', callback);
       mockIPC.send('channel-b', 'data');
@@ -48,9 +49,9 @@ describe('MockIPCService', () => {
 
   describe('multiple listeners', () => {
     it('should support multiple listeners on same channel', () => {
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
-      const callback3 = jest.fn();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
+      const callback3 = vi.fn();
 
       mockIPC.on('test-channel', callback1);
       mockIPC.on('test-channel', callback2);
@@ -65,9 +66,9 @@ describe('MockIPCService', () => {
 
     it('should call all listeners in order of registration', () => {
       const callOrder: number[] = [];
-      const callback1 = jest.fn(() => callOrder.push(1));
-      const callback2 = jest.fn(() => callOrder.push(2));
-      const callback3 = jest.fn(() => callOrder.push(3));
+      const callback1 = vi.fn(() => callOrder.push(1));
+      const callback2 = vi.fn(() => callOrder.push(2));
+      const callback3 = vi.fn(() => callOrder.push(3));
 
       mockIPC.on('test-channel', callback1);
       mockIPC.on('test-channel', callback2);
@@ -81,7 +82,7 @@ describe('MockIPCService', () => {
 
   describe('removeListener', () => {
     it('should remove listener correctly', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       mockIPC.on('test-channel', callback);
       mockIPC.removeListener('test-channel', callback);
@@ -91,8 +92,8 @@ describe('MockIPCService', () => {
     });
 
     it('should only remove specified listener', () => {
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
 
       mockIPC.on('test-channel', callback1);
       mockIPC.on('test-channel', callback2);
@@ -104,7 +105,7 @@ describe('MockIPCService', () => {
     });
 
     it('should not throw if removing non-existent listener', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       expect(() => {
         mockIPC.removeListener('test-channel', callback);
@@ -112,7 +113,7 @@ describe('MockIPCService', () => {
     });
 
     it('should not throw if removing from non-existent channel', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       expect(() => {
         mockIPC.removeListener('non-existent-channel', callback);
@@ -122,8 +123,8 @@ describe('MockIPCService', () => {
 
   describe('helper methods', () => {
     it('should clear all listeners', () => {
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
 
       mockIPC.on('channel-a', callback1);
       mockIPC.on('channel-b', callback2);
@@ -138,9 +139,9 @@ describe('MockIPCService', () => {
     });
 
     it('should return correct listener count', () => {
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
-      const callback3 = jest.fn();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
+      const callback3 = vi.fn();
 
       expect(mockIPC.getListenerCount('test-channel')).toBe(0);
 
@@ -164,7 +165,7 @@ describe('MockIPCService', () => {
 
   describe('edge cases', () => {
     it('should handle null data', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       mockIPC.on('test-channel', callback);
       mockIPC.send('test-channel', null);
@@ -173,7 +174,7 @@ describe('MockIPCService', () => {
     });
 
     it('should handle undefined data', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       mockIPC.on('test-channel', callback);
       mockIPC.send('test-channel', undefined);
@@ -182,7 +183,7 @@ describe('MockIPCService', () => {
     });
 
     it('should handle complex nested objects', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       const complexData = {
         nested: {
           deep: {
@@ -200,7 +201,7 @@ describe('MockIPCService', () => {
     });
 
     it('should not prevent duplicate listener registration', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       mockIPC.on('test-channel', callback);
       mockIPC.on('test-channel', callback);
@@ -216,15 +217,15 @@ describe('MockIPCService', () => {
 describe('ElectronIPCService', () => {
   let electronIPC: ElectronIPCService;
   let mockElectronAPI: {
-    send: jest.Mock;
-    on: jest.Mock;
+    send: ReturnType<typeof vi.fn>;
+    on: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
     // Mock window.electronAPI
     mockElectronAPI = {
-      send: jest.fn(),
-      on: jest.fn(),
+      send: vi.fn(),
+      on: vi.fn(),
     };
 
     // @ts-expect-error - Mocking global window
@@ -262,7 +263,7 @@ describe('ElectronIPCService', () => {
 
   describe('on', () => {
     it('should call window.electronAPI.on with correct arguments', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       electronIPC.on('test-channel', callback);
 
@@ -275,7 +276,7 @@ describe('ElectronIPCService', () => {
       global.window = {};
 
       const ipc = new ElectronIPCService();
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       expect(() => {
         ipc.on('test-channel', callback);
@@ -285,8 +286,8 @@ describe('ElectronIPCService', () => {
 
   describe('removeListener', () => {
     it('should log warning (not implemented)', () => {
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-      const callback = jest.fn();
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation();
+      const callback = vi.fn();
 
       electronIPC.removeListener('test-channel', callback);
 
