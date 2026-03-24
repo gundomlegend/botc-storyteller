@@ -9,9 +9,15 @@ import type { Player } from '../../engine/types';
 
 const mockPlayers: Player[] = [];
 
+const mockRoleRegistry = {
+  getPlayerRoleName: (player: Player) => player.role,
+};
+
 vi.mock('../../store/gameStore', () => ({
-  useGameStore: (selector: (s: { players: Player[] }) => Player[]) =>
-    selector({ players: mockPlayers }),
+  useGameStore: () => ({
+    players: mockPlayers,
+    roleRegistry: mockRoleRegistry,
+  }),
 }));
 
 // ============================================================

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import LibrarianProcessor from '../LibrarianProcessor';
 import type { NightOrderItem, Player, RoleData } from '../../../engine/types';
 
@@ -178,9 +178,10 @@ describe('LibrarianProcessor', () => {
 
       render(<LibrarianProcessor item={item} onDone={onDone} />);
 
-      // 應該顯示外來者列表
+      // 應該顯示外來者列表（list 區域）
       expect(screen.getByText(/場上外來者/)).toBeInTheDocument();
-      expect(screen.getByText(/2號 Bob（管家）/)).toBeInTheDocument();
+      const listItems = screen.getAllByRole('listitem');
+      expect(listItems.some(li => /2號 - Bob - 管家/.test(li.textContent ?? ''))).toBe(true);
 
       // 應該有選擇下拉選單
       expect(screen.getByLabelText(/選擇展示的外來者角色/)).toBeInTheDocument();
@@ -242,7 +243,7 @@ describe('LibrarianProcessor', () => {
         type: 'ability_use',
         description: expect.stringContaining('圖書管理員資訊'),
         details: {
-          outsiderRole: 'butler',
+          role: 'butler',
           player1: 2,
           player2: 3,
         },
@@ -281,18 +282,20 @@ describe('LibrarianProcessor', () => {
 
       render(<LibrarianProcessor item={item} onDone={onDone} />);
 
-      // 應該顯示特殊提示
-      expect(screen.getByText(/只有間諜在場/)).toBeInTheDocument();
-      expect(screen.getByText(/給予「無外來者」資訊/)).toBeInTheDocument();
+      // 應該顯示特殊提示（間諜在場提示）
+      expect(screen.getAllByText(/只有間諜在場/).length).toBeGreaterThan(0);
+      // 應該顯示「給予無外來者資訊」按鈕
+      const noOutsiderBtn = screen.getByRole('button', { name: /給予「無外來者」資訊/ });
+      expect(noOutsiderBtn).toBeInTheDocument();
 
       // 點擊「給予無外來者資訊」按鈕
-      fireEvent.click(screen.getByText(/給予「無外來者」資訊/));
+      fireEvent.click(noOutsiderBtn);
 
       expect(mockLogEvent).toHaveBeenCalledWith({
         type: 'ability_use',
         description: '圖書管理員資訊：告知場上沒有外來者',
         details: {
-          noOutsider: true,
+          noTarget: true,
         },
       });
 
@@ -322,6 +325,7 @@ describe('LibrarianProcessor', () => {
             seat: 3,
             name: 'Carol',
             role: 'recluse',
+            roleName: '陌客',
           }],
           hasSpy: false,
           hasRecluse: true,
@@ -334,16 +338,15 @@ describe('LibrarianProcessor', () => {
 
       render(<LibrarianProcessor item={item} onDone={onDone} />);
 
-      // 應該顯示外來者列表
+      // 應該顯示外來者列表（含陌客，以 [可不視為外來者] 標注）
       expect(screen.getByText(/場上外來者/)).toBeInTheDocument();
-      expect(screen.getByText(/2號 Bob（管家）/)).toBeInTheDocument();
-
-      // 應該顯示陌客獨立列表
-      expect(screen.getByText(/陌客（可選擇不視為外來者）/)).toBeInTheDocument();
-      expect(screen.getByText(/3號 Carol/)).toBeInTheDocument();
+      const listItems = screen.getAllByRole('listitem');
+      expect(listItems.some(li => /2號 - Bob - 管家/.test(li.textContent ?? ''))).toBe(true);
+      expect(listItems.some(li => /3號 - Carol - 陌客/.test(li.textContent ?? ''))).toBe(true);
+      expect(listItems.some(li => /可不視為外來者/.test(li.textContent ?? ''))).toBe(true);
 
       // 應該顯示提示
-      expect(screen.getByText(/陌客能力正常，可選擇不視為外來者/)).toBeInTheDocument();
+      expect(screen.getByText(/可以不將陌客視為外來者/)).toBeInTheDocument();
     });
   });
 });
