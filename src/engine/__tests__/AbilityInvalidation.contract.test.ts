@@ -80,13 +80,14 @@ describe('Ability Invalidation — RuleEngine 層', () => {
       ]);
       m.startNight();
 
-      // Drunk 以為自己是某角色，但 handler 跳過
+      // Drunk 被自動分配假角色（believesRole），使用假角色的 handler 但效果被無效化
       const drunk = m.getPlayer(1)!;
+      expect(drunk.believesRole).toBeTruthy(); // initializeDrunkPlayers 自動分配假角色
       engine.startNightResolution();
       const result = engine.processNightAbility(drunk, null, m.getState(), m);
 
-      // Drunk handler 回傳 skip（酒鬼本身無夜間行動）
-      expect(result.skip).toBe(true);
+      // 酒鬼的能力效果被無效化（effectNullified: true）
+      expect(result.effectNullified).toBe(true);
     });
 
     it('中毒的 FortuneTeller 仍回傳實際偵測結果（不反轉）', () => {

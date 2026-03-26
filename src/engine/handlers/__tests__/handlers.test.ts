@@ -15,6 +15,7 @@ import { DrunkHandler } from '../DrunkHandler';
 import { ButlerHandler } from '../ButlerHandler';
 import { InvestigatorHandler } from '../InvestigatorHandler';
 import { LibrarianHandler } from '../LibrarianHandler';
+import { RavenkeeperHandler } from '../RavenkeeperHandler';
 import { RoleRegistry } from '../../RoleRegistry';
 import troubleBrewingRolesData from '../../../data/roles/trouble-brewing.json';
 
@@ -975,5 +976,218 @@ describe('LibrarianHandler', () => {
     expect((result.info as any).recluses[0].role).toBe('recluse');
     expect((result.info as any).hasSpy).toBe(true);
     expect((result.info as any).hasRecluse).toBe(true);
+  });
+});
+
+// ============================================================
+// RavenkeeperHandler
+// ============================================================
+describe('RavenkeeperHandler', () => {
+  const RAVENKEEPER_ROLE_DATA: RoleData = {
+    ...STUB_ROLE_DATA,
+    id: 'ravenkeeper',
+    name: 'Ravenkeeper',
+    name_cn: '守鴉人',
+    team: 'townsfolk',
+    firstNight: 0,
+    otherNight: 41,
+    worksWhenDead: true,
+  };
+
+  function makeHandler() {
+    return new RavenkeeperHandler(roleRegistry);
+  }
+
+  function makeRavenkeeperContext(
+    overrides: Partial<HandlerContext> & { players?: Player[] },
+  ): HandlerContext {
+    const { players = [], ...rest } = overrides;
+    const ravenkeeper = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk' });
+    const allPlayers = players.some(p => p.seat === ravenkeeper.seat) ? players : [ravenkeeper, ...players];
+    const gs: GameState = {
+      ...makeGameState(allPlayers),
+      night: 2,
+    };
+    return makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: ravenkeeper,
+      target: null,
+      gameState: gs,
+      infoReliable: true,
+      statusReason: '',
+      ...rest,
+    });
+  }
+
+  it('T8：第一夜不執行', () => {
+    const handler = makeHandler();
+    const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk' });
+    const gs: GameState = { ...makeGameState([rk]), night: 1 };
+    const result = handler.process(makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: rk,
+      gameState: gs,
+    }));
+
+    expect(result.skip).toBe(true);
+    expect(result.skipReason).toContain('第一夜');
+  });
+
+  it('T2：今晚未死亡，跳過', () => {
+    const handler = makeHandler();
+    const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk', isAlive: true });
+    const gs: GameState = { ...makeGameState([rk]), night: 2 };
+    const result = handler.process(makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: rk,
+      gameState: gs,
+    }));
+
+    expect(result.skip).toBe(true);
+    expect(result.skipReason).toContain('未死亡');
+  });
+
+  it('T2b：昨晚死亡（非今晚），跳過', () => {
+    const handler = makeHandler();
+    const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk', isAlive: false, deathNight: 1 });
+    const gs: GameState = { ...makeGameState([rk]), night: 2 };
+    const result = handler.process(makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: rk,
+      gameState: gs,
+    }));
+
+    expect(result.skip).toBe(true);
+  });
+
+  it('T1：今晚死亡，需選擇目標（needInput）', () => {
+    const handler = makeHandler();
+    const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk', isAlive: false, deathNight: 2 });
+    const gs: GameState = { ...makeGameState([rk]), night: 2 };
+    const result = handler.process(makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: rk,
+      target: null,
+      gameState: gs,
+    }));
+
+    expect(result.needInput).toBe(true);
+    expect(result.inputType).toBe('select_player');
+  });
+
+  it('T1：今晚死亡，選擇目標後顯示真實角色', () => {
+    const handler = makeHandler();
+    const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk', isAlive: false, deathNight: 2 });
+    const target = makePlayer({ seat: 5, role: 'poisoner', team: 'minion' });
+    const gs: GameState = { ...makeGameState([rk, target]), night: 2 };
+    const result = handler.process(makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: rk,
+      target,
+      gameState: gs,
+      infoReliable: true,
+    }));
+
+    expect(result.action).toBe('show_info');
+    expect((result.info as any).targetPlayer.role).toBe('poisoner');
+    expect((result.info as any).reliable).toBe(true);
+    expect(result.mustFollow).toBe(true);
+    expect(result.canLie).toBe(false);
+  });
+
+  it('T3：守鴉人中毒，能力不可靠', () => {
+    const handler = makeHandler();
+    const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk', isAlive: false, deathNight: 2 });
+    const target = makePlayer({ seat: 5, role: 'poisoner', team: 'minion' });
+    const gs: GameState = { ...makeGameState([rk, target]), night: 2 };
+    const result = handler.process(makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: rk,
+      target,
+      gameState: gs,
+      infoReliable: false,
+      statusReason: '中毒',
+    }));
+
+    expect((result.info as any).reliable).toBe(false);
+    expect(result.canLie).toBe(true);
+  });
+
+  it('T5：目標是酒鬼，顯示真實角色（drunk）', () => {
+    const handler = makeHandler();
+    const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk', isAlive: false, deathNight: 2 });
+    const target = makePlayer({ seat: 5, role: 'drunk', team: 'outsider', believesRole: 'monk' });
+    const gs: GameState = { ...makeGameState([rk, target]), night: 2 };
+    const result = handler.process(makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: rk,
+      target,
+      gameState: gs,
+      infoReliable: true,
+    }));
+
+    expect((result.info as any).targetPlayer.role).toBe('drunk');
+    expect((result.info as any).targetPlayer.believesRole).toBe('monk');
+    expect((result.info as any).targetPlayer.isDrunk).toBe(true);
+  });
+
+  it('T6：目標是陌客（能力正常），可選擇在場邪惡角色', () => {
+    const handler = makeHandler();
+    const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk', isAlive: false, deathNight: 2 });
+    const recluse = makePlayer({ seat: 3, role: 'recluse', team: 'outsider' });
+    const poisoner = makePlayer({ seat: 4, role: 'poisoner', team: 'minion' });
+    const imp = makePlayer({ seat: 5, role: 'imp', team: 'demon' });
+    const gs: GameState = { ...makeGameState([rk, recluse, poisoner, imp]), night: 2 };
+    const result = handler.process(makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: rk,
+      target: recluse,
+      gameState: gs,
+      infoReliable: true,
+    }));
+
+    expect((result.info as any).isRecluse).toBe(true);
+    expect((result.info as any).selectableRoles).toContain('poisoner');
+    expect((result.info as any).selectableRoles).toContain('imp');
+    expect(result.canLie).toBe(true);
+  });
+
+  it('T6b：目標是陌客但中毒，視為普通角色', () => {
+    const handler = makeHandler();
+    const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk', isAlive: false, deathNight: 2 });
+    const recluse = makePlayer({ seat: 3, role: 'recluse', team: 'outsider', isPoisoned: true });
+    const gs: GameState = { ...makeGameState([rk, recluse]), night: 2 };
+    const result = handler.process(makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: rk,
+      target: recluse,
+      gameState: gs,
+      infoReliable: true,
+    }));
+
+    expect((result.info as any).isRecluse).toBe(false);
+    expect((result.info as any).selectableRoles).toHaveLength(0);
+    expect(result.mustFollow).toBe(true);
+  });
+
+  it('T7：目標是間諜（能力正常），可選擇在場善良角色', () => {
+    const handler = makeHandler();
+    const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk', isAlive: false, deathNight: 2 });
+    const spy = makePlayer({ seat: 3, role: 'spy', team: 'minion' });
+    const monk = makePlayer({ seat: 4, role: 'monk', team: 'townsfolk' });
+    const empath = makePlayer({ seat: 5, role: 'empath', team: 'townsfolk' });
+    const gs: GameState = { ...makeGameState([rk, spy, monk, empath]), night: 2 };
+    const result = handler.process(makeContext({
+      roleData: RAVENKEEPER_ROLE_DATA,
+      player: rk,
+      target: spy,
+      gameState: gs,
+      infoReliable: true,
+    }));
+
+    expect((result.info as any).isSpy).toBe(true);
+    expect((result.info as any).selectableRoles).toContain('monk');
+    expect((result.info as any).selectableRoles).toContain('empath');
+    expect(result.canLie).toBe(true);
   });
 });
