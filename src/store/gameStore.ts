@@ -54,6 +54,7 @@ export interface GameStore {
   addStatus: (seat: number, type: StatusEffectType, sourceSeat: number) => void;
   removeStatus: (seat: number, type: StatusEffectType) => void;
   killPlayer: (seat: number, cause: 'demon_kill' | 'execution' | 'virgin_ability' | 'other') => void;
+  useDeathVote: (seat: number) => void;
   setButlerMaster: (masterSeat: number) => void;
   setRedHerring: (seat: number) => void;
   endGame: (winner: 'good' | 'evil', reason: string) => void;
@@ -174,6 +175,11 @@ export const useGameStore = create<GameStore>(
 
     killPlayer: (seat, cause) => {
       stateManager.killPlayer(seat, cause);
+      refresh();
+    },
+
+    useDeathVote: (seat) => {
+      stateManager.useDeathVote(seat);
       refresh();
     },
 
