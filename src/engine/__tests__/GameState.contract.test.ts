@@ -615,3 +615,71 @@ describe('Demon Bluffs', () => {
     expect(bluffs).not.toContain('drunk'); // 即使酒鬼不在場，仍不應出現在虛張聲勢中
   });
 });
+
+// ============================================================
+// Group A — hasDeathVote & useDeathVote
+// ============================================================
+
+describe('Group A: hasDeathVote & useDeathVote', () => {
+  it('新玩家初始化後 hasDeathVote = false', () => {
+    const m = createMinimalManager();
+    expect(m.getPlayer(1)?.hasDeathVote).toBe(false);
+    expect(m.getPlayer(2)?.hasDeathVote).toBe(false);
+  });
+
+  it('demon_kill 死亡後 hasDeathVote = true', () => {
+    const m = createMinimalManager();
+    m.startNight();
+    m.killPlayer(1, 'demon_kill');
+    expect(m.getPlayer(1)?.hasDeathVote).toBe(true);
+  });
+
+  it('execution 死亡後 hasDeathVote 仍為 false', () => {
+    const m = createMinimalManager();
+    m.startNight();
+    m.startDay();
+    m.killPlayer(1, 'execution');
+    expect(m.getPlayer(1)?.hasDeathVote).toBe(false);
+  });
+
+  it('virgin_ability 死亡後 hasDeathVote 仍為 false', () => {
+    const m = createMinimalManager();
+    m.startNight();
+    m.startDay();
+    m.killPlayer(1, 'virgin_ability');
+    expect(m.getPlayer(1)?.hasDeathVote).toBe(false);
+  });
+
+  it('other 死亡後 hasDeathVote 仍為 false', () => {
+    const m = createMinimalManager();
+    m.startNight();
+    m.killPlayer(1, 'other');
+    expect(m.getPlayer(1)?.hasDeathVote).toBe(false);
+  });
+
+  it('useDeathVote 將 hasDeathVote 標記為 false（已使用）', () => {
+    const m = createMinimalManager();
+    m.startNight();
+    m.killPlayer(1, 'demon_kill');
+    expect(m.getPlayer(1)?.hasDeathVote).toBe(true);
+    m.useDeathVote(1);
+    expect(m.getPlayer(1)?.hasDeathVote).toBe(false);
+  });
+
+  it('useDeathVote 對不存在玩家不拋錯', () => {
+    const m = createMinimalManager();
+    expect(() => m.useDeathVote(999)).not.toThrow();
+  });
+});
+
+// ============================================================
+// Group A — hasMadeSlayerClaim initialization
+// ============================================================
+
+describe('Group A: hasMadeSlayerClaim 初始化', () => {
+  it('新玩家初始化後 hasMadeSlayerClaim = false', () => {
+    const m = createMinimalManager();
+    expect(m.getPlayer(1)?.hasMadeSlayerClaim).toBe(false);
+    expect(m.getPlayer(2)?.hasMadeSlayerClaim).toBe(false);
+  });
+});

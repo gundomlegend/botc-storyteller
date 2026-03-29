@@ -72,6 +72,8 @@ export interface Player {
   believesRole: string | null;
   masterSeat: number | null;
   abilityUsed: boolean;
+  hasDeathVote: boolean;       // true when killed by demon at night; false after used
+  hasMadeSlayerClaim: boolean; // true after this player claims Slayer (once per game)
   deathCause: 'demon_kill' | 'execution' | 'virgin_ability' | 'other' | null;
   deathNight: number | null;
   deathDay: number | null;

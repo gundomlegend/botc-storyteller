@@ -55,6 +55,8 @@ function makePlayer(overrides: Partial<Player> & { seat: number }): Player {
     believesRole: null,
     masterSeat: null,
     abilityUsed: false,
+    hasDeathVote: false,
+    hasMadeSlayerClaim: false,
     deathCause: null,
     deathNight: null,
     deathDay: null,
@@ -804,8 +806,10 @@ describe('LibrarianHandler', () => {
 
     expect(result.action).toBe('show_info');
     expect((result.info as any).onlySpyInGame).toBe(true);
-    expect((result.info as any).spy.seat).toBe(2);
-    expect((result.info as any).spy.role).toBe('spy');
+    expect((result.info as any).outsiders).toHaveLength(1);
+    expect((result.info as any).outsiders[0].seat).toBe(2);
+    expect((result.info as any).outsiders[0].role).toBe('spy');
+    expect((result.info as any).hasSpy).toBe(true);
     // 與調查員不同：圖書管理員可選擇給假資訊或「無外來者」
     expect(result.mustFollow).toBe(false);
     expect(result.canLie).toBe(true);
@@ -1189,5 +1193,61 @@ describe('RavenkeeperHandler', () => {
     expect((result.info as any).selectableRoles).toContain('monk');
     expect((result.info as any).selectableRoles).toContain('empath');
     expect(result.canLie).toBe(true);
+  });
+});
+
+// ============================================================
+// SlayerHandler — Group C unit tests
+// ============================================================
+
+import { processSlayerClaim } from '../SlayerHandler';
+
+describe('SlayerHandler (processSlayerClaim)', () => {
+  const slayer = makePlayer({ seat: 1, role: 'slayer', team: 'townsfolk' });
+  const imp = makePlayer({ seat: 2, role: 'imp', team: 'demon' });
+  const monk = makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' });
+
+  it('成功條件：slayer + 能力未用 + 未中毒/醉酒 + 目標是 imp → success', () => {
+    const result = processSlayerClaim(slayer, imp);
+    expect(result.success).toBe(true);
+  });
+
+  it('目標非惡魔 → fail', () => {
+    const result = processSlayerClaim(slayer, monk);
+    expect(result.success).toBe(false);
+  });
+
+  it('宣稱者非獵手 → fail', () => {
+    const notSlayer = makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' });
+    const result = processSlayerClaim(notSlayer, imp);
+    expect(result.success).toBe(false);
+  });
+
+  it('獵手能力已使用 → fail', () => {
+    const usedSlayer = makePlayer({ seat: 1, role: 'slayer', team: 'townsfolk', abilityUsed: true });
+    const result = processSlayerClaim(usedSlayer, imp);
+    expect(result.success).toBe(false);
+  });
+
+  it('獵手中毒 → fail', () => {
+    const poisonedSlayer = makePlayer({ seat: 1, role: 'slayer', team: 'townsfolk', isPoisoned: true });
+    const result = processSlayerClaim(poisonedSlayer, imp);
+    expect(result.success).toBe(false);
+  });
+
+  it('獵手醉酒（酒鬼以為自己是獵手）→ fail', () => {
+    const drunkSlayer = makePlayer({ seat: 1, role: 'drunk', team: 'outsider', isDrunk: true, believesRole: 'slayer' });
+    const result = processSlayerClaim(drunkSlayer, imp);
+    expect(result.success).toBe(false);
+  });
+
+  it('成功時 reason 包含"驅魔成功"', () => {
+    const result = processSlayerClaim(slayer, imp);
+    expect(result.reason).toContain('驅魔成功');
+  });
+
+  it('失敗時 reason 包含"無事發生"', () => {
+    const result = processSlayerClaim(slayer, monk);
+    expect(result.reason).toContain('無事發生');
   });
 });
