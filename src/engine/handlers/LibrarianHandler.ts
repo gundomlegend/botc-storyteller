@@ -77,17 +77,25 @@ export class LibrarianHandler extends BaseRoleHandler implements RoleHandler {
     if (outsiders.length === 1 && outsiders[0].role === 'spy' &&
         !outsiders[0].isPoisoned && !outsiders[0].isDrunk &&
         recluses.length === 0) {
+      const spyPlayer = outsiders[0];
       return {
         action: 'show_info',
         display: '場上只有間諜（能力正常），可給予假外來者資訊',
         info: {
           onlySpyInGame: true,
-          spy: {
-            seat: outsiders[0].seat,
-            name: outsiders[0].name,
-            role: outsiders[0].role,
-            roleName: this.getPlayerRoleName(outsiders[0]),
-          },
+          outsiders: [{  // 間諜列入外來者列表供 UI 顯示
+            seat: spyPlayer.seat,
+            name: spyPlayer.name,
+            role: spyPlayer.role,
+            roleName: this.getPlayerRoleName(spyPlayer),
+            isPoisoned: spyPlayer.isPoisoned,
+            isDrunk: spyPlayer.isDrunk,
+          }],
+          recluses: [],
+          hasSpy: true,
+          hasRecluse: false,
+          reliable: this.infoReliable,
+          statusReason: this.statusReason,
         },
         mustFollow: false, // 說書人可選擇給假資訊
         canLie: true,
