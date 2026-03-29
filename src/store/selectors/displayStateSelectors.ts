@@ -29,12 +29,18 @@ const displayStateSelectors: Record<string, StateSelector> = {
   day: (state: GameStore) => ({
     phase: state.phase,
     day: state.day,
-    alivePlayers: state.alivePlayers.map((p) => ({
+    alivePlayers: state.players.map((p) => ({
       seat: p.seat,
       name: p.name,
       isAlive: p.isAlive,
     })),
     displayState: state.displayState,
+    history: state.history.filter((e) =>
+      ['death', 'execution'].includes(e.type)
+    ),
+    dawnDeaths: state.players
+      .filter((p) => !p.isAlive && p.deathNight === state.night)
+      .map((p) => ({ seat: p.seat, name: p.name })),
   }),
 
   game_over: (state: GameStore) => ({

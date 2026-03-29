@@ -63,6 +63,7 @@ export interface DisplayStore {
     name: string;
     isAlive: boolean;
   }>;
+  dawnDeaths: Array<{ seat: number; name: string }>;
 
   // Game Over 階段
   gameOver: boolean;
@@ -101,6 +102,7 @@ export const useDisplayStore = create<DisplayStore>((set) => {
     // Day
     day: 0,
     alivePlayers: [],
+    dawnDeaths: [],
 
     // Game Over
     gameOver: false,
