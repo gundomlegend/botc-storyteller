@@ -38,6 +38,8 @@ export function DisplayFactory() {
           alivePlayers={store.alivePlayers}
           nomination={store.displayState.nomination}
           voting={store.displayState.voting}
+          history={store.history}
+          dawnDeaths={store.dawnDeaths}
         />
       );
 

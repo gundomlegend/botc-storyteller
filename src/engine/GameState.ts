@@ -54,6 +54,8 @@ export class GameStateManager {
         believesRole: null, // 酒鬼的假角色會在 initializeDrunkPlayers() 中設定
         masterSeat: null,
         abilityUsed: false,
+        hasDeathVote: false,
+        hasMadeSlayerClaim: false,
         deathCause: null,
         deathNight: null,
         deathDay: null,
@@ -269,6 +271,11 @@ export class GameStateManager {
       player.deathDay = this.state.day;
     }
 
+    // 只有惡魔殺人才授予死亡投票權
+    if (cause === 'demon_kill') {
+      player.hasDeathVote = true;
+    }
+
     if (cause === 'execution' || cause === 'virgin_ability') {
       this.state.executedToday = seat;
     }
@@ -424,27 +431,12 @@ export class GameStateManager {
   }
 
   /**
-   * 記錄今天被處決的玩家
+   * 使用死亡投票權（死亡玩家每場只能投一次票）
    */
-  executePlayer(seat: number): void {
-    const player = this.getPlayer(seat);
-    if (!player) {
-      console.error(`executePlayer: 玩家 ${seat} 不存在`);
-      return;
-    }
-
-    this.state.executedToday = seat;
-
-    this.logEvent({
-      type: 'death',
-      description: `${player.seat}號 ${player.name}（${this.roleRegistry.getRoleName(player.role)}）被處決`,
-      details: {
-        seat,
-        name: player.name,
-        role: player.role,
-        cause: 'execution',
-      },
-    });
+  useDeathVote(seat: number): void {
+    const player = this.state.players.get(seat);
+    if (!player) return;
+    player.hasDeathVote = false;
   }
 
   /**

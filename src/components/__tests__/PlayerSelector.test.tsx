@@ -36,6 +36,8 @@ function makeTestPlayer(overrides: Partial<Player> & { seat: number }): Player {
     believesRole: null,
     masterSeat: null,
     abilityUsed: false,
+    hasDeathVote: false,
+    hasMadeSlayerClaim: false,
     deathCause: null,
     deathNight: null,
     deathDay: null,
