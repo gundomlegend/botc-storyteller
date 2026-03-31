@@ -145,6 +145,25 @@ export interface NightContext {
   blockedRoles: Set<string>;
 }
 
+// ===== 公共投影特殊夜晚階段 =====
+
+export type SpecialNightPhaseType =
+  | 'recognition_title'  // 「爪牙與惡魔互認」標題
+  | 'reveal_demon'       // 「X號 名字 是惡魔」
+  | 'close_minions'      // 「請爪牙們閉上眼睛」
+  | 'reveal_minions'     // 爪牙名單（給惡魔看）
+  | 'show_bluffs';       // 三個偽裝角色卡片
+
+export interface SpecialNightPhase {
+  type: SpecialNightPhaseType;
+  /** 投影主要顯示文字。show_bluffs 時設為 '偽裝角色' 作為標題。 */
+  message: string;
+  data?: {
+    /** 已預先轉換為中文名稱的偽裝角色陣列，for show_bluffs */
+    bluffs?: string[];
+  };
+}
+
 // ===== 處理器 =====
 
 export interface HandlerContext {
