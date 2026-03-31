@@ -683,3 +683,59 @@ describe('Group A: hasMadeSlayerClaim 初始化', () => {
     expect(m.getPlayer(2)?.hasMadeSlayerClaim).toBe(false);
   });
 });
+
+// ============================================================
+// Group B — generateDemonBluffs 排除邏輯
+// ============================================================
+
+describe('Group B: generateDemonBluffs 排除邏輯', () => {
+  it('生成的偽裝角色不包含任何已分配給玩家的角色', () => {
+    const m = new GameStateManager(roleRegistry);
+    m.initializePlayers([
+      { seat: 1, name: 'A', role: 'empath' },
+      { seat: 2, name: 'B', role: 'fortuneteller' },
+      { seat: 3, name: 'C', role: 'poisoner' },
+      { seat: 4, name: 'D', role: 'imp' },
+      { seat: 5, name: 'E', role: 'washerwoman' },
+    ]);
+    const bluffs = m.generateDemonBluffs();
+    const assignedRoles = new Set(['empath', 'fortuneteller', 'poisoner', 'imp', 'washerwoman']);
+    for (const bluff of bluffs) {
+      expect(assignedRoles.has(bluff)).toBe(false);
+    }
+  });
+
+  it('生成的偽裝角色不包含 drunk（即使 drunk 未在場）', () => {
+    const m = new GameStateManager(roleRegistry);
+    m.initializePlayers([
+      { seat: 1, name: 'A', role: 'empath' },
+      { seat: 2, name: 'B', role: 'imp' },
+    ]);
+    const bluffs = m.generateDemonBluffs();
+    expect(bluffs).not.toContain('drunk');
+  });
+
+  it('酒鬼的 believesRole 不出現在偽裝清單中（避免惡魔識破酒鬼身份）', () => {
+    const m = new GameStateManager(roleRegistry);
+    // drunk 玩家在 initializePlayers 後由 initializeDrunkPlayers 自動分配 believesRole
+    m.initializePlayers([
+      { seat: 1, name: 'A', role: 'drunk' },   // 酒鬼，believesRole 會被自動設定
+      { seat: 2, name: 'B', role: 'imp' },
+      { seat: 3, name: 'C', role: 'poisoner' },
+    ]);
+    const drunkPlayer = m.getPlayer(1);
+    const believesRole = drunkPlayer?.believesRole;
+    // 酒鬼的假角色必須已被設定（initializeDrunkPlayers 邏輯）
+    expect(believesRole).toBeTruthy();
+
+    const bluffs = m.generateDemonBluffs();
+    // 酒鬼的假角色不應出現在偽裝清單中
+    expect(bluffs).not.toContain(believesRole);
+  });
+
+  it('每次呼叫 generateDemonBluffs 回傳 3 個角色', () => {
+    const m = createFullManager();
+    const bluffs = m.generateDemonBluffs();
+    expect(bluffs).toHaveLength(3);
+  });
+});

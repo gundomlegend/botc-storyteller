@@ -215,6 +215,62 @@
   margin: 0;
 }
 
+/* Demon Card（惡魔身份，單張，紫色主題） */
+.display-demon-card {
+  background: rgba(156, 39, 176, 0.15);
+  border: 2px solid rgba(156, 39, 176, 0.5);
+  border-radius: 10px;
+  padding: 1rem 1.8rem;
+  font-size: 1.6rem;
+  font-weight: bold;
+  text-align: center;
+  min-width: 100px;
+  margin-top: 1rem;
+  animation: fadeIn 0.4s ease-in;
+}
+
+/* Bluff Cards（惡魔偽裝名單，固定3張，金黃色主題） */
+.display-bluff-cards {
+  display: flex;
+  gap: 1.2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.display-bluff-card {
+  background: rgba(255, 167, 38, 0.15);
+  border: 2px solid rgba(255, 167, 38, 0.5);
+  border-radius: 10px;
+  padding: 1rem 1.8rem;
+  font-size: 1.6rem;
+  font-weight: bold;
+  text-align: center;
+  min-width: 100px;
+  animation: fadeIn 0.4s ease-in;
+}
+
+/* Minion Cards（爪牙名單，最多5個，紅色主題） */
+.display-minion-cards {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.display-minion-card {
+  background: rgba(244, 67, 54, 0.15);
+  border: 2px solid rgba(244, 67, 54, 0.5);
+  border-radius: 10px;
+  padding: 0.8rem 1.2rem;
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-align: center;
+  min-width: 90px;
+  animation: fadeIn 0.4s ease-in;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {

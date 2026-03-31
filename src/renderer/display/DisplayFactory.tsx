@@ -28,6 +28,7 @@ export function DisplayFactory() {
         <NightDisplay
           night={store.night}
           nightAction={store.displayState.nightAction}
+          specialPhase={store.displayState.specialPhase ?? null}
         />
       );
 

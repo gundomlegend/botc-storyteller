@@ -472,15 +472,6 @@ export class GameStateManager {
   generateDemonBluffs(): string[] {
     const assignedRoles = new Set(this.state.selectedRoles);
 
-    console.log('[DemonBluffs] Initial assignedRoles:', Array.from(assignedRoles));
-    console.log('[DemonBluffs] selectedRoles length:', this.state.selectedRoles.length);
-    console.log('[DemonBluffs] playerCount:', this.state.playerCount);
-
-    // 驗證 selectedRoles 不為空
-    if (this.state.selectedRoles.length === 0) {
-      console.error('[DemonBluffs] ERROR: selectedRoles is empty! Players may not be initialized.');
-    }
-
     // 永久排除酒鬼標記（無論是否在場）
     // 原因：酒鬼標記只有說書人可見，不應被惡魔看到
     assignedRoles.add('drunk');
@@ -491,29 +482,15 @@ export class GameStateManager {
     // 這違反了遊戲平衡，酒鬼應該被保護不被輕易識別
     for (const player of this.state.players.values()) {
       if (player.role === 'drunk' && player.believesRole) {
-        console.log('[DemonBluffs] Found drunk with believesRole:', player.believesRole);
         assignedRoles.add(player.believesRole);
       }
     }
-
-    console.log('[DemonBluffs] After drunk handling:', Array.from(assignedRoles));
 
     const goodRoles = this.roleRegistry.getAllRoles().filter(
       (r) => (r.team === 'townsfolk' || r.team === 'outsider') &&
              !assignedRoles.has(r.id) &&
              r.id !== 'drunk'  // 排除酒鬼：惡魔不會宣稱自己是酒鬼
     );
-
-    console.log('[DemonBluffs] Available good roles:', goodRoles.map(r => r.id));
-
-    // 驗證酒鬼是否被正確排除
-    const drunkInGoodRoles = goodRoles.some(r => r.id === 'drunk');
-    const drunkInAssignedRoles = assignedRoles.has('drunk');
-    console.log('[DemonBluffs] Is drunk in assignedRoles?', drunkInAssignedRoles);
-    console.log('[DemonBluffs] Is drunk in available goodRoles?', drunkInGoodRoles);
-    if (drunkInAssignedRoles && drunkInGoodRoles) {
-      console.error('[DemonBluffs] ERROR: drunk is in assignedRoles but still in goodRoles!');
-    }
 
     // Shuffle and pick 3
     const shuffled = [...goodRoles];
@@ -523,13 +500,6 @@ export class GameStateManager {
     }
 
     const bluffs = shuffled.slice(0, 3).map((r) => r.id);
-    console.log('[DemonBluffs] Final bluffs:', bluffs);
-
-    // 最終驗證：檢查生成的虛張聲勢中是否包含任何在場角色
-    const invalidBluffs = bluffs.filter(bluff => assignedRoles.has(bluff));
-    if (invalidBluffs.length > 0) {
-      console.error('[DemonBluffs] ERROR: Generated bluffs contain assigned roles:', invalidBluffs);
-    }
 
     this.state.demonBluffs = bluffs;
     return bluffs;
