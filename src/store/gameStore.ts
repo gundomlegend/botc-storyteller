@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { GameStateManager } from '../engine/GameState';
 import { RuleEngine } from '../engine/RuleEngine';
-import type { Player, NightOrderItem, NightResult, GameEvent, StatusEffectType, RoleData } from '../engine/types';
+import type { Player, NightOrderItem, NightResult, GameEvent, StatusEffectType, RoleData, SpecialNightPhase } from '../engine/types';
 import { RoleRegistry } from '../engine/RoleRegistry';
 import rolesData from '../data/roles/trouble-brewing.json';
 import { ElectronIPCService } from '../services/IPCService';
@@ -14,6 +14,7 @@ export interface DisplayState {
     roleName: string;
     phase: 'waking' | 'awake' | 'closing';
   } | null;
+  specialPhase: SpecialNightPhase | null;
   nomination: {
     nominatorName: string;
     nomineeName: string;
@@ -61,6 +62,7 @@ export interface GameStore {
 
   // Display 控制
   setDisplayNightAction: (action: DisplayState['nightAction']) => void;
+  setSpecialNightPhase: (phase: SpecialNightPhase | null) => void;
   setDisplayNomination: (nomination: DisplayState['nomination']) => void;
   setDisplayVoting: (voting: DisplayState['voting']) => void;
   clearDisplayState: () => void;
@@ -113,6 +115,7 @@ export const useGameStore = create<GameStore>(
     // Display 控制狀態
     displayState: {
       nightAction: null,
+      specialPhase: null,
       nomination: null,
       voting: null,
     },
@@ -208,6 +211,15 @@ export const useGameStore = create<GameStore>(
       }));
     },
 
+    setSpecialNightPhase: (phase) => {
+      set((state) => ({
+        displayState: {
+          ...state.displayState,
+          specialPhase: phase,
+        },
+      }));
+    },
+
     setDisplayNomination: (nomination) => {
       set((state) => ({
         displayState: {
@@ -230,6 +242,7 @@ export const useGameStore = create<GameStore>(
       set({
         displayState: {
           nightAction: null,
+          specialPhase: null,
           nomination: null,
           voting: null,
         },

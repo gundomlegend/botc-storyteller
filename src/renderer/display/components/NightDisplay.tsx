@@ -3,6 +3,7 @@
  */
 
 import { BaseDisplay } from '../BaseDisplay';
+import type { SpecialNightPhase } from '../../../engine/types';
 
 interface NightAction {
   index: number;
@@ -14,20 +15,14 @@ interface NightAction {
 interface NightDisplayProps {
   night: number;
   nightAction: NightAction | null;
+  specialPhase: SpecialNightPhase | null;
 }
 
-export function NightDisplay({ night, nightAction }: NightDisplayProps) {
-  const getTitle = () => {
-    return `第 ${night} 夜 - 夜晚降臨`;
-  };
+export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayProps) {
+  const title = `第 ${night} 夜 - 夜晚降臨`;
 
   const getMessage = () => {
-    if (!nightAction) {
-      return '所有人保持閉眼';
-    }
-
-    const { seat, roleName, phase } = nightAction;
-
+    const { seat, roleName, phase } = nightAction!;
     switch (phase) {
       case 'waking':
         return `${seat}號 ${roleName} 請睜眼`;
@@ -40,10 +35,50 @@ export function NightDisplay({ night, nightAction }: NightDisplayProps) {
     }
   };
 
+  // 一般角色行動
+  if (nightAction) {
+    return (
+      <BaseDisplay title={title} className="night-display">
+        <div className="night-content">
+          <p className="night-message">{getMessage()}</p>
+        </div>
+      </BaseDisplay>
+    );
+  }
+
+  // 特殊階段（爪牙惡魔互認、虛張聲勢）
+  if (specialPhase) {
+    if (specialPhase.type === 'show_bluffs') {
+      return (
+        <BaseDisplay title={title} className="night-display">
+          <div className="night-content">
+            <p className="night-message">{specialPhase.message}</p>
+            <div className="display-bluff-cards">
+              {(specialPhase.data?.bluffs ?? []).map((name) => (
+                <div key={name} className="display-bluff-card">
+                  {name}
+                </div>
+              ))}
+            </div>
+          </div>
+        </BaseDisplay>
+      );
+    }
+
+    return (
+      <BaseDisplay title={title} className="night-display">
+        <div className="night-content">
+          <p className="night-message">{specialPhase.message}</p>
+        </div>
+      </BaseDisplay>
+    );
+  }
+
+  // 預設：所有人閉眼
   return (
-    <BaseDisplay title={getTitle()} className="night-display">
+    <BaseDisplay title={title} className="night-display">
       <div className="night-content">
-        <p className="night-message">{getMessage()}</p>
+        <p className="night-message">所有人保持閉眼</p>
       </div>
     </BaseDisplay>
   );

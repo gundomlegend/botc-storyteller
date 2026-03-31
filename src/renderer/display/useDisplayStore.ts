@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { ElectronIPCService } from '../../services/IPCService';
+import type { SpecialNightPhase } from '../../engine/types';
 
 interface DisplayNightAction {
   index: number;
@@ -27,6 +28,7 @@ interface DisplayVoting {
 
 interface DisplayStateData {
   nightAction: DisplayNightAction | null;
+  specialPhase: SpecialNightPhase | null;
   nomination: DisplayNomination | null;
   voting: DisplayVoting | null;
 }
@@ -95,6 +97,7 @@ export const useDisplayStore = create<DisplayStore>((set) => {
     night: 0,
     displayState: {
       nightAction: null,
+      specialPhase: null,
       nomination: null,
       voting: null,
     },
