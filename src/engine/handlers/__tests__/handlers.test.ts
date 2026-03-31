@@ -1002,27 +1002,6 @@ describe('RavenkeeperHandler', () => {
     return new RavenkeeperHandler(roleRegistry);
   }
 
-  function makeRavenkeeperContext(
-    overrides: Partial<HandlerContext> & { players?: Player[] },
-  ): HandlerContext {
-    const { players = [], ...rest } = overrides;
-    const ravenkeeper = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk' });
-    const allPlayers = players.some(p => p.seat === ravenkeeper.seat) ? players : [ravenkeeper, ...players];
-    const gs: GameState = {
-      ...makeGameState(allPlayers),
-      night: 2,
-    };
-    return makeContext({
-      roleData: RAVENKEEPER_ROLE_DATA,
-      player: ravenkeeper,
-      target: null,
-      gameState: gs,
-      infoReliable: true,
-      statusReason: '',
-      ...rest,
-    });
-  }
-
   it('T8：第一夜不執行', () => {
     const handler = makeHandler();
     const rk = makePlayer({ seat: 1, role: 'ravenkeeper', team: 'townsfolk' });
