@@ -65,6 +65,23 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
       );
     }
 
+    if (specialPhase.type === 'reveal_minions') {
+      return (
+        <BaseDisplay title={title} className="night-display">
+          <div className="night-content">
+            <p className="night-message">{specialPhase.message}</p>
+            <div className="display-minion-cards">
+              {(specialPhase.data?.minions ?? []).map((label) => (
+                <div key={label} className="display-minion-card">
+                  {label}
+                </div>
+              ))}
+            </div>
+          </div>
+        </BaseDisplay>
+      );
+    }
+
     return (
       <BaseDisplay title={title} className="night-display">
         <div className="night-content">
