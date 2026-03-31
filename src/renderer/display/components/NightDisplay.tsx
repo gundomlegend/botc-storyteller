@@ -65,6 +65,19 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
       );
     }
 
+    if (specialPhase.type === 'reveal_demon') {
+      return (
+        <BaseDisplay title={title} className="night-display">
+          <div className="night-content">
+            <p className="night-message">惡魔</p>
+            <div className="display-demon-card">
+              {specialPhase.message}
+            </div>
+          </div>
+        </BaseDisplay>
+      );
+    }
+
     if (specialPhase.type === 'reveal_minions') {
       return (
         <BaseDisplay title={title} className="night-display">
