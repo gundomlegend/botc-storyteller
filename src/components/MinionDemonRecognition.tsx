@@ -1,15 +1,38 @@
+import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 
 interface MinionDemonRecognitionProps {
   onComplete: () => void;
 }
 
+type Step = 'title' | 'reveal_demon';
+
 export default function MinionDemonRecognition({ onComplete }: MinionDemonRecognitionProps) {
-  const { stateManager, ruleEngine, roleRegistry } = useGameStore();
+  const { stateManager, ruleEngine, roleRegistry, setSpecialNightPhase } = useGameStore();
+  const [step, setStep] = useState<Step>('title');
 
   const result = ruleEngine.processMinionDemonRecognition(stateManager);
   const minions = stateManager.getMinionPlayers();
   const demon = stateManager.getDemonPlayer();
+
+  // 初始化投影：顯示互認標題；unmount 時 cleanup（含中途跳離）
+  useEffect(() => {
+    setSpecialNightPhase({ type: 'recognition_title', message: '爪牙與惡魔互認' });
+    return () => setSpecialNightPhase(null);
+  }, [setSpecialNightPhase]);
+
+  const handleRevealDemon = () => {
+    const demonLabel = demon
+      ? `${demon.seat}號 ${demon.name} 是惡魔`
+      : '（無惡魔）';
+    setSpecialNightPhase({ type: 'reveal_demon', message: demonLabel });
+    setStep('reveal_demon');
+  };
+
+  const handleNext = () => {
+    // useEffect cleanup 會在 onComplete 後 unmount 時執行
+    onComplete();
+  };
 
   return (
     <div className="first-night-special">
@@ -41,8 +64,8 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
           ))}
         </div>
 
-        <p className="special-step">讓他們互相確認身份。</p>
-        <p className="special-step">確認完畢後，讓他們閉眼。</p>
+        {step === 'title' && <p className="special-step">請喚醒爪牙們後，再按下提示惡魔。 </p>}
+        {step === 'reveal_demon' && <p className="special-step">請爪牙們閉眼，接著喚醒惡魔。</p>}
       </div>
 
       {result.display && (
@@ -50,9 +73,16 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
       )}
 
       <div className="special-actions">
-        <button className="btn-primary" onClick={onComplete}>
-          完成 — 下一步
-        </button>
+        {step === 'title' && (
+          <button className="btn-primary" onClick={handleRevealDemon}>
+            提示惡魔 →
+          </button>
+        )}
+        {step === 'reveal_demon' && (
+          <button className="btn-primary" onClick={handleNext}>
+            下一步 →
+          </button>
+        )}
       </div>
     </div>
   );
