@@ -17,7 +17,7 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
   const hasBluffs = playerCount >= 7;
 
   useEffect(() => {
-    const generated = stateManager.generateDemonBluffs();
+    const generated = stateManager.getDemonBluffs();
     setBluffs(generated);
   }, [stateManager]);
 
