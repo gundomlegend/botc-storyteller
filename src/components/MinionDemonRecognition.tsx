@@ -26,7 +26,7 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
 
   const handleRevealDemon = () => {
     const demonLabel = demon
-      ? `${demon.seat}號 ${demon.name} 是惡魔`
+      ? `${demon.seat}號 ${demon.name}`
       : '（無惡魔）';
     setSpecialNightPhase({ type: 'reveal_demon', message: demonLabel });
     setStep('reveal_demon');

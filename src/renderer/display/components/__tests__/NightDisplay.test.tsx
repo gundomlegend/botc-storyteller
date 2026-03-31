@@ -48,10 +48,10 @@ describe('NightDisplay', () => {
     });
 
     it('reveal_demon：顯示「惡魔」標題和紫色卡片', () => {
-      const phase: SpecialNightPhase = { type: 'reveal_demon', message: '1號 惡魔玩家 是惡魔' };
+      const phase: SpecialNightPhase = { type: 'reveal_demon', message: '1號 惡魔玩家' };
       render(<NightDisplay night={1} nightAction={null} specialPhase={phase} />);
       expect(screen.getByText('惡魔')).toBeInTheDocument();
-      const card = screen.getByText('1號 惡魔玩家 是惡魔');
+      const card = screen.getByText('1號 惡魔玩家');
       expect(card).toBeInTheDocument();
       expect(card.className).toBe('display-demon-card');
     });

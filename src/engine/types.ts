@@ -149,7 +149,7 @@ export interface NightContext {
 
 export type SpecialNightPhaseType =
   | 'recognition_title'  // 「爪牙與惡魔互認」標題（爪牙睜眼）
-  | 'reveal_demon'       // 「X號 名字 是惡魔」（給爪牙看）
+  | 'reveal_demon'       // 「X號 名字」惡魔卡片（給爪牙看）
   | 'reveal_minions'     // 爪牙卡片名單（給惡魔看）
   | 'show_bluffs';       // 三個偽裝角色卡片
 
