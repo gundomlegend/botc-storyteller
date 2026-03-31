@@ -5,16 +5,54 @@ interface DemonBluffsProps {
   onComplete: () => void;
 }
 
+type Step = 'close_minions' | 'reveal_minions' | 'show_bluffs';
+
 export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
-  const { stateManager, roleRegistry } = useGameStore();
+  const { stateManager, roleRegistry, setSpecialNightPhase } = useGameStore();
   const [bluffs, setBluffs] = useState<string[]>([]);
 
   const demon = stateManager.getDemonPlayer();
+  const minions = stateManager.getMinionPlayers();
+  const hasMinions = minions.length > 0;
+
+  const initialStep: Step = hasMinions ? 'close_minions' : 'show_bluffs';
+  const [step, setStep] = useState<Step>(initialStep);
 
   useEffect(() => {
     const generated = stateManager.generateDemonBluffs();
     setBluffs(generated);
   }, [stateManager]);
+
+  // 初始化投影；unmount 時 cleanup（含中途跳離）
+  useEffect(() => {
+    if (hasMinions) {
+      setSpecialNightPhase({ type: 'close_minions', message: '請爪牙們閉上眼睛' });
+    } else {
+      setSpecialNightPhase({ type: 'show_bluffs', message: '偽裝角色' });
+    }
+    return () => setSpecialNightPhase(null);
+  }, [hasMinions, setSpecialNightPhase]);
+
+  const handleRevealMinions = () => {
+    const minionList = minions.map((m) => `${m.name}(${m.seat}號)`).join('　');
+    setSpecialNightPhase({ type: 'reveal_minions', message: minionList });
+    setStep('reveal_minions');
+  };
+
+  const handleShowBluffs = () => {
+    // 預先將 role ID 轉換為中文名稱，NightDisplay 不需要 roleRegistry
+    const bluffNames = bluffs.map((id) => roleRegistry.getRoleName(id));
+    setSpecialNightPhase({
+      type: 'show_bluffs',
+      message: '偽裝角色',
+      data: { bluffs: bluffNames },
+    });
+    setStep('show_bluffs');
+  };
+
+  const handleComplete = () => {
+    onComplete();
+  };
 
   return (
     <div className="first-night-special">
@@ -49,9 +87,21 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
       </div>
 
       <div className="special-actions">
-        <button className="btn-primary" onClick={onComplete}>
-          完成 — 下一步
-        </button>
+        {step === 'close_minions' && (
+          <button className="btn-primary" onClick={handleRevealMinions}>
+            顯示爪牙 →
+          </button>
+        )}
+        {step === 'reveal_minions' && (
+          <button className="btn-primary" onClick={handleShowBluffs}>
+            展示偽裝 →
+          </button>
+        )}
+        {step === 'show_bluffs' && (
+          <button className="btn-primary" onClick={handleComplete}>
+            完成 →
+          </button>
+        )}
       </div>
     </div>
   );
