@@ -8,26 +8,28 @@ interface DemonBluffsProps {
 type Step = 'wake_demon' | 'show_bluffs';
 
 export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
-  const { stateManager, roleRegistry, setSpecialNightPhase } = useGameStore();
+  const { stateManager, roleRegistry, setDisplayNightAction, setSpecialNightPhase } = useGameStore();
   const [bluffs, setBluffs] = useState<string[]>([]);
   const [step, setStep] = useState<Step>('wake_demon');
 
   const demon = stateManager.getDemonPlayer();
   const playerCount = stateManager.getState().playerCount;
   const hasBluffs = playerCount >= 7;
+  
+  // unmount 時 cleanup（含中途跳離）
+  useEffect(() => {
+    setDisplayNightAction({ phase: 'demon_waking' });
+    return () => setSpecialNightPhase(null);
+  }, [setDisplayNightAction, setSpecialNightPhase]);
 
   useEffect(() => {
     const generated = stateManager.getDemonBluffs();
     setBluffs(generated);
   }, [stateManager]);
 
-  // unmount 時 cleanup（含中途跳離）
-  useEffect(() => {
-    return () => setSpecialNightPhase(null);
-  }, [setSpecialNightPhase]);
-
   const handleShowBluffs = () => {
     const bluffNames = bluffs.map((id) => roleRegistry.getRoleName(id));
+    setDisplayNightAction(null);
     setSpecialNightPhase({
       type: 'show_bluffs',
       message: '偽裝角色',
