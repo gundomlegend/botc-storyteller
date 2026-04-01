@@ -16,9 +16,13 @@ export default function NightView() {
 
   // Update Display state when currentIndex changes
   useEffect(() => {
-    if (!currentItem || isSpecialPhase(currentItem.role)) {
-      // Special phases or no item: all sleeping
+    if (!currentItem) {
       setDisplayNightAction(null);
+      return;
+    }
+
+    if (isSpecialPhase(currentItem.role)) {
+      // Special phase components manage their own display state
       return;
     }
 
