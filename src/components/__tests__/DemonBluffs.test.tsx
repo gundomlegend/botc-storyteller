@@ -8,6 +8,7 @@ import type { Player } from '../../engine/types';
 // ============================================================
 
 const mockSetSpecialNightPhase = vi.fn();
+const mockSetDisplayNightAction = vi.fn();
 const mockGetDemonBluffs = vi.fn().mockReturnValue(['washerwoman', 'librarian', 'investigator']);
 
 const mockDemon: Player = {
@@ -47,6 +48,7 @@ vi.mock('../../store/gameStore', () => ({
     },
     roleRegistry: mockRoleRegistry,
     setSpecialNightPhase: mockSetSpecialNightPhase,
+    setDisplayNightAction: mockSetDisplayNightAction,
   }),
 }));
 
