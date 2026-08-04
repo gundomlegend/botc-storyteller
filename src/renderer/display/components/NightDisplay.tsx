@@ -6,10 +6,10 @@ import { BaseDisplay } from '../BaseDisplay';
 import type { SpecialNightPhase } from '../../../engine/types';
 
 interface NightAction {
-  index?: number;
-  seat?: number;
-  roleName?: string;
-  phase: 'waking' | 'awake' | 'closing' | 'demon_waking';
+  index: number;
+  seat: number;
+  roleName: string;
+  phase: 'waking' | 'awake' | 'closing';
 }
 
 interface NightDisplayProps {
@@ -30,8 +30,6 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
         return `${seat}號 ${roleName}\n請執行你的能力`;
       case 'closing':
         return `${seat}號 請閉眼`;
-      case 'demon_waking':
-        return `請惡魔保持睜眼`;
       default:
         return '所有人保持閉眼';
     }

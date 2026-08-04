@@ -9,10 +9,10 @@ import { createStateSyncMiddleware } from './middleware/stateSyncMiddleware';
 
 export interface DisplayState {
   nightAction: {
-    index?: number;
-    seat?: number;
-    roleName?: string;
-    phase: 'waking' | 'awake' | 'closing' | 'demon_waking';
+    index: number;
+    seat: number;
+    roleName: string;
+    phase: 'waking' | 'awake' | 'closing';
   } | null;
   specialPhase: SpecialNightPhase | null;
   nomination: {
