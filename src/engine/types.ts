@@ -151,6 +151,7 @@ export type SpecialNightPhaseType =
   | 'recognition_title'  // 「爪牙與惡魔互認」標題（爪牙睜眼）
   | 'reveal_demon'       // 「X號 名字」惡魔卡片（給爪牙看）
   | 'reveal_minions'     // 爪牙卡片名單（給惡魔看）
+  | 'demon_waking'       // 惡魔認完爪牙後，展示偽裝前維持睜眼
   | 'show_bluffs';       // 三個偽裝角色卡片
 
 export interface SpecialNightPhase {

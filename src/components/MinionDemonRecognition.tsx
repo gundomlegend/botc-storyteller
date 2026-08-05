@@ -96,7 +96,7 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
           <p className="special-step">請爪牙們閉眼，接著喚醒惡魔，投影顯示爪牙名單。</p>
         )}
         {step === 'reveal_minions' && (
-          <p className="special-step">惡魔確認爪牙身份後閉眼。</p>
+          <p className="special-step">惡魔確認爪牙身份後保持睜眼。</p>
         )}
       </div>
 

@@ -78,12 +78,29 @@ describe('DemonBluffs', () => {
       fireEvent.click(screen.getByText('確認跳過 →'));
       expect(onComplete).toHaveBeenCalledOnce();
     });
+
+    it('不投影 demon_waking（跳過時惡魔不需保持睜眼）', () => {
+      mockPlayerCount = 6;
+      render(<DemonBluffs onComplete={vi.fn()} />);
+
+      expect(mockSetSpecialNightPhase).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'demon_waking' })
+      );
+    });
   });
 
   describe('人數足夠時的 step-based 流程', () => {
     it('初始顯示「展示偽裝」按鈕（wake_demon step）', () => {
       render(<DemonBluffs onComplete={vi.fn()} />);
       expect(screen.getByText('展示偽裝 →')).toBeInTheDocument();
+    });
+
+    it('mount 時投影 demon_waking，指示惡魔保持睜眼', () => {
+      render(<DemonBluffs onComplete={vi.fn()} />);
+      expect(mockSetSpecialNightPhase).toHaveBeenCalledWith({
+        type: 'demon_waking',
+        message: '請惡魔保持睜眼',
+      });
     });
 
     it('mount 時呼叫 getDemonBluffs 讀取已生成的偽裝，不重新生成', () => {

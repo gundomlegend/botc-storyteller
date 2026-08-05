@@ -16,15 +16,18 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
   const playerCount = stateManager.getState().playerCount;
   const hasBluffs = playerCount >= 7;
 
+  // 初始化投影；unmount 時 cleanup（含中途跳離）
+  useEffect(() => {
+    if (hasBluffs) {
+      setSpecialNightPhase({ type: 'demon_waking', message: '請惡魔保持睜眼' });
+    }
+    return () => setSpecialNightPhase(null);
+  }, [hasBluffs, setSpecialNightPhase]);
+
   useEffect(() => {
     const generated = stateManager.getDemonBluffs();
     setBluffs(generated);
   }, [stateManager]);
-
-  // unmount 時 cleanup（含中途跳離）
-  useEffect(() => {
-    return () => setSpecialNightPhase(null);
-  }, [setSpecialNightPhase]);
 
   const handleShowBluffs = () => {
     const bluffNames = bluffs.map((id) => roleRegistry.getRoleName(id));
