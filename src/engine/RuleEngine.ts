@@ -17,6 +17,7 @@ import { ImpHandler } from './handlers/ImpHandler';
 import { DrunkHandler } from './handlers/DrunkHandler';
 import { ButlerHandler } from './handlers/ButlerHandler';
 import { RavenkeeperHandler } from './handlers/RavenkeeperHandler';
+import { SpyHandler } from './handlers/SpyHandler';
 
 const EFFECT_ACTIONS = new Set(['add_protection', 'add_poison', 'kill']);
 
@@ -45,6 +46,7 @@ export class RuleEngine {
       ['drunk', new DrunkHandler(roleRegistry)],
       ['butler', new ButlerHandler(roleRegistry)],
       ['ravenkeeper', new RavenkeeperHandler(roleRegistry)],
+      ['spy', new SpyHandler(roleRegistry)],
     ]);
     this.nightContext = { blockedRoles: new Set() };
   }
