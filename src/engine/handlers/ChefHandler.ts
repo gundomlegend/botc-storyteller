@@ -1,6 +1,19 @@
 import type { RoleHandler, HandlerContext, NightResult, Player, GameState } from '../types';
 import { BaseRoleHandler } from './BaseRoleHandler';
 
+/**
+ * 陌客/間諜的登記結果。
+ *
+ * 註記文字必須由 registersAsEvil 產生，不可另行計算 —— 否則會出現
+ * 「說書人看到的註記」與「引擎實際計算」互相矛盾的情況。
+ */
+interface SpecialRoleEntry {
+  seat: number;
+  role: 'recluse' | 'spy';
+  registersAsEvil: boolean;
+  abilityActive: boolean;
+}
+
 export class ChefHandler extends BaseRoleHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
     const { gameState } = context;
@@ -16,14 +29,16 @@ export class ChefHandler extends BaseRoleHandler implements RoleHandler {
 
     // 步驟 2-3: 計算相鄰配對
     const result = this.findAdjacentPairs(gameState);
-    const { actualPairCount, segments, pairDetails, evilSeats, recluseSeats, spySeats } = result;
+    const {
+      actualPairCount, segments, pairDetails, evilSeats,
+      recluseSeats, spySeats, specialRoles,
+    } = result;
 
     // 步驟 4: 回傳結果
     const reasoning = this.buildReasoning(
       actualPairCount,
       segments,
-      recluseSeats,
-      spySeats,
+      specialRoles,
       gameState
     );
 
@@ -45,8 +60,7 @@ export class ChefHandler extends BaseRoleHandler implements RoleHandler {
         actualPairCount,
         segments,
         pairDetails,
-        recluseSeats,
-        spySeats,
+        specialRoles,
         gameState
       ),
     };
@@ -80,6 +94,7 @@ export class ChefHandler extends BaseRoleHandler implements RoleHandler {
     evilSeats: number[];
     recluseSeats: number[];
     spySeats: number[];
+    specialRoles: SpecialRoleEntry[];
   } {
     const players = Array.from(gameState.players.values())
       .filter(p => p.isAlive)
@@ -90,14 +105,18 @@ export class ChefHandler extends BaseRoleHandler implements RoleHandler {
       .filter(p => this.isEvilForChef(p))
       .map(p => p.seat);
 
-    // 記錄特殊角色
-    const recluseSeats = players
-      .filter(p => p.role === 'recluse')
-      .map(p => p.seat);
+    // 記錄特殊角色（登記結果直接取自 isEvilForChef，確保與 evilSeats 一致）
+    const specialRoles: SpecialRoleEntry[] = players
+      .filter(p => p.role === 'recluse' || p.role === 'spy')
+      .map(p => ({
+        seat: p.seat,
+        role: p.role as 'recluse' | 'spy',
+        registersAsEvil: this.isEvilForChef(p),
+        abilityActive: !p.isPoisoned && !p.isDrunk,
+      }));
 
-    const spySeats = players
-      .filter(p => p.role === 'spy')
-      .map(p => p.seat);
+    const recluseSeats = specialRoles.filter(e => e.role === 'recluse').map(e => e.seat);
+    const spySeats = specialRoles.filter(e => e.role === 'spy').map(e => e.seat);
 
     if (evilSeats.length === 0) {
       return {
@@ -107,6 +126,7 @@ export class ChefHandler extends BaseRoleHandler implements RoleHandler {
         evilSeats: [],
         recluseSeats,
         spySeats,
+        specialRoles,
       };
     }
 
@@ -159,6 +179,7 @@ export class ChefHandler extends BaseRoleHandler implements RoleHandler {
       evilSeats,
       recluseSeats,
       spySeats,
+      specialRoles,
     };
   }
 
@@ -170,33 +191,32 @@ export class ChefHandler extends BaseRoleHandler implements RoleHandler {
     return seat === 1 ? totalPlayers : seat - 1;
   }
 
-  /** 生成特殊角色說明文字（陌客/間諜） */
+  /**
+   * 生成特殊角色說明文字（陌客/間諜）。
+   *
+   * 文字一律由 entry.registersAsEvil 推導，因此不可能與 evilSeats 矛盾。
+   */
   private buildSpecialRoleNotes(
-    recluseSeats: number[],
-    spySeats: number[],
+    specialRoles: SpecialRoleEntry[],
     withEmoji = false
   ): string[] {
-    const notes: string[] = [];
     const prefix = withEmoji ? 'ℹ️ ' : '';
+    const roleName = { recluse: '陌客', spy: '間諜' };
 
-    if (recluseSeats.length > 0) {
-      notes.push(`${prefix}陌客 ${recluseSeats.join('、')}號 被視為邪惡`);
-    }
-    if (spySeats.length > 0) {
-      notes.push(`${prefix}間諜 ${spySeats.join('、')}號 不被視為邪惡`);
-    }
-
-    return notes;
+    return specialRoles.map(e => {
+      const verdict = e.registersAsEvil ? '被視為邪惡' : '不被視為邪惡';
+      const cause = e.abilityActive ? '' : '（能力失效）';
+      return `${prefix}${roleName[e.role]} ${e.seat}號 ${verdict}${cause}`;
+    });
   }
 
   private buildReasoning(
     actualPairCount: number,
     segments: number[][],
-    recluseSeats: number[],
-    spySeats: number[],
+    specialRoles: SpecialRoleEntry[],
     gameState: GameState
   ): string {
-    const notes = this.buildSpecialRoleNotes(recluseSeats, spySeats, false);
+    const notes = this.buildSpecialRoleNotes(specialRoles, false);
 
     if (actualPairCount === 0) {
       const noteStr = notes.length > 0 ? `（${notes.join('；')}）` : '';
@@ -225,11 +245,10 @@ export class ChefHandler extends BaseRoleHandler implements RoleHandler {
     actualPairCount: number,
     segments: number[][],
     pairDetails: string[],
-    recluseSeats: number[],
-    spySeats: number[],
+    specialRoles: SpecialRoleEntry[],
     gameState: GameState
   ): string {
-    const specialNotes = this.buildSpecialRoleNotes(recluseSeats, spySeats, true);
+    const specialNotes = this.buildSpecialRoleNotes(specialRoles, true);
     const specialNotesStr = specialNotes.length > 0
       ? `\n\n${specialNotes.join('\n')}`
       : '';

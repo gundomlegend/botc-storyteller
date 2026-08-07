@@ -8,6 +8,7 @@ import { describe, it, expect } from 'vitest';
 import type { HandlerContext, Player, GameState, RoleData } from '../../types';
 import { FortunetellerHandler } from '../FortunetellerHandler';
 import { ChefHandler } from '../ChefHandler';
+import { EmpathHandler } from '../EmpathHandler';
 import { MonkHandler } from '../MonkHandler';
 import { PoisonerHandler } from '../PoisonerHandler';
 import { ImpHandler } from '../ImpHandler';
@@ -388,6 +389,196 @@ describe('ChefHandler', () => {
     expect((result.info as any).toldPairCount).toBeUndefined();
     expect(result.mustFollow).toBe(false);
     expect(result.canLie).toBe(true);
+  });
+
+  // ----------------------------------------------------------
+  // 註記文字必須與實際計算一致
+  //
+  // 說書人是照著 display / reasoning 的文字唸的，
+  // 因此註記與 evilSeats 不一致等同給錯資訊。
+  // ----------------------------------------------------------
+  describe('陌客/間諜註記與計算一致性', () => {
+    it('中毒陌客 → 註記不得宣稱「被視為邪惡」', () => {
+      const players = [
+        makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+        makePlayer({ seat: 2, role: 'recluse', team: 'outsider', isPoisoned: true }),
+        makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+        makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+      ];
+      const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+
+      expect((result.info as any).evilSeats).not.toContain(2);
+      expect(result.display).not.toContain('陌客 2號 被視為邪惡');
+      expect(result.reasoning).not.toContain('陌客 2號 被視為邪惡');
+      // 並且要說明原因，讓說書人知道為何與平常不同
+      expect(result.display).toContain('陌客 2號 不被視為邪惡（能力失效）');
+    });
+
+    it('醉酒陌客 → 註記不得宣稱「被視為邪惡」', () => {
+      const players = [
+        makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+        makePlayer({ seat: 2, role: 'recluse', team: 'outsider', isDrunk: true }),
+        makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+        makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+      ];
+      const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+
+      expect((result.info as any).evilSeats).not.toContain(2);
+      expect(result.display).not.toContain('陌客 2號 被視為邪惡');
+    });
+
+    it('中毒間諜 → 註記不得宣稱「不被視為邪惡」', () => {
+      const players = [
+        makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+        makePlayer({ seat: 2, role: 'spy', team: 'minion', isPoisoned: true }),
+        makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+        makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+      ];
+      const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+
+      expect((result.info as any).evilSeats).toContain(2);
+      expect(result.display).not.toContain('間諜 2號 不被視為邪惡');
+      expect(result.display).toContain('間諜 2號 被視為邪惡（能力失效）');
+    });
+
+    // 不變式：註記說「被視為邪惡」⇔ 該座位必須在 evilSeats 裡。
+    // 這條斷言涵蓋所有組合，比逐一列舉情境更能防止復發。
+    it('不變式：註記宣稱的邪惡狀態必須與 evilSeats 相符', () => {
+      const cases: Array<{ role: string; team: Player['team']; isPoisoned?: boolean; isDrunk?: boolean }> = [
+        { role: 'recluse', team: 'outsider' },
+        { role: 'recluse', team: 'outsider', isPoisoned: true },
+        { role: 'recluse', team: 'outsider', isDrunk: true },
+        { role: 'spy', team: 'minion' },
+        { role: 'spy', team: 'minion', isPoisoned: true },
+        { role: 'spy', team: 'minion', isDrunk: true },
+      ];
+
+      for (const c of cases) {
+        const players = [
+          makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+          makePlayer({ seat: 2, ...c }),
+          makePlayer({ seat: 3, role: 'imp', team: 'demon' }),
+          makePlayer({ seat: 4, role: 'chef', team: 'townsfolk' }),
+        ];
+        const result = handler.process(makeContext({ gameState: makeGameState(players) }));
+
+        const evilSeats: number[] = (result.info as any).evilSeats;
+        const text = `${result.display}\n${result.reasoning}`;
+        const noteSaysEvil = /2號 被視為邪惡/.test(text);
+        const noteSaysNotEvil = /2號 不被視為邪惡/.test(text);
+
+        // 註記若有表態，必須與計算一致
+        if (noteSaysEvil) {
+          expect(evilSeats, `${JSON.stringify(c)}: 註記說邪惡但不在 evilSeats`).toContain(2);
+        }
+        if (noteSaysNotEvil) {
+          expect(evilSeats, `${JSON.stringify(c)}: 註記說非邪惡但在 evilSeats`).not.toContain(2);
+        }
+      }
+    });
+  });
+});
+
+// ============================================================
+// EmpathHandler
+// ============================================================
+
+describe('EmpathHandler', () => {
+  const handler = new EmpathHandler(roleRegistry);
+
+  it('兩側鄰居皆為好人 → actualEvilCount: 0', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'monk', team: 'townsfolk' }),
+      makePlayer({ seat: 2, role: 'empath', team: 'townsfolk' }),
+      makePlayer({ seat: 3, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({
+      player: players[1],
+      gameState: makeGameState(players),
+    }));
+    expect((result.info as any).actualEvilCount).toBe(0);
+  });
+
+  it('一側鄰居為爪牙 → actualEvilCount: 1', () => {
+    const players = [
+      makePlayer({ seat: 1, role: 'poisoner', team: 'minion' }),
+      makePlayer({ seat: 2, role: 'empath', team: 'townsfolk' }),
+      makePlayer({ seat: 3, role: 'chef', team: 'townsfolk' }),
+    ];
+    const result = handler.process(makeContext({
+      player: players[1],
+      gameState: makeGameState(players),
+    }));
+    expect((result.info as any).actualEvilCount).toBe(1);
+  });
+
+  describe('陌客/間諜註記與計算一致性', () => {
+    it('中毒陌客鄰居 → 註記不得宣稱「被視為邪惡」', () => {
+      const players = [
+        makePlayer({ seat: 1, role: 'recluse', team: 'outsider', isPoisoned: true }),
+        makePlayer({ seat: 2, role: 'empath', team: 'townsfolk' }),
+        makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' }),
+      ];
+      const result = handler.process(makeContext({
+        player: players[1],
+        gameState: makeGameState(players),
+      }));
+
+      expect((result.info as any).actualEvilCount).toBe(0);
+      expect(result.display).not.toContain('陌客 1號 被視為邪惡');
+    });
+
+    it('中毒間諜鄰居 → 註記不得宣稱「不被視為邪惡」', () => {
+      const players = [
+        makePlayer({ seat: 1, role: 'spy', team: 'minion', isPoisoned: true }),
+        makePlayer({ seat: 2, role: 'empath', team: 'townsfolk' }),
+        makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' }),
+      ];
+      const result = handler.process(makeContext({
+        player: players[1],
+        gameState: makeGameState(players),
+      }));
+
+      expect((result.info as any).actualEvilCount).toBe(1);
+      expect(result.display).not.toContain('間諜 1號 不被視為邪惡');
+    });
+
+    it('不變式：註記宣稱的邪惡狀態必須與 actualEvilCount 相符', () => {
+      const cases: Array<{ role: string; team: Player['team']; isPoisoned?: boolean; isDrunk?: boolean }> = [
+        { role: 'recluse', team: 'outsider' },
+        { role: 'recluse', team: 'outsider', isPoisoned: true },
+        { role: 'recluse', team: 'outsider', isDrunk: true },
+        { role: 'spy', team: 'minion' },
+        { role: 'spy', team: 'minion', isPoisoned: true },
+        { role: 'spy', team: 'minion', isDrunk: true },
+      ];
+
+      for (const c of cases) {
+        const players = [
+          makePlayer({ seat: 1, ...c }),
+          makePlayer({ seat: 2, role: 'empath', team: 'townsfolk' }),
+          makePlayer({ seat: 3, role: 'monk', team: 'townsfolk' }),
+        ];
+        const result = handler.process(makeContext({
+          player: players[1],
+          gameState: makeGameState(players),
+        }));
+
+        const evilCount: number = (result.info as any).actualEvilCount;
+        const leftIsEvil: boolean = (result.info as any).leftNeighbor.isEvil;
+        const text = result.display ?? '';
+        const noteSaysEvil = /1號 被視為邪惡/.test(text);
+        const noteSaysNotEvil = /1號 不被視為邪惡/.test(text);
+
+        expect(leftIsEvil, `${JSON.stringify(c)}: 計數與鄰居旗標不符`).toBe(evilCount === 1);
+        if (noteSaysEvil) {
+          expect(leftIsEvil, `${JSON.stringify(c)}: 註記說邪惡但計算為非邪惡`).toBe(true);
+        }
+        if (noteSaysNotEvil) {
+          expect(leftIsEvil, `${JSON.stringify(c)}: 註記說非邪惡但計算為邪惡`).toBe(false);
+        }
+      }
+    });
   });
 });
 
