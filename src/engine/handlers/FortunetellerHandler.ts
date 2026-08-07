@@ -1,5 +1,6 @@
 import type { RoleHandler, HandlerContext, NightResult, Player } from '../types';
 import { BaseRoleHandler } from './BaseRoleHandler';
+import { mayRegisterAsTeam, isRegistrationAbilityActive } from '../Registration';
 
 export class FortunetellerHandler extends BaseRoleHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
@@ -41,11 +42,13 @@ export class FortunetellerHandler extends BaseRoleHandler implements RoleHandler
     redHerringSeat: number | null
   ): { triggers: boolean; isDemon: boolean; isRecluse: boolean; isRedHerring: boolean } {
     const isDemon = target.team === 'demon';
-    // 陌客中毒/醉酒時能力失效，不觸發偵測（與廚師邏輯一致）
-    const isRecluse = target.role === 'recluse' && !target.isPoisoned && !target.isDrunk;
+    // 陌客能力正常時可被視為惡魔而觸發偵測；中毒/醉酒則失效。
+    // 間諜只能被視為鎮民/外來者，故永不觸發 —— 由 Registration 的資料保證。
+    const isRecluse = target.role === 'recluse' && isRegistrationAbilityActive(target);
     const isRedHerring = target.seat === redHerringSeat;
     return {
-      triggers: isDemon || isRecluse || isRedHerring,
+      // 惡魔或「可被視為惡魔」者觸發偵測
+      triggers: mayRegisterAsTeam(target, 'demon') || isRedHerring,
       isDemon,
       isRecluse,
       isRedHerring,

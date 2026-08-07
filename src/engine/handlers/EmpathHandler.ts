@@ -1,18 +1,10 @@
 import type { RoleHandler, HandlerContext, NightResult, Player, GameState } from '../types';
 import { BaseRoleHandler } from './BaseRoleHandler';
-
-/**
- * 陌客/間諜的登記結果。
- *
- * 註記文字必須由 registersAsEvil 產生，不可另行計算 —— 否則會出現
- * 「說書人看到的註記」與「引擎實際計算」互相矛盾的情況。
- */
-interface SpecialRoleEntry {
-  seat: number;
-  role: 'recluse' | 'spy';
-  registersAsEvil: boolean;
-  abilityActive: boolean;
-}
+import {
+  registersAsEvil,
+  hasRegistrationAbility,
+  describeAlignmentRegistration,
+} from '../Registration';
 
 export class EmpathHandler extends BaseRoleHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
@@ -30,30 +22,19 @@ export class EmpathHandler extends BaseRoleHandler implements RoleHandler {
     }
 
     // 步驟 2: 計算邪惡玩家數量
-    const leftIsEvil = this.isEvilForEmpath(left);
-    const rightIsEvil = this.isEvilForEmpath(right);
+    const leftIsEvil = registersAsEvil(left);
+    const rightIsEvil = registersAsEvil(right);
     const actualEvilCount = (leftIsEvil ? 1 : 0) + (rightIsEvil ? 1 : 0);
 
-    // 記錄特殊角色（登記結果直接取自上方判斷，確保與 actualEvilCount 一致）
-    const specialRoles: SpecialRoleEntry[] = [
-      { player: left, isEvil: leftIsEvil },
-      { player: right, isEvil: rightIsEvil },
-    ]
-      .filter(({ player }) => player.role === 'recluse' || player.role === 'spy')
-      .map(({ player, isEvil }) => ({
-        seat: player.seat,
-        role: player.role as 'recluse' | 'spy',
-        registersAsEvil: isEvil,
-        abilityActive: !player.isPoisoned && !player.isDrunk,
-      }));
-
-    const recluseSeats = specialRoles.filter(e => e.role === 'recluse').map(e => e.seat);
-    const spySeats = specialRoles.filter(e => e.role === 'spy').map(e => e.seat);
+    // 具登記彈性的鄰居（陌客/間諜）；註記文字稍後由同一個 resolver 產生
+    const specialPlayers = [left, right].filter(hasRegistrationAbility);
+    const recluseSeats = specialPlayers.filter(p => p.role === 'recluse').map(p => p.seat);
+    const spySeats = specialPlayers.filter(p => p.role === 'spy').map(p => p.seat);
 
     // 步驟 3: 回傳結果
     const reasoning = this.buildReasoning(
       left, right, leftIsEvil, rightIsEvil,
-      specialRoles
+      specialPlayers
     );
 
     return {
@@ -81,7 +62,7 @@ export class EmpathHandler extends BaseRoleHandler implements RoleHandler {
       reasoning,
       display: this.formatDisplay(
         left, right, leftIsEvil, rightIsEvil,
-        actualEvilCount, specialRoles
+        actualEvilCount, specialPlayers
       ),
       gesture: 'none',
     };
@@ -114,44 +95,17 @@ export class EmpathHandler extends BaseRoleHandler implements RoleHandler {
     };
   }
 
-  private isEvilForEmpath(player: Player): boolean {
-    // 特例 1：間諜
-    if (player.role === 'spy') {
-      // 間諜中毒/醉酒：能力失效，被視為邪惡
-      if (player.isPoisoned || player.isDrunk) return true;
-      // 間諜正常：不被視為邪惡
-      return false;
-    }
-
-    // 特例 2：陌客
-    if (player.role === 'recluse') {
-      // 陌客中毒/醉酒：能力失效，不被視為邪惡
-      if (player.isPoisoned || player.isDrunk) return false;
-      // 陌客正常：被視為邪惡（說書人決定，預設為 true）
-      return true;
-    }
-
-    // 一般規則：爪牙和惡魔均被視為邪惡
-    return player.team === 'minion' || player.team === 'demon';
-  }
-
   /**
    * 生成特殊角色說明文字（陌客/間諜）。
    *
-   * 文字一律由 entry.registersAsEvil 推導，因此不可能與鄰居的邪惡判定矛盾。
+   * 委派給 Registration —— 文字與邪惡判定同源，故不可能矛盾。
+   * 見 docs/contracts/Registration.contract.md AC6。
    */
-  private buildSpecialRoleNotes(
-    specialRoles: SpecialRoleEntry[],
-    withEmoji = false
-  ): string[] {
+  private buildSpecialRoleNotes(specialPlayers: Player[], withEmoji = false): string[] {
     const prefix = withEmoji ? 'ℹ️ ' : '';
-    const roleName = { recluse: '陌客', spy: '間諜' };
-
-    return specialRoles.map(e => {
-      const verdict = e.registersAsEvil ? '被視為邪惡' : '不被視為邪惡';
-      const cause = e.abilityActive ? '' : '（能力失效）';
-      return `${prefix}${roleName[e.role]} ${e.seat}號 ${verdict}${cause}`;
-    });
+    return specialPlayers
+      .map(p => describeAlignmentRegistration(p, { prefix }))
+      .filter((note): note is string => note !== null);
   }
 
   private buildReasoning(
@@ -159,7 +113,7 @@ export class EmpathHandler extends BaseRoleHandler implements RoleHandler {
     right: Player,
     leftIsEvil: boolean,
     rightIsEvil: boolean,
-    specialRoles: SpecialRoleEntry[]
+    specialPlayers: Player[]
   ): string {
     const parts: string[] = [];
 
@@ -171,7 +125,7 @@ export class EmpathHandler extends BaseRoleHandler implements RoleHandler {
     }
 
     // 添加特殊角色說明（無 emoji）
-    parts.push(...this.buildSpecialRoleNotes(specialRoles, false));
+    parts.push(...this.buildSpecialRoleNotes(specialPlayers, false));
 
     return parts.length > 0 ? parts.join('；') : '左右兩側鄰居都是好人';
   }
@@ -182,13 +136,13 @@ export class EmpathHandler extends BaseRoleHandler implements RoleHandler {
     leftIsEvil: boolean,
     rightIsEvil: boolean,
     actualEvilCount: number,
-    specialRoles: SpecialRoleEntry[]
+    specialPlayers: Player[]
   ): string {
     const leftTag = leftIsEvil ? ' [邪惡]' : '';
     const rightTag = rightIsEvil ? ' [邪惡]' : '';
 
     // 生成特殊角色說明（有 emoji）
-    const specialNotes = this.buildSpecialRoleNotes(specialRoles, true);
+    const specialNotes = this.buildSpecialRoleNotes(specialPlayers, true);
     const specialNotesStr = specialNotes.length > 0
       ? `\n\n${specialNotes.join('\n')}`
       : '';
