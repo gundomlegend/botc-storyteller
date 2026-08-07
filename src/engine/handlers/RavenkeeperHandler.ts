@@ -1,5 +1,6 @@
 import type { RoleHandler, HandlerContext, NightResult } from '../types';
 import { BaseRoleHandler } from './BaseRoleHandler';
+import { isRegistrationAbilityActive, getRegistrationOptions } from '../Registration';
 
 /**
  * 守鴉人 Handler
@@ -56,11 +57,11 @@ export class RavenkeeperHandler extends BaseRoleHandler implements RoleHandler {
     const targetRoleName = this.getPlayerRoleName(this.target);
 
     // 步驟 5: 檢查陌客/間諜特殊情況
-    const isRecluse = targetRole === 'recluse' && !this.target.isPoisoned && !this.target.isDrunk;
-    const isSpy = targetRole === 'spy' && !this.target.isPoisoned && !this.target.isDrunk;
+    const isRecluse = targetRole === 'recluse' && isRegistrationAbilityActive(this.target);
+    const isSpy = targetRole === 'spy' && isRegistrationAbilityActive(this.target);
 
     // 取得可選角色列表
-    const selectableRoles = this.buildSelectableRoles(isRecluse, isSpy);
+    const selectableRoles = this.buildSelectableRoles();
 
     // 步驟 6: 返回資訊
     return {
@@ -88,28 +89,24 @@ export class RavenkeeperHandler extends BaseRoleHandler implements RoleHandler {
   }
 
   /**
-   * 建立可選角色列表
+   * 建立可選角色列表。
+   *
+   * 登記範圍為**劇本內**該類型的全部角色，不限定在場、不限定存活
+   * （見 Registration.contract.md AC5）。
    */
-  private buildSelectableRoles(isRecluse: boolean, isSpy: boolean): string[] {
-    if (this.infoReliable) {
-      if (isRecluse) {
-        // 陌客：可選擇在場邪惡角色
-        return Array.from(this.gameState.players.values())
-          .filter(p => p.team === 'minion' || p.team === 'demon')
-          .map(p => p.role);
-      } else if (isSpy) {
-        // 間諜：可選擇在場善良角色
-        return Array.from(this.gameState.players.values())
-          .filter(p => p.team === 'townsfolk' || p.team === 'outsider')
-          .map(p => p.role);
-      }
-      // 正常情況：不需要選擇，直接給真實角色
-      return [];
+  private buildSelectableRoles(): string[] {
+    // 能力不可靠：可選擇所有在場角色
+    if (!this.infoReliable) {
+      return Array.from(this.gameState.players.values()).map(p => p.role);
     }
 
-    // 能力不可靠：可選擇所有在場角色
-    return Array.from(this.gameState.players.values())
-      .map(p => p.role);
+    const inPlayRoles = Array.from(this.gameState.players.values()).map(p => p.role);
+    // 正常情況回傳空陣列（不需選擇，直接給真實角色）
+    return getRegistrationOptions(
+      this.target!,
+      this.ruleRegistry.getAllRoles(),
+      inPlayRoles
+    ).registrableCharacters;
   }
 
   /**

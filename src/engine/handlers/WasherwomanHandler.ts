@@ -1,5 +1,6 @@
 import type { RoleHandler, HandlerContext, NightResult } from '../types';
 import { BaseRoleHandler } from './BaseRoleHandler';
+import { mayRegisterAsTeam, isRegistrationAbilityActive } from '../Registration';
 
 /**
  * 洗衣婦 Handler
@@ -33,22 +34,15 @@ export class WasherwomanHandler extends BaseRoleHandler implements RoleHandler {
       p => p.isAlive && p.seat !== this.player.seat
     );
 
-    // 步驟 3: 篩選鎮民玩家
-    const townsfolk = allPlayers.filter(p => {
-      // 真實鎮民
-      if (p.team === 'townsfolk') return true;
-
-      // 間諜（能力正常時可能被視為鎮民）
-      if (p.role === 'spy' && !p.isPoisoned && !p.isDrunk) {
-        return true; // 間諜可能被視為鎮民（說書人可選擇）
-      }
-
-      return false;
-    });
+    // 步驟 3: 篩選可被視為鎮民的玩家
+    //
+    // 委派給 Registration，一併涵蓋：真實鎮民、能力正常的間諜（可被視為鎮民）；
+    // 並自動排除陌客（只能被視為爪牙/惡魔）與酒鬼（真實類型為外來者）。
+    const townsfolk = allPlayers.filter(p => mayRegisterAsTeam(p, 'townsfolk'));
 
     // 步驟 4: 只有間諜的特殊情況（間諜能力正常且無其他鎮民）
     const onlySpy = townsfolk.length === 1 && townsfolk[0].role === 'spy' &&
-                    !townsfolk[0].isPoisoned && !townsfolk[0].isDrunk;
+                    isRegistrationAbilityActive(townsfolk[0]);
 
     if (onlySpy) {
       return {
@@ -85,7 +79,7 @@ export class WasherwomanHandler extends BaseRoleHandler implements RoleHandler {
 
     // 步驟 6: 檢查是否有間諜（供 UI 層參考）
     const hasSpy = townsfolk.some(t =>
-      t.role === 'spy' && !t.isPoisoned && !t.isDrunk
+      t.role === 'spy' && isRegistrationAbilityActive(t)
     );
 
     // 步驟 7: 返回資訊，讓說書人在 UI 中選擇
