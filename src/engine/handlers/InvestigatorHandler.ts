@@ -1,5 +1,6 @@
 import type { RoleHandler, HandlerContext, NightResult } from '../types';
 import { BaseRoleHandler } from './BaseRoleHandler';
+import { isRegistrationAbilityActive } from '../Registration';
 
 export class InvestigatorHandler extends BaseRoleHandler implements RoleHandler {
   process(context: HandlerContext): NightResult {
@@ -35,7 +36,7 @@ export class InvestigatorHandler extends BaseRoleHandler implements RoleHandler 
     // 如果間諜中毒或醉酒，能力失效，不適用特殊規則
     // 說書人可選擇告知「無爪牙」或給予假資訊
     if (minions.length === 1 && minions[0].role === 'spy' &&
-        !minions[0].isPoisoned && !minions[0].isDrunk) {
+        isRegistrationAbilityActive(minions[0])) {
       const spyInfo = {
         seat: minions[0].seat,
         name: minions[0].name,
@@ -70,9 +71,11 @@ export class InvestigatorHandler extends BaseRoleHandler implements RoleHandler 
     }));
 
     // 步驟 6: 收集陌客資訊（能力正常，可視為爪牙）
-    // 陌客中毒或醉酒時，能力失效，不應視為可疑目標
+    // 陌客中毒或醉酒時，能力失效，不應視為可疑目標。
+    // 不以 isAlive 過濾 —— 陌客能力明訂「即使你已死亡亦然」
+    // （見 Registration.contract.md AC3）。
     const recluses = allPlayers.filter(p =>
-      p.role === 'recluse' && p.isAlive && !p.isPoisoned && !p.isDrunk
+      p.role === 'recluse' && isRegistrationAbilityActive(p)
     );
 
     const recluseList = recluses.map(r => ({
@@ -86,7 +89,7 @@ export class InvestigatorHandler extends BaseRoleHandler implements RoleHandler 
 
     // 步驟 7: 檢查是否有間諜（供 UI 層參考）
     const hasSpy = minions.some(m =>
-      m.role === 'spy' && !m.isPoisoned && !m.isDrunk
+      m.role === 'spy' && isRegistrationAbilityActive(m)
     );
 
     // 步驟 8: 返回資訊，讓說書人在 UI 中選擇

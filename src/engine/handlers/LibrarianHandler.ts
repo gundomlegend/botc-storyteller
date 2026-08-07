@@ -1,5 +1,6 @@
 import type { RoleHandler, HandlerContext, NightResult } from '../types';
 import { BaseRoleHandler } from './BaseRoleHandler';
+import { mayRegisterAsTeam, isRegistrationAbilityActive } from '../Registration';
 
 /**
  * 圖書管理員 Handler
@@ -33,31 +34,19 @@ export class LibrarianHandler extends BaseRoleHandler implements RoleHandler {
       p => p.isAlive && p.seat !== this.player.seat
     );
 
-    // 步驟 3: 篩選外來者玩家（排除陌客，稍後特別處理）
-    const outsiders = allPlayers.filter(p => {
-      // 真實外來者（排除陌客）
-      if (p.team === 'outsider' && p.role !== 'recluse') return true;
+    // 步驟 3: 篩選必然被視為外來者的玩家
+    //
+    // 委派給 Registration，一併涵蓋：真實外來者、能力正常的間諜（可被視為外來者），
+    // 以及能力失效的陌客（只能以真實身分登記，故必為外來者）。
+    const outsiders = allPlayers.filter(p => mayRegisterAsTeam(p, 'outsider'));
 
-      // 間諜（能力正常時可能被視為外來者）
-      if (p.role === 'spy' && !p.isPoisoned && !p.isDrunk) {
-        return true; // 間諜可能被視為外來者（說書人可選擇）
-      }
-
-      return false;
-    });
-
-    // 步驟 3.5: 處理陌客（能力正常時可以選擇不視為外來者）
+    // 步驟 3.5: 能力正常的陌客另立一份清單。
+    //
+    // 陌客預設被視為爪牙/惡魔，故不在上方清單中；但它真實身分仍是外來者，
+    // 說書人可選擇以外來者身分呈現 —— 兩種登記皆合法，因此需要說書人決定。
     const recluses = allPlayers.filter(p =>
-      p.role === 'recluse' && !p.isPoisoned && !p.isDrunk
+      p.role === 'recluse' && isRegistrationAbilityActive(p)
     );
-
-    // 陌客中毒/醉酒時必須被視為外來者
-    const poisonedOrDrunkRecluses = allPlayers.filter(p =>
-      p.role === 'recluse' && (p.isPoisoned || p.isDrunk)
-    );
-
-    // 將中毒/醉酒的陌客加入外來者列表
-    outsiders.push(...poisonedOrDrunkRecluses);
 
     // 步驟 4: 無外來者情況
     if (outsiders.length === 0 && recluses.length === 0) {
@@ -75,7 +64,7 @@ export class LibrarianHandler extends BaseRoleHandler implements RoleHandler {
     // 步驟 5: 只有間諜的特殊情況（間諜能力正常且無其他外來者）
     // 根據規則：只有間諜時，可給予假外來者資訊或告知「無外來者」
     if (outsiders.length === 1 && outsiders[0].role === 'spy' &&
-        !outsiders[0].isPoisoned && !outsiders[0].isDrunk &&
+        isRegistrationAbilityActive(outsiders[0]) &&
         recluses.length === 0) {
       const spyPlayer = outsiders[0];
       return {
@@ -114,7 +103,7 @@ export class LibrarianHandler extends BaseRoleHandler implements RoleHandler {
 
     // 步驟 7: 檢查特殊角色（供 UI 層參考）
     const hasSpy = outsiders.some(o =>
-      o.role === 'spy' && !o.isPoisoned && !o.isDrunk
+      o.role === 'spy' && isRegistrationAbilityActive(o)
     );
     const hasRecluse = recluses.length > 0;
 

@@ -1,5 +1,6 @@
 import type { RoleHandler, HandlerContext, NightResult } from '../types';
 import { BaseRoleHandler } from './BaseRoleHandler';
+import { isRegistrationAbilityActive, getRegistrationOptions } from '../Registration';
 
 /**
  * 送葬者 Handler
@@ -55,23 +56,21 @@ export class UndertakerHandler extends BaseRoleHandler implements RoleHandler {
     const executedRoleName = this.ruleRegistry.getRoleName(executedRole);
 
     // 步驟 5: 檢查陌客/間諜特殊情況
-    const isRecluse = executedRole === 'recluse' && !executedPlayer.isPoisoned && !executedPlayer.isDrunk;
-    const isSpy = executedRole === 'spy' && !executedPlayer.isPoisoned && !executedPlayer.isDrunk;
+    const isRecluse = executedRole === 'recluse' && isRegistrationAbilityActive(executedPlayer);
+    const isSpy = executedRole === 'spy' && isRegistrationAbilityActive(executedPlayer);
 
-    // 取得可選角色列表
-    let selectableRoles: string[] = [];
+    // 步驟 5.5: 取得可選角色列表
+    //
+    // 登記範圍為**劇本內**該類型的全部角色，不限定在場、不限定存活
+    // （見 Registration.contract.md AC5）。
+    let selectableRoles: string[];
     if (this.infoReliable) {
-      if (isRecluse) {
-        // 陌客：可選擇在場邪惡角色
-        selectableRoles = Array.from(gameState.players.values())
-          .filter(p => p.isAlive && (p.team === 'minion' || p.team === 'demon'))
-          .map(p => p.role);
-      } else if (isSpy) {
-        // 間諜：可選擇在場善良角色
-        selectableRoles = Array.from(gameState.players.values())
-          .filter(p => p.isAlive && (p.team === 'townsfolk' || p.team === 'outsider'))
-          .map(p => p.role);
-      }
+      const inPlayRoles = Array.from(gameState.players.values()).map(p => p.role);
+      selectableRoles = getRegistrationOptions(
+        executedPlayer,
+        this.ruleRegistry.getAllRoles(),
+        inPlayRoles
+      ).registrableCharacters;
     } else {
       // 能力不可靠：可選擇所有在場角色
       selectableRoles = Array.from(gameState.players.values())
