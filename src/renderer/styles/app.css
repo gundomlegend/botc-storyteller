@@ -24,6 +24,7 @@
 
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei',
     'Noto Sans CJK TC', 'Noto Sans TC', 'WenQuanYi Micro Hei', sans-serif;
+  --font-display: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
   /* ── Base neutrals ── */
   --color-white: #fff;

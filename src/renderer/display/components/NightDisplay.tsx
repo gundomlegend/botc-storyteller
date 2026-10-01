@@ -38,7 +38,7 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
   // 一般角色行動
   if (nightAction) {
     return (
-      <BaseDisplay title={title} className="night-display">
+      <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
         <div className="night-content">
           <p className="night-message">{getMessage()}</p>
         </div>
@@ -50,7 +50,7 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
   if (specialPhase) {
     if (specialPhase.type === 'show_bluffs') {
       return (
-        <BaseDisplay title={title} className="night-display">
+        <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
           <div className="night-content">
             <p className="night-message">{specialPhase.message}</p>
             <div className="display-bluff-cards">
@@ -67,7 +67,7 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
 
     if (specialPhase.type === 'reveal_demon') {
       return (
-        <BaseDisplay title={title} className="night-display">
+        <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
           <div className="night-content">
             <p className="night-message">惡魔</p>
             <div className="display-demon-card">
@@ -80,7 +80,7 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
 
     if (specialPhase.type === 'reveal_minions') {
       return (
-        <BaseDisplay title={title} className="night-display">
+        <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
           <div className="night-content">
             <p className="night-message">{specialPhase.message}</p>
             <div className="display-minion-cards">
@@ -96,7 +96,7 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
     }
 
     return (
-      <BaseDisplay title={title} className="night-display">
+      <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
         <div className="night-content">
           <p className="night-message">{specialPhase.message}</p>
         </div>
@@ -106,7 +106,7 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
 
   // 預設：所有人閉眼
   return (
-    <BaseDisplay title={title} className="night-display">
+    <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
       <div className="night-content">
         <p className="night-message">所有人保持閉眼</p>
       </div>

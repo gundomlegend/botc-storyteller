@@ -36,7 +36,7 @@ export function DayDisplay({ day, alivePlayers, nomination, voting, history = []
   const recentEvents = history.slice(-5);
 
   return (
-    <BaseDisplay title={`第 ${day} 天`} className="day-display">
+    <BaseDisplay title={`第 ${day} 天`} background="bg-linear-135/srgb from-day-from to-day-to">
       <div className="day-content">
 
         {/* 黎明公告 */}
