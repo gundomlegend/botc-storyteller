@@ -1,3 +1,9 @@
+/* Preflight compat — remove progressively in Phase 3/4 */
+html { line-height: normal; }
+h1, h2, h3, h4, h5, h6 { font-size: revert; font-weight: revert; }
+ul, ol { list-style: revert; }
+button, input, select, textarea { font: revert; }
+
 * {
   margin: 0;
   padding: 0;
