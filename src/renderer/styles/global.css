@@ -389,12 +389,6 @@ body {
   margin-bottom: 8px;
 }
 
-.ability-desc {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  margin-bottom: 4px;
-}
-
 .ability-reminder {
   color: var(--text-primary);
   font-size: 0.9rem;
@@ -408,33 +402,6 @@ body {
   display: flex;
   gap: 6px;
   margin-bottom: 12px;
-}
-
-.status-tag {
-  font-size: 0.8rem;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: bold;
-}
-
-.status-tag.dead {
-  background: #555;
-  color: #ccc;
-}
-
-.status-tag.poisoned {
-  background: #8e44ad;
-  color: #fff;
-}
-
-.status-tag.drunk {
-  background: #d35400;
-  color: #fff;
-}
-
-.status-tag.protected {
-  background: #27ae60;
-  color: #fff;
 }
 
 .ability-target {

@@ -6,6 +6,9 @@
 @import "./display.css" layer(legacy);
 @import "./global.css" layer(legacy);
 
+/* Vite's root is src/renderer, so auto-detection would miss src/components — scan all of src/. */
+@source "../..";
+
 /* Class-based dark variant, reserved for a future nativeTheme-driven toggle.
    The app is dark-only today, so the tokens below are the dark values. */
 @custom-variant dark (&:where(.dark, .dark *));
