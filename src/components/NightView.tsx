@@ -11,6 +11,7 @@ function isSpecialPhase(role: string): boolean {
 export default function NightView() {
   const { night, nightOrder, startDay, setDisplayNightAction, clearDisplayState } = useGameStore();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [allDone, setAllDone] = useState(false);
 
   const currentItem = nightOrder[currentIndex] ?? null;
 
@@ -41,16 +42,35 @@ export default function NightView() {
     } else {
       // All done: all sleeping
       setDisplayNightAction(null);
+      setAllDone(true);
     }
+  };
+
+  const handleSelectItem = (i: number) => {
+    setAllDone(false);
+    setCurrentIndex(i);
   };
 
   const handleEndNight = () => {
     setCurrentIndex(0);
+    setAllDone(false);
     clearDisplayState(); // Clear all display state when ending night
     startDay();
   };
 
   const renderCurrentProcessor = () => {
+    if (allDone) {
+      return (
+        <div className="night-complete">
+          <h3>所有角色行動完畢</h3>
+          <p>讓所有玩家閉眼，準備進入白天。</p>
+          <button className="btn-primary" onClick={handleEndNight}>
+            進入白天 →
+          </button>
+        </div>
+      );
+    }
+
     if (!currentItem) {
       return <div className="night-empty">沒有需要處理的角色</div>;
     }
@@ -77,7 +97,7 @@ export default function NightView() {
       <div className="night-header">
         <h2>第 {night} 夜</h2>
         <span className="night-progress">
-          {currentIndex + 1} / {nightOrder.length}
+          {allDone ? '完成' : `${currentIndex + 1} / ${nightOrder.length}`}
         </span>
       </div>
 
@@ -89,13 +109,13 @@ export default function NightView() {
               key={`${item.seat}-${item.role}`}
               className={[
                 'night-order-item',
-                i === currentIndex ? 'active' : '',
+                i === currentIndex && !allDone ? 'active' : '',
                 item.isDead ? 'dead' : '',
                 isSpecialPhase(item.role) ? 'special' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
-              onClick={() => setCurrentIndex(i)}
+              onClick={() => handleSelectItem(i)}
             >
               <span className="order-priority">
                 {isSpecialPhase(item.role) ? '★' : item.priority}
