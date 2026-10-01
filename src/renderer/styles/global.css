@@ -17,8 +17,8 @@ small { font-size: revert; }
   --bg-primary: var(--color-surface);
   --bg-secondary: var(--color-surface-raised);
   --bg-card: var(--color-surface-card);
-  --text-primary: var(--color-text);
-  --text-secondary: var(--color-text-muted);
+  --text-primary: var(--color-fg);
+  --text-secondary: var(--color-fg-muted);
   --accent: var(--color-primary);
   --accent-hover: var(--color-primary-hover);
   --border: var(--color-border);

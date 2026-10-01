@@ -36,7 +36,7 @@ export default function MayorBounceUI({ result, item, onDone }: MayorBounceUIPro
         <div className="mt-6">
           <h4 className="font-bold">🎯 選擇處理方式</h4>
           <div className="mb-3">
-            <p className="text-text-muted mb-2 text-sm">轉移給其他角色（不包含惡魔）：</p>
+            <p className="text-fg-muted mb-2 text-sm">轉移給其他角色（不包含惡魔）：</p>
             <PlayerSelector
               mode="single"
               canSelectSelf={false}

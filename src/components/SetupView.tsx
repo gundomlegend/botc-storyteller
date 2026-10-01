@@ -50,9 +50,9 @@ export default function SetupView() {
       <h2 className="text-3xl font-bold text-primary mb-4">遊戲設置</h2>
 
       <div className="mb-4 flex items-center gap-2">
-        <label className="text-text-muted">玩家人數：</label>
+        <label className="text-fg-muted">玩家人數：</label>
         <select
-          className="py-1.5 px-3 rounded-sm border border-border bg-surface-raised text-text text-sm"
+          className="py-1.5 px-3 rounded-sm border border-border bg-surface-raised text-fg text-sm"
           value={playerCount}
           onChange={(e) => handleCountChange(Number(e.target.value))}
         >
@@ -63,7 +63,7 @@ export default function SetupView() {
           ))}
         </select>
         {dist && (
-          <span className="text-text-muted text-xs">
+          <span className="text-fg-muted text-xs">
             鎮民 {dist.townsfolk} / 外來者 {dist.outsider} / 爪牙 {dist.minion} / 惡魔 {dist.demon}
           </span>
         )}
@@ -75,7 +75,7 @@ export default function SetupView() {
             <span className="w-7 text-center text-primary font-bold">{i + 1}</span>
             <input
               type="text"
-              className="flex-1 py-2 px-3 rounded-sm border border-border bg-surface-raised text-text text-sm"
+              className="flex-1 py-2 px-3 rounded-sm border border-border bg-surface-raised text-fg text-sm"
               placeholder={`玩家 ${i + 1} 名稱`}
               value={name}
               onChange={(e) => updateName(i, e.target.value)}

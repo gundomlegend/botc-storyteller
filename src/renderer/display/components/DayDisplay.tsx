@@ -98,12 +98,12 @@ export function DayDisplay({ day, alivePlayers, nomination, voting, history = []
         {voting && (
           <div className="bg-black/30 p-8 rounded-2xl mt-4">
             <h3 className="mt-0 text-4xl font-bold text-highlight">投票中 - {voting.nomineeName}</h3>
-            <p className="text-2xl font-bold text-text" style={{ margin: '0.8rem 0' }}>
+            <p className="text-2xl font-bold text-fg" style={{ margin: '0.8rem 0' }}>
               票數：{voting.voteCount} / {voting.threshold}
               {voting.voteCount >= voting.threshold && '（通過）'}
             </p>
             {voting.voters.length > 0 && (
-              <p className="text-2xl text-text-subtle" style={{ margin: '0.8rem 0' }}>已投票：{voting.voters.join(', ')}</p>
+              <p className="text-2xl text-fg-subtle" style={{ margin: '0.8rem 0' }}>已投票：{voting.voters.join(', ')}</p>
             )}
           </div>
         )}

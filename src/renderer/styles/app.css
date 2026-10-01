@@ -43,9 +43,9 @@
   --color-surface-raised: #16213e;
   --color-surface-card: #0f3460;
   --color-border: #2a2a4a;
-  --color-text: #e6e6e6;
-  --color-text-muted: #a8a8b3;
-  --color-text-subtle: #b0bec5;
+  --color-fg: #e6e6e6;
+  --color-fg-muted: #a8a8b3;
+  --color-fg-subtle: #b0bec5;
   --color-primary: #e94560;
   --color-primary-hover: #ff6b81;
 

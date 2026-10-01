@@ -48,7 +48,7 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
       <div className="bg-surface-raised rounded-lg p-5">
         <h3 className="text-2xl font-bold text-warning mb-4">爪牙與惡魔互認</h3>
         <div className="mb-4">
-          <p className="text-text-muted text-xs my-2.5">此局無爪牙，跳過互認階段。</p>
+          <p className="text-fg-muted text-xs my-2.5">此局無爪牙，跳過互認階段。</p>
         </div>
         <div className="mt-4">
           <button className="btn-primary" onClick={onComplete}>
@@ -64,14 +64,14 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
       <h3 className="text-2xl font-bold text-warning mb-4">爪牙與惡魔互認</h3>
 
       <div className="mb-4">
-        <p className="text-text text-md mb-2.5">請讓以下玩家睜眼：</p>
+        <p className="text-fg text-md mb-2.5">請讓以下玩家睜眼：</p>
 
         <div className="flex flex-col gap-1.5 my-3">
           {demon && (
             <div className="flex items-center gap-2.5 py-2 px-3 rounded-md bg-surface-card text-sm">
               <span className="text-primary font-bold min-w-9">{demon.seat}號</span>
-              <span className="flex-1 text-text">{demon.name}</span>
-              <span className="text-text-muted">
+              <span className="flex-1 text-fg">{demon.name}</span>
+              <span className="text-fg-muted">
                 {roleRegistry.getPlayerRoleName(demon)}
               </span>
               <span className="py-0.5 px-2 rounded-sm text-3xs font-bold text-white bg-demon">惡魔</span>
@@ -80,8 +80,8 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
           {minions.map((m) => (
             <div key={m.seat} className="flex items-center gap-2.5 py-2 px-3 rounded-md bg-surface-card text-sm">
               <span className="text-primary font-bold min-w-9">{m.seat}號</span>
-              <span className="flex-1 text-text">{m.name}</span>
-              <span className="text-text-muted">
+              <span className="flex-1 text-fg">{m.name}</span>
+              <span className="text-fg-muted">
                 {roleRegistry.getPlayerRoleName(m)}
               </span>
               <span className="py-0.5 px-2 rounded-sm text-3xs font-bold text-white bg-minion">爪牙</span>
@@ -90,18 +90,18 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
         </div>
 
         {step === 'wake_minions' && (
-          <p className="text-text text-md mb-2.5">讓爪牙們睜眼，並投影提示惡魔身份。</p>
+          <p className="text-fg text-md mb-2.5">讓爪牙們睜眼，並投影提示惡魔身份。</p>
         )}
         {step === 'reveal_demon' && (
-          <p className="text-text text-md mb-2.5">請爪牙們閉眼，接著喚醒惡魔，投影顯示爪牙名單。</p>
+          <p className="text-fg text-md mb-2.5">請爪牙們閉眼，接著喚醒惡魔，投影顯示爪牙名單。</p>
         )}
         {step === 'reveal_minions' && (
-          <p className="text-text text-md mb-2.5">惡魔確認爪牙身份後保持睜眼。</p>
+          <p className="text-fg text-md mb-2.5">惡魔確認爪牙身份後保持睜眼。</p>
         )}
       </div>
 
       {result.display && (
-        <div className="hidden bg-surface-card p-3 rounded-md whitespace-pre-line text-xs text-text-muted mb-3">{result.display}</div>
+        <div className="hidden bg-surface-card p-3 rounded-md whitespace-pre-line text-xs text-fg-muted mb-3">{result.display}</div>
       )}
 
       <div className="mt-4">
