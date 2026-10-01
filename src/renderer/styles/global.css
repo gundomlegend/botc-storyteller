@@ -317,15 +317,6 @@ body {
   margin-bottom: 8px;
 }
 
-.ability-reminder {
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  padding: 8px;
-  background: var(--bg-card);
-  border-radius: 4px;
-  margin-bottom: 12px;
-}
-
 .ability-status {
   display: flex;
   gap: 6px;
@@ -361,19 +352,6 @@ body {
   line-height: 1.5;
 }
 
-.result-gesture {
-  margin-top: 8px;
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: var(--accent);
-}
-
-.result-reasoning {
-  margin-top: 6px;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
 .result-warning {
   margin-top: 6px;
   color: #e74c3c;
@@ -389,48 +367,10 @@ body {
 
 /* ===== PlayerSelector ===== */
 
-.player-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .selector-label {
   font-size: 0.95rem;
   color: var(--text-secondary);
   margin-bottom: 4px;
-}
-
-/* --- Player Card --- */
-
-.player-card {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  transition: all 0.2s;
-}
-
-.player-card.selectable {
-  cursor: pointer;
-}
-
-.player-card.selectable:hover {
-  border-color: var(--accent);
-  color: var(--text-primary);
-}
-
-/* --- Layouts --- */
-
-.layout-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
 }
 
 /* ===== DayView ===== */

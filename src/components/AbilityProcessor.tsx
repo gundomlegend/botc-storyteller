@@ -9,6 +9,8 @@ import { usePlayerRealTimeStatus } from '../hooks/usePlayerRealTimeStatus';
 import { useDrunkPlayerInfo } from '../hooks/useDrunkPlayerInfo';
 import { DrunkIndicator } from './shared/DrunkIndicator';
 import { MayorBounceUI } from './mayorBounce';
+import { AbilityPanel, AbilityTarget, TargetLabel, AbilityActions, AbilityResult, ResultDisplay, ResultNote } from './shared/AbilityPanel';
+import { Button } from './shared/Button';
 import { RoleRegistry } from '../engine/RoleRegistry';
 
 interface AbilityProcessorProps {
@@ -115,7 +117,7 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
   const isTargetReady = !needsTarget || selectedTarget != null;
 
   return (
-    <div className="ability-processor">
+    <AbilityPanel>
       <AbilityHeader
         seat={item.seat}
         roleName={item.roleName}
@@ -139,8 +141,8 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
       {!result && (
         <>
           {needsTarget && (
-            <div className="ability-target">
-              <p>選擇目標玩家：</p>
+            <AbilityTarget>
+              <TargetLabel>選擇目標玩家：</TargetLabel>
               <PlayerSelector
                 mode="single"
                 canSelectSelf={item.role === 'imp' || item.role === 'poisoner'}
@@ -149,20 +151,16 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
                 excludePlayers={item.role === 'monk' || item.role === 'butler' ? [item.seat] : []}
                 onSelect={(players: Player[]) => setSelectedTarget(players[0]?.seat ?? null)}
               />
-            </div>
+            </AbilityTarget>
           )}
-          <div className="ability-actions">
-            <button
-              className="btn-primary"
-              onClick={handleProcess}
-              disabled={!isTargetReady}
-            >
+          <AbilityActions>
+            <Button onClick={handleProcess} disabled={!isTargetReady}>
               執行能力
-            </button>
-            <button className="btn-secondary" onClick={onDone}>
+            </Button>
+            <Button variant="secondary" onClick={onDone}>
               跳過
-            </button>
-          </div>
+            </Button>
+          </AbilityActions>
         </>
       )}
 
@@ -173,41 +171,33 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
 
       {/* 一般結果顯示 */}
       {result && result.action !== 'mayor_bounce' && (
-        <div className="ability-result">
-          <div className="result-display">{result.display}</div>
+        <AbilityResult>
+          <ResultDisplay>{result.display}</ResultDisplay>
 
           {result.gesture && result.gesture !== 'none' && (
-            <div className="result-gesture">
+            <ResultNote tone="gesture">
               建議手勢：{result.gesture === 'nod' ? '點頭（善良）' : '搖頭（邪惡）'}
-            </div>
+            </ResultNote>
           )}
 
-          {result.reasoning && (
-            <div className="result-reasoning">{result.reasoning}</div>
-          )}
+          {result.reasoning && <ResultNote tone="reasoning">{result.reasoning}</ResultNote>}
 
           {result.effectNullified && (
-            <div className="result-warning">效果已無效化（中毒/醉酒），不會實際生效</div>
+            <ResultNote tone="warning">效果已無效化（中毒/醉酒），不會實際生效</ResultNote>
           )}
 
-          {result.mustFollow && (
-            <div className="result-warning">必須遵守此結果</div>
-          )}
+          {result.mustFollow && <ResultNote tone="warning">必須遵守此結果</ResultNote>}
 
-          {result.canLie && (
-            <div className="result-hint">說書人可自行決定是否給不同資訊</div>
-          )}
+          {result.canLie && <ResultNote tone="hint">說書人可自行決定是否給不同資訊</ResultNote>}
 
-          <div className="ability-actions">
-            <button className="btn-primary" onClick={handleConfirm}>
-              確認
-            </button>
-            <button className="btn-secondary" onClick={handleReset}>
+          <AbilityActions>
+            <Button onClick={handleConfirm}>確認</Button>
+            <Button variant="secondary" onClick={handleReset}>
               重選
-            </button>
-          </div>
-        </div>
+            </Button>
+          </AbilityActions>
+        </AbilityResult>
       )}
-    </div>
+    </AbilityPanel>
   );
 }

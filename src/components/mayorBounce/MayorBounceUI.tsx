@@ -2,6 +2,7 @@ import type { NightOrderItem, NightResult } from '../../engine/types';
 import PlayerSelector from '../PlayerSelector';
 import { useMayorBounce } from './useMayorBounce';
 import { Button } from '../shared/Button';
+import { AbilityTarget, TargetLabel, AbilityActions, AbilityResult, ResultDisplay } from '../shared/AbilityPanel';
 
 interface MayorBounceUIProps {
   result: NightResult;
@@ -29,15 +30,15 @@ export default function MayorBounceUI({ result, item, onDone }: MayorBounceUIPro
   } = useMayorBounce(result, onDone);
 
   return (
-    <div className="mt-3">
-      <div className="bg-surface-card p-3 rounded-md whitespace-pre-line text-sm leading-normal">{result.display}</div>
+    <AbilityResult>
+      <ResultDisplay>{result.display}</ResultDisplay>
 
       {/* 未確認階段：選擇處理方式 */}
       {!confirmed && (
         <div className="mt-6">
           <h4 className="font-bold">🎯 選擇處理方式</h4>
-          <div className="mb-3">
-            <p className="text-fg-muted mb-2 text-sm">轉移給其他角色（不包含惡魔）：</p>
+          <AbilityTarget>
+            <TargetLabel>轉移給其他角色（不包含惡魔）：</TargetLabel>
             <PlayerSelector
               mode="single"
               canSelectSelf={false}
@@ -48,8 +49,8 @@ export default function MayorBounceUI({ result, item, onDone }: MayorBounceUIPro
               excludePlayers={[mayorSeat]}
               onSelect={handleTargetSelect}
             />
-          </div>
-          <div className="flex gap-2 mt-3">
+          </AbilityTarget>
+          <AbilityActions>
             <Button
               onClick={handleConfirmTransfer}
               disabled={target === null || target === -1}
@@ -59,7 +60,7 @@ export default function MayorBounceUI({ result, item, onDone }: MayorBounceUIPro
             <Button variant="secondary" onClick={handleNoTransfer}>
               不轉移 - 鎮長死亡
             </Button>
-          </div>
+          </AbilityActions>
         </div>
       )}
 
@@ -69,40 +70,40 @@ export default function MayorBounceUI({ result, item, onDone }: MayorBounceUIPro
           {/* 不轉移：鎮長死亡 */}
           {target === -1 && (
             <>
-              <div className="bg-surface-card p-3 rounded-md whitespace-pre-line text-sm leading-normal">
+              <ResultDisplay>
                 ✅ 確認：鎮長 {mayorSeat}號 ({mayorName}) 被小惡魔擊殺
-              </div>
-              <div className="flex gap-2 mt-3">
+              </ResultDisplay>
+              <AbilityActions>
                 <Button onClick={executeNoTransfer}>
                   確認
                 </Button>
                 <Button variant="secondary" onClick={handleReset}>
                   重選
                 </Button>
-              </div>
+              </AbilityActions>
             </>
           )}
 
           {/* 轉移：目標玩家死亡 */}
           {target !== null && target !== -1 && (
             <>
-              <div className="bg-surface-card p-3 rounded-md whitespace-pre-line text-sm leading-normal">
+              <ResultDisplay>
                 ✅ 確認轉移：{target}號 {stateManager.getPlayer(target)?.name ?? ''} 被擊殺
                 <br />
                 <small>（原目標：鎮長 {mayorSeat}號）</small>
-              </div>
-              <div className="flex gap-2 mt-3">
+              </ResultDisplay>
+              <AbilityActions>
                 <Button onClick={() => executeTransfer(target)}>
                   確認
                 </Button>
                 <Button variant="secondary" onClick={handleReset}>
                   重選
                 </Button>
-              </div>
+              </AbilityActions>
             </>
           )}
         </div>
       )}
-    </div>
+    </AbilityResult>
   );
 }

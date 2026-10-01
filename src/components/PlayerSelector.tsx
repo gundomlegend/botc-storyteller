@@ -2,6 +2,11 @@ import { useState, useMemo } from 'react';
 import type { Player } from '../engine/types';
 import { useGameStore } from '../store/gameStore';
 
+const CARD_BASE = 'flex items-center gap-2 py-2 px-3 border rounded-md text-xs transition-all';
+
+/** 可點選玩家卡片的靜止樣式（供自訂卡片清單重用，例如占卜師干擾項） */
+export const SELECTABLE_CARD = `${CARD_BASE} border-border bg-transparent text-fg-muted cursor-pointer hover:border-primary hover:text-fg`;
+
 interface PlayerSelectorProps {
   mode?: 'single' | 'double' | 'multiple' | 'display';
   canSelectSelf?: boolean;
@@ -142,7 +147,7 @@ export function PlayerSelector({
 
           // Resting colors resolved here (highlighted border beats selected); hover:* utilities still win on hover.
           const cardClass = [
-            'flex items-center gap-2 py-2 px-3 border rounded-md text-xs transition-all',
+            CARD_BASE,
             highlighted ? 'border-warning shadow-glow-warning' : selectedState ? 'border-primary' : 'border-border',
             selectedState ? 'bg-primary text-white' : 'bg-transparent text-fg-muted',
             selectable ? 'cursor-pointer hover:border-primary hover:text-fg' : 'cursor-not-allowed',
