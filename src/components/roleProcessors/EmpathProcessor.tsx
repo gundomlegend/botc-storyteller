@@ -29,13 +29,10 @@ export default function EmpathProcessor({ item, onDone }: RoleProcessorProps) {
   useEffect(() => {
     if (result?.action === 'tell_number' && result.info && typeof result.info === 'object') {
       const info = result.info as Record<string, unknown>;
-      if (!isPoisonedOrDrunk) {
-        // 正常狀態：預填實際數字
-        setToldEvilCount(String(info.actualEvilCount ?? 0));
-      }
-      // 中毒/醉酒：不預填（保持空字串）
+      // 一律預填實際數字；中毒/醉酒時說書人可在輸入框改成其他數字
+      setToldEvilCount(String(info.actualEvilCount ?? 0));
     }
-  }, [result, isPoisonedOrDrunk]);
+  }, [result]);
 
   const handleConfirm = () => {
     if (toldEvilCount === '') return;
