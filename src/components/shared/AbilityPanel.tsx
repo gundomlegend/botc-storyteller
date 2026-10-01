@@ -44,13 +44,20 @@ export function ResultDisplay({ children }: ChildrenProps) {
 type NoteTone = 'gesture' | 'reasoning' | 'warning' | 'hint';
 
 const NOTE_TONES: Record<NoteTone, string> = {
-  gesture: 'mt-2 text-lg font-bold text-primary',
-  reasoning: 'mt-1.5 text-fg-muted text-xs',
-  warning: 'mt-1.5 text-danger-hover font-bold text-sm',
-  hint: 'mt-1.5 text-success text-xs',
+  gesture: 'text-lg font-bold text-primary',
+  reasoning: 'text-fg-muted text-xs',
+  warning: 'text-danger-hover font-bold text-sm',
+  hint: 'text-success text-xs',
 };
 
-/** 結果下方的補充說明 */
-export function ResultNote({ tone, children }: ChildrenProps & { tone: NoteTone }) {
-  return <div className={NOTE_TONES[tone]}>{children}</div>;
+const NOTE_MARGINS: Record<NoteTone, string> = {
+  gesture: 'mt-2',
+  reasoning: 'mt-1.5',
+  warning: 'mt-1.5',
+  hint: 'mt-1.5',
+};
+
+/** 結果下方的補充說明；`margin` 取代預設的上邊距（避免兩個 mt-* 互相衝突） */
+export function ResultNote({ tone, margin, children }: ChildrenProps & { tone: NoteTone; margin?: string }) {
+  return <div className={`${margin ?? NOTE_MARGINS[tone]} ${NOTE_TONES[tone]}`}>{children}</div>;
 }
