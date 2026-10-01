@@ -133,6 +133,10 @@
   --shadow-glow-warning: 0 0 8px rgb(243 156 18 / 0.4);
   --text-shadow-title: 2px 2px 4px rgb(0 0 0 / 0.5);
 
+  /* Match plain CSS transitions (`transition: X 0.2s`) used by the legacy buttons. */
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: ease;
+
   /* ── Motion (display window) ── */
   --animate-fade-in: fadeIn 0.5s ease-in;
   --animate-fade-in-fast: fadeIn 0.4s ease-in;
@@ -147,4 +151,11 @@
       transform: translateY(0);
     }
   }
+}
+
+/* Exact equivalent of the legacy `transition: background 0.2s` (transition-colors would also list other color properties). */
+@utility transition-background {
+  transition-property: background;
+  transition-timing-function: var(--default-transition-timing-function);
+  transition-duration: var(--default-transition-duration);
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { Button } from './shared/Button';
 
 interface MinionDemonRecognitionProps {
   onComplete: () => void;
@@ -51,9 +52,9 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
           <p className="text-fg-muted text-xs my-2.5">此局無爪牙，跳過互認階段。</p>
         </div>
         <div className="mt-4">
-          <button className="btn-primary" onClick={onComplete}>
+          <Button onClick={onComplete}>
             確認跳過 →
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -106,19 +107,19 @@ export default function MinionDemonRecognition({ onComplete }: MinionDemonRecogn
 
       <div className="mt-4">
         {step === 'wake_minions' && (
-          <button className="btn-primary" onClick={handleRevealDemon}>
+          <Button onClick={handleRevealDemon}>
             提示惡魔 →
-          </button>
+          </Button>
         )}
         {step === 'reveal_demon' && (
-          <button className="btn-primary" onClick={handleRevealMinions}>
+          <Button onClick={handleRevealMinions}>
             提示爪牙 →
-          </button>
+          </Button>
         )}
         {step === 'reveal_minions' && (
-          <button className="btn-primary" onClick={onComplete}>
+          <Button onClick={onComplete}>
             下一步 →
-          </button>
+          </Button>
         )}
       </div>
     </div>

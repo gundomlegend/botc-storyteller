@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { Button } from './shared/Button';
 
 interface DemonBluffsProps {
   onComplete: () => void;
@@ -48,9 +49,9 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
           <p className="text-fg-muted text-xs my-2.5">人數未達 7 人，跳過惡魔虛張聲勢。</p>
         </div>
         <div className="mt-4">
-          <button className="btn-primary" onClick={onComplete}>
+          <Button onClick={onComplete}>
             確認跳過 →
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -93,14 +94,14 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
 
       <div className="mt-4">
         {step === 'wake_demon' && (
-          <button className="btn-primary" onClick={handleShowBluffs}>
+          <Button onClick={handleShowBluffs}>
             展示偽裝 →
-          </button>
+          </Button>
         )}
         {step === 'show_bluffs' && (
-          <button className="btn-primary" onClick={onComplete}>
+          <Button onClick={onComplete}>
             完成 →
-          </button>
+          </Button>
         )}
       </div>
     </div>

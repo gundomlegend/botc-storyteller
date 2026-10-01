@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { getPlayerDestribution, RoleRegistry } from '../engine/RoleRegistry';
+import { getPlayerDestribution, RoleRegistry } from '../engine/RoleRegistry';
+import { Button } from './shared/Button';
 
 export default function SetupView() {
   const { initGame, startNight, roleRegistry } = useGameStore();
@@ -87,13 +88,12 @@ export default function SetupView() {
         ))}
       </div>
 
-      <button
-        className="btn-primary"
+      <Button
         disabled={!canStart}
         onClick={handleStart}
       >
         開始遊戲 — 隨機分配角色，進入第一夜
-      </button>
+      </Button>
     </section>
   );
 }

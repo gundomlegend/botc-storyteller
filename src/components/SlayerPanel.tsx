@@ -9,6 +9,7 @@ import { useState } from 'react';
 import type { Player } from '../engine/types';
 import { processSlayerClaim } from '../engine/handlers/SlayerHandler';
 import PlayerSelector from './PlayerSelector';
+import { Button } from './shared/Button';
 
 interface SlayerPanelProps {
   players: Player[];
@@ -91,14 +92,13 @@ export function SlayerPanel({ players, roleRegistry, onSuccess, onFail, onCancel
           )}
 
           <div className="flex gap-2 mt-2">
-            <button
-              className="btn-primary"
+            <Button
               disabled={claimantSeat == null || targetSeat == null}
               onClick={handleProcess}
             >
               確認宣稱
-            </button>
-            <button className="btn-secondary" onClick={onCancel}>取消</button>
+            </Button>
+            <Button variant="secondary" onClick={onCancel}>取消</Button>
           </div>
         </>
       )}

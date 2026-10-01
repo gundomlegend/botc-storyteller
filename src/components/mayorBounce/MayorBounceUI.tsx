@@ -1,6 +1,7 @@
 import type { NightOrderItem, NightResult } from '../../engine/types';
 import PlayerSelector from '../PlayerSelector';
-import { useMayorBounce } from './useMayorBounce';
+import { useMayorBounce } from './useMayorBounce';
+import { Button } from '../shared/Button';
 
 interface MayorBounceUIProps {
   result: NightResult;
@@ -49,16 +50,15 @@ export default function MayorBounceUI({ result, item, onDone }: MayorBounceUIPro
             />
           </div>
           <div className="flex gap-2 mt-3">
-            <button
-              className="btn-primary"
+            <Button
               onClick={handleConfirmTransfer}
               disabled={target === null || target === -1}
             >
               確認轉移
-            </button>
-            <button className="btn-secondary" onClick={handleNoTransfer}>
+            </Button>
+            <Button variant="secondary" onClick={handleNoTransfer}>
               不轉移 - 鎮長死亡
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -73,12 +73,12 @@ export default function MayorBounceUI({ result, item, onDone }: MayorBounceUIPro
                 ✅ 確認：鎮長 {mayorSeat}號 ({mayorName}) 被小惡魔擊殺
               </div>
               <div className="flex gap-2 mt-3">
-                <button className="btn-primary" onClick={executeNoTransfer}>
+                <Button onClick={executeNoTransfer}>
                   確認
-                </button>
-                <button className="btn-secondary" onClick={handleReset}>
+                </Button>
+                <Button variant="secondary" onClick={handleReset}>
                   重選
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -92,12 +92,12 @@ export default function MayorBounceUI({ result, item, onDone }: MayorBounceUIPro
                 <small>（原目標：鎮長 {mayorSeat}號）</small>
               </div>
               <div className="flex gap-2 mt-3">
-                <button className="btn-primary" onClick={() => executeTransfer(target)}>
+                <Button onClick={() => executeTransfer(target)}>
                   確認
-                </button>
-                <button className="btn-secondary" onClick={handleReset}>
+                </Button>
+                <Button variant="secondary" onClick={handleReset}>
                   重選
-                </button>
+                </Button>
               </div>
             </>
           )}

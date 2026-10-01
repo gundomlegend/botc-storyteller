@@ -6,6 +6,7 @@
  */
 
 import type { Player } from '../engine/types';
+import { Button } from './shared/Button';
 
 interface NominationRecord {
   nominatorSeat: number;
@@ -67,18 +68,18 @@ export function ExecutionPhase({
       {nominationHistory.length === 0 ? (
         <div>
           <p>今天沒有提名，無需處決。</p>
-          <button className="btn-primary" onClick={onNoExecution}>
+          <Button onClick={onNoExecution}>
             今天沒有處決，進入夜晚
-          </button>
+          </Button>
         </div>
       ) : isTie ? (
         <div>
           <p className="font-bold text-alert-warning-text">
             最高票平手（{maxVotes} 票），今天沒有處決。
           </p>
-          <button className="btn-secondary" onClick={onNoExecution}>
+          <Button variant="secondary" onClick={onNoExecution}>
             確認：今天沒有處決，進入夜晚
-          </button>
+          </Button>
         </div>
       ) : winner ? (
         <div>
@@ -86,20 +87,20 @@ export function ExecutionPhase({
             最高票：{winner.seat}號 {winner.name}（{roleRegistry.getPlayerRoleName(winner)}）— {maxVotes} 票
           </p>
           <div className="flex gap-2 mt-2">
-            <button className="btn-danger" onClick={() => onExecute(winner.seat)}>
+            <Button variant="danger" onClick={() => onExecute(winner.seat)}>
               處決 {winner.name}，進入夜晚
-            </button>
-            <button className="btn-secondary" onClick={onNoExecution}>
+            </Button>
+            <Button variant="secondary" onClick={onNoExecution}>
               說書人裁決：今天沒有處決
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <div>
           <p>今天沒有有效票數，無需處決。</p>
-          <button className="btn-secondary" onClick={onNoExecution}>
+          <Button variant="secondary" onClick={onNoExecution}>
             今天沒有處決，進入夜晚
-          </button>
+          </Button>
         </div>
       )}
     </div>
