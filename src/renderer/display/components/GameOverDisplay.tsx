@@ -36,8 +36,7 @@ export function GameOverDisplay({ winner, gameOverReason, players }: GameOverDis
 
         <div>
           <h3 className="text-6xl font-bold text-center mb-6">角色揭示</h3>
-          {/* TODO(tailwind): 0.8rem gap is off the spacing grid — see Phase 3 batch 3 report */}
-          <div className="flex flex-col" style={{ gap: '0.8rem' }}>
+          <div className="flex flex-col gap-3">
             {players.map((player) => (
               <div
                 key={player.seat}

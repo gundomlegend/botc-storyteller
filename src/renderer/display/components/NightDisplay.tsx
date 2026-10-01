@@ -53,10 +53,9 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
         <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
           <div className="text-center max-w-150">
             <p className="text-8xl leading-normal whitespace-pre-line animate-fade-in">{specialPhase.message}</p>
-            {/* TODO(tailwind): off-grid spacing (0.8/1.2/1.8rem) — see Phase 3 batch 3 report */}
-            <div className="flex justify-center flex-wrap mt-4" style={{ gap: '1.2rem' }}>
+            <div className="flex gap-5 justify-center flex-wrap mt-4">
               {(specialPhase.data?.bluffs ?? []).map((name) => (
-                <div key={name} className="bg-team-bluff/15 border-2 border-team-bluff/50 rounded-xl py-4 text-5xl font-bold text-center min-w-25 animate-fade-in-fast" style={{ paddingInline: '1.8rem' }}>
+                <div key={name} className="bg-team-bluff/15 border-2 border-team-bluff/50 rounded-xl py-4 px-7 text-5xl font-bold text-center min-w-25 animate-fade-in-fast">
                   {name}
                 </div>
               ))}
@@ -71,7 +70,7 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
         <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
           <div className="text-center max-w-150">
             <p className="text-8xl leading-normal whitespace-pre-line animate-fade-in">惡魔</p>
-            <div data-testid="demon-card" className="bg-team-demon/15 border-2 border-team-demon/50 rounded-xl py-4 text-5xl font-bold text-center min-w-25 mt-4 animate-fade-in-fast" style={{ paddingInline: '1.8rem' }}>
+            <div data-testid="demon-card" className="bg-team-demon/15 border-2 border-team-demon/50 rounded-xl py-4 px-7 text-5xl font-bold text-center min-w-25 mt-4 animate-fade-in-fast">
               {specialPhase.message}
             </div>
           </div>
@@ -86,7 +85,7 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
             <p className="text-8xl leading-normal whitespace-pre-line animate-fade-in">{specialPhase.message}</p>
             <div className="flex gap-4 justify-center flex-wrap mt-4">
               {(specialPhase.data?.minions ?? []).map((label) => (
-                <div key={label} className="bg-team-minion/15 border-2 border-team-minion/50 rounded-xl text-3xl font-bold text-center min-w-22.5 animate-fade-in-fast" style={{ padding: '0.8rem 1.2rem' }}>
+                <div key={label} className="bg-team-minion/15 border-2 border-team-minion/50 rounded-xl py-3 px-5 text-3xl font-bold text-center min-w-22.5 animate-fade-in-fast">
                   {label}
                 </div>
               ))}

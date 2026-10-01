@@ -22,8 +22,7 @@ export function HistoryDisplay({ history }: HistoryDisplayProps) {
             <p>尚無歷史記錄</p>
           ) : (
             history.map((event, index) => (
-              // TODO(tailwind): 0.8rem is off the spacing grid — see Phase 3 batch 3 report
-              <div key={index} className="bg-black/30 p-4 rounded-lg border-l-3 border-l-info" style={{ marginBottom: '0.8rem' }}>
+              <div key={index} className="bg-black/30 p-4 rounded-lg border-l-3 border-l-info mb-3">
                 <p className="text-xl m-0">{event.description}</p>
               </div>
             ))

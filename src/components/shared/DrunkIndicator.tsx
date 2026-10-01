@@ -13,8 +13,7 @@ export function DrunkIndicator({ roleData }: DrunkIndicatorProps) {
   return (
     <div className="drunk-indicator py-2 px-3 mx-0 my-2 bg-alert-warning-surface border-2 border-alert-warning-border rounded-sm">
       <strong className="text-drunk-alert">🍺 酒鬼角色</strong>
-      {/* TODO(tailwind): 14px has no type token — see Phase 3 batch 2 report */}
-      <p className="m-0 mt-1 text-drunk-alert" style={{ fontSize: '14px' }}>
+      <p className="m-0 mt-1 text-sm text-drunk-alert">
         此玩家實際上是酒鬼，以為自己是{' '}
         <strong className="text-drunk-alert">{t(roleData, 'name')}</strong>。
         他們會執行假角色的行為，但能力不會生效。說書人可給予任意假資訊。
