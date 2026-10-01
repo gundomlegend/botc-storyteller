@@ -1,4 +1,10 @@
+/* Legacy CSS sits in its own layer: above Preflight (base), below utilities,
+   so migrated Tailwind classes win over leftover global rules. Remove in Phase 4. */
+@layer theme, base, legacy, components, utilities;
+
 @import "tailwindcss";
+@import "./display.css" layer(legacy);
+@import "./global.css" layer(legacy);
 
 /* Class-based dark variant, reserved for a future nativeTheme-driven toggle.
    The app is dark-only today, so the tokens below are the dark values. */

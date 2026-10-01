@@ -4,7 +4,6 @@
  */
 
 import { DisplayFactory } from './display/DisplayFactory';
-import './styles/display.css';
 
 function DisplayPage() {
   return (

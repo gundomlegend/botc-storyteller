@@ -4,7 +4,6 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import App from './App';
 import DisplayPage from './DisplayPage';
 import './styles/app.css';
-import './styles/global.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
