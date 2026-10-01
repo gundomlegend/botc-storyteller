@@ -38,24 +38,15 @@ export function ExecutionPhase({
   const winner = !isTie && topCandidates.length === 1 ? getPlayer(topCandidates[0].nomineeSeat) : null;
 
   return (
-    <div
-      className="execution-phase"
-      style={{
-        backgroundColor: '#fff3cd',
-        border: '2px solid #ffc107',
-        padding: '1rem',
-        borderRadius: '8px',
-        marginBottom: '1rem',
-      }}
-    >
-      <h3 style={{ color: '#856404' }}>強制處決階段</h3>
+    <div className="bg-alert-warning-surface border-2 border-alert-warning-border p-4 rounded-lg mb-4">
+      <h3 className="text-lg font-bold text-alert-warning-text mb-2.5">強制處決階段</h3>
 
-      <div style={{ marginBottom: '0.75rem' }}>
+      <div className="mb-3">
         <strong>今日提名記錄：</strong>
         {nominationHistory.length === 0 ? (
-          <p style={{ color: '#555' }}>今天沒有提名</p>
+          <p className="text-neutral-700">今天沒有提名</p>
         ) : (
-          <ul style={{ margin: '0.5rem 0', paddingLeft: '1.25rem' }}>
+          <ul className="list-disc my-2 mx-0 pl-5">
             {nominationHistory.map((r, i) => {
               const nominator = getPlayer(r.nominatorSeat);
               const nominee = getPlayer(r.nomineeSeat);
@@ -64,7 +55,7 @@ export function ExecutionPhase({
                   {nominator?.name ?? r.nominatorSeat}號 提名 {nominee?.name ?? r.nomineeSeat}號 —{' '}
                   {r.voteCount} 票 {r.passed ? '（通過）' : '（未通過）'}
                   {r.voteCount === maxVotes && !isTie && maxVotes > 0 && (
-                    <span style={{ color: '#856404', fontWeight: 'bold' }}> ← 最高票</span>
+                    <span className="text-alert-warning-text font-bold"> ← 最高票</span>
                   )}
                 </li>
               );
@@ -82,7 +73,7 @@ export function ExecutionPhase({
         </div>
       ) : isTie ? (
         <div>
-          <p style={{ fontWeight: 'bold', color: '#856404' }}>
+          <p className="font-bold text-alert-warning-text">
             最高票平手（{maxVotes} 票），今天沒有處決。
           </p>
           <button className="btn-secondary" onClick={onNoExecution}>
@@ -91,10 +82,10 @@ export function ExecutionPhase({
         </div>
       ) : winner ? (
         <div>
-          <p style={{ fontWeight: 'bold', color: '#721c24' }}>
+          <p className="font-bold text-alert-danger-text">
             最高票：{winner.seat}號 {winner.name}（{roleRegistry.getPlayerRoleName(winner)}）— {maxVotes} 票
           </p>
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+          <div className="flex gap-2 mt-2">
             <button className="btn-danger" onClick={() => onExecute(winner.seat)}>
               處決 {winner.name}，進入夜晚
             </button>

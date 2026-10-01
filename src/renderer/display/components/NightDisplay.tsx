@@ -39,8 +39,8 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
   if (nightAction) {
     return (
       <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
-        <div className="night-content">
-          <p className="night-message">{getMessage()}</p>
+        <div className="text-center max-w-150">
+          <p className="text-8xl leading-normal whitespace-pre-line animate-fade-in">{getMessage()}</p>
         </div>
       </BaseDisplay>
     );
@@ -51,11 +51,12 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
     if (specialPhase.type === 'show_bluffs') {
       return (
         <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
-          <div className="night-content">
-            <p className="night-message">{specialPhase.message}</p>
-            <div className="display-bluff-cards">
+          <div className="text-center max-w-150">
+            <p className="text-8xl leading-normal whitespace-pre-line animate-fade-in">{specialPhase.message}</p>
+            {/* TODO(tailwind): off-grid spacing (0.8/1.2/1.8rem) — see Phase 3 batch 3 report */}
+            <div className="flex justify-center flex-wrap mt-4" style={{ gap: '1.2rem' }}>
               {(specialPhase.data?.bluffs ?? []).map((name) => (
-                <div key={name} className="display-bluff-card">
+                <div key={name} className="bg-team-bluff/15 border-2 border-team-bluff/50 rounded-xl py-4 text-5xl font-bold text-center min-w-25 animate-fade-in-fast" style={{ paddingInline: '1.8rem' }}>
                   {name}
                 </div>
               ))}
@@ -68,9 +69,9 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
     if (specialPhase.type === 'reveal_demon') {
       return (
         <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
-          <div className="night-content">
-            <p className="night-message">惡魔</p>
-            <div className="display-demon-card">
+          <div className="text-center max-w-150">
+            <p className="text-8xl leading-normal whitespace-pre-line animate-fade-in">惡魔</p>
+            <div data-testid="demon-card" className="bg-team-demon/15 border-2 border-team-demon/50 rounded-xl py-4 text-5xl font-bold text-center min-w-25 mt-4 animate-fade-in-fast" style={{ paddingInline: '1.8rem' }}>
               {specialPhase.message}
             </div>
           </div>
@@ -81,11 +82,11 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
     if (specialPhase.type === 'reveal_minions') {
       return (
         <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
-          <div className="night-content">
-            <p className="night-message">{specialPhase.message}</p>
-            <div className="display-minion-cards">
+          <div className="text-center max-w-150">
+            <p className="text-8xl leading-normal whitespace-pre-line animate-fade-in">{specialPhase.message}</p>
+            <div className="flex gap-4 justify-center flex-wrap mt-4">
               {(specialPhase.data?.minions ?? []).map((label) => (
-                <div key={label} className="display-minion-card">
+                <div key={label} className="bg-team-minion/15 border-2 border-team-minion/50 rounded-xl text-3xl font-bold text-center min-w-22.5 animate-fade-in-fast" style={{ padding: '0.8rem 1.2rem' }}>
                   {label}
                 </div>
               ))}
@@ -97,8 +98,8 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
 
     return (
       <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
-        <div className="night-content">
-          <p className="night-message">{specialPhase.message}</p>
+        <div className="text-center max-w-150">
+          <p className="text-8xl leading-normal whitespace-pre-line animate-fade-in">{specialPhase.message}</p>
         </div>
       </BaseDisplay>
     );
@@ -107,8 +108,8 @@ export function NightDisplay({ night, nightAction, specialPhase }: NightDisplayP
   // 預設：所有人閉眼
   return (
     <BaseDisplay title={title} background="bg-linear-135/srgb from-night-from to-night-to">
-      <div className="night-content">
-        <p className="night-message">所有人保持閉眼</p>
+      <div className="text-center max-w-150">
+        <p className="text-8xl leading-normal whitespace-pre-line animate-fade-in">所有人保持閉眼</p>
       </div>
     </BaseDisplay>
   );

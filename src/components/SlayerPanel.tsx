@@ -51,28 +51,19 @@ export function SlayerPanel({ players, roleRegistry, onSuccess, onFail, onCancel
       : roleRegistry.getRoleName(p.role);
 
   return (
-    <div
-      className="slayer-panel"
-      style={{
-        backgroundColor: '#e8f4fd',
-        border: '2px solid #0d6efd',
-        padding: '1rem',
-        borderRadius: '8px',
-        marginBottom: '1rem',
-      }}
-    >
-      <h3 style={{ color: '#0d47a1' }}>獵手宣稱</h3>
-      <p style={{ color: '#555', fontSize: '0.9em' }}>
+    <div className="bg-alert-info-surface border-2 border-alert-info-border p-4 rounded-lg mb-4">
+      <h3 className="text-lg font-bold text-alert-info-text mb-2.5">獵手宣稱</h3>
+      <p className="text-neutral-700 text-sm">
         存活玩家可宣稱自己是獵手，並指定一名目標。整場每人只能宣稱一次。
       </p>
 
       {eligibleClaimants.length === 0 && (
-        <p style={{ color: '#dc3545', fontWeight: 'bold' }}>所有存活玩家都已宣稱過獵手。</p>
+        <p className="text-alert-danger-accent font-bold">所有存活玩家都已宣稱過獵手。</p>
       )}
 
       {!result && eligibleClaimants.length > 0 && (
         <>
-          <div style={{ marginBottom: '0.75rem' }}>
+          <div className="mb-3">
             <p>宣稱者（選擇存活且尚未宣稱的玩家）：</p>
             <PlayerSelector
               mode="single"
@@ -83,7 +74,7 @@ export function SlayerPanel({ players, roleRegistry, onSuccess, onFail, onCancel
             />
           </div>
 
-          <div style={{ marginBottom: '0.75rem' }}>
+          <div className="mb-3">
             <p>目標（選擇存活玩家，可選任何人包含自己）：</p>
             <PlayerSelector
               mode="single"
@@ -94,12 +85,12 @@ export function SlayerPanel({ players, roleRegistry, onSuccess, onFail, onCancel
           </div>
 
           {claimantSeat != null && (
-            <p style={{ fontSize: '0.85em', color: '#555' }}>
+            <p className="text-xs text-neutral-700">
               宣稱者：{players.find((p) => p.seat === claimantSeat)?.name}（{roleName(players.find((p) => p.seat === claimantSeat)!)}）
             </p>
           )}
 
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+          <div className="flex gap-2 mt-2">
             <button
               className="btn-primary"
               disabled={claimantSeat == null || targetSeat == null}
@@ -113,12 +104,12 @@ export function SlayerPanel({ players, roleRegistry, onSuccess, onFail, onCancel
       )}
 
       {result && (
-        <div style={{ marginTop: '0.75rem' }}>
-          <p style={{ fontWeight: 'bold', color: result.success ? '#155724' : '#721c24', fontSize: '1.1em' }}>
+        <div className="mt-3">
+          <p className={`font-bold text-lg ${result.success ? 'text-alert-success-text' : 'text-alert-danger-text'}`}>
             {result.success ? '✅ ' : '❌ '}{result.reason}
           </p>
           {result.success && (
-            <p style={{ color: '#155724' }}>遊戲結束 — 善良陣營獲勝！</p>
+            <p className="text-alert-success-text">遊戲結束 — 善良陣營獲勝！</p>
           )}
         </div>
       )}
