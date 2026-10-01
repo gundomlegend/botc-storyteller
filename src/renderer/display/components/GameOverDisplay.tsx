@@ -27,24 +27,28 @@ export function GameOverDisplay({ winner, gameOverReason, players }: GameOverDis
   };
 
   return (
-    <BaseDisplay title="遊戲結束" className="game-over-display">
-      <div className="game-over-content">
-        <div className="winner-section">
-          <h2>{getWinnerText()}</h2>
-          {gameOverReason && <p className="reason">原因：{gameOverReason}</p>}
+    <BaseDisplay title="遊戲結束">
+      <div className="w-full max-w-225">
+        <div className="text-center mb-8">
+          <h2 className="text-9xl font-bold mb-4">{getWinnerText()}</h2>
+          {gameOverReason && <p className="text-4xl text-highlight">原因：{gameOverReason}</p>}
         </div>
 
-        <div className="role-reveal-section">
-          <h3>角色揭示</h3>
-          <div className="player-list">
+        <div>
+          <h3 className="text-6xl font-bold text-center mb-6">角色揭示</h3>
+          {/* TODO(tailwind): 0.8rem gap is off the spacing grid — see Phase 3 batch 3 report */}
+          <div className="flex flex-col" style={{ gap: '0.8rem' }}>
             {players.map((player) => (
-              <div key={player.seat} className={`player-reveal ${player.team}`}>
-                <span className="seat">{player.seat}號</span>
-                <span className="name">{player.name}</span>
-                <span className="role">
+              <div
+                key={player.seat}
+                className={`bg-black/30 p-4 rounded-lg flex gap-4 items-center text-xl border-l-4 ${player.team === 'good' ? 'border-l-good' : 'border-l-evil'}`}
+              >
+                <span className="font-bold text-info">{player.seat}號</span>
+                <span className="flex-1">{player.name}</span>
+                <span className="text-highlight">
                   {player.roleName} ({player.team === 'good' ? '善良' : '邪惡'})
                 </span>
-                {!player.isAlive && <span className="dead">☠</span>}
+                {!player.isAlive && <span className="text-4xl">☠</span>}
               </div>
             ))}
           </div>

@@ -65,71 +65,10 @@
 }
 
 /* Game Over Display */
-.game-over-display .game-over-content {
-  max-width: 900px;
-  width: 100%;
-}
-
-.winner-section {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.winner-section h2 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.reason {
-  font-size: 1.5rem;
-  color: #ffeb3b;
-}
-
-.role-reveal-section h3 {
-  font-size: 1.8rem;
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
-
 .player-list {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
-}
-
-.player-reveal {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 1rem;
-  border-radius: 8px;
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  font-size: 1.2rem;
-}
-
-.player-reveal.good {
-  border-left: 4px solid #4caf50;
-}
-
-.player-reveal.evil {
-  border-left: 4px solid #f44336;
-}
-
-.player-reveal .seat {
-  font-weight: bold;
-  color: #90caf9;
-}
-
-.player-reveal .name {
-  flex: 1;
-}
-
-.player-reveal .role {
-  color: #ffeb3b;
-}
-
-.player-reveal .dead {
-  font-size: 1.5rem;
 }
 
 /* Demon Card（惡魔身份，單張，紫色主題） */
