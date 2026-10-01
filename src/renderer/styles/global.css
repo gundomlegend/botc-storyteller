@@ -363,6 +363,24 @@ body {
   padding: 40px;
 }
 
+.night-complete {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+}
+
+.night-complete h3 {
+  font-size: 1.2rem;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.night-complete p {
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
 .night-footer {
   padding-top: 16px;
   text-align: right;
