@@ -46,12 +46,13 @@ export default function SetupView() {
   };
 
   return (
-    <section className="setup-view">
-      <h2>遊戲設置</h2>
+    <section className="max-w-175 mx-auto">
+      <h2 className="text-3xl font-bold text-primary mb-4">遊戲設置</h2>
 
-      <div className="setup-count">
-        <label>玩家人數：</label>
+      <div className="mb-4 flex items-center gap-2">
+        <label className="text-text-muted">玩家人數：</label>
         <select
+          className="py-1.5 px-3 rounded-sm border border-border bg-surface-raised text-text text-sm"
           value={playerCount}
           onChange={(e) => handleCountChange(Number(e.target.value))}
         >
@@ -62,24 +63,25 @@ export default function SetupView() {
           ))}
         </select>
         {dist && (
-          <span className="setup-dist">
+          <span className="text-text-muted text-xs">
             鎮民 {dist.townsfolk} / 外來者 {dist.outsider} / 爪牙 {dist.minion} / 惡魔 {dist.demon}
           </span>
         )}
       </div>
 
-      <div className="setup-players">
+      <div className="flex flex-col gap-1.5 mb-5">
         {names.map((name, i) => (
-          <div key={i} className="setup-player-row">
-            <span className="seat-number">{i + 1}</span>
+          <div key={i} className="flex items-center gap-2">
+            <span className="w-7 text-center text-primary font-bold">{i + 1}</span>
             <input
               type="text"
+              className="flex-1 py-2 px-3 rounded-sm border border-border bg-surface-raised text-text text-sm"
               placeholder={`玩家 ${i + 1} 名稱`}
               value={name}
               onChange={(e) => updateName(i, e.target.value)}
             />
             {assignedRoles && assignedRoles[i] && (
-              <span className="assigned-role">{roleRegistry.getRoleName(assignedRoles[i])}</span>
+              <span className="text-primary text-xs whitespace-nowrap">{roleRegistry.getRoleName(assignedRoles[i])}</span>
             )}
           </div>
         ))}

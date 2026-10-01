@@ -180,80 +180,6 @@ body {
   background: #e74c3c;
 }
 
-/* ===== SetupView ===== */
-
-.setup-view {
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-.setup-view h2 {
-  font-size: 1.4rem;
-  color: var(--accent);
-  margin-bottom: 16px;
-}
-
-.setup-count {
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.setup-count label {
-  color: var(--text-secondary);
-}
-
-.setup-count select {
-  padding: 6px 12px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 0.9rem;
-}
-
-.setup-players {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 20px;
-}
-
-.setup-player-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.setup-player-row .seat-number {
-  width: 28px;
-  text-align: center;
-  color: var(--accent);
-  font-weight: bold;
-}
-
-.setup-player-row input {
-  flex: 1;
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 0.9rem;
-}
-
-.setup-dist {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-.assigned-role {
-  color: var(--accent);
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
 /* ===== NightView ===== */
 
 .night-view {
@@ -818,33 +744,6 @@ body {
 .special-player.minion .special-team-tag {
   background: #8e44ad;
   color: #fff;
-}
-
-.bluff-tokens {
-  display: flex;
-  gap: 12px;
-  margin: 12px 0;
-}
-
-.bluff-token {
-  flex: 1;
-  padding: 16px 12px;
-  border-radius: 8px;
-  background: var(--bg-card);
-  text-align: center;
-  border: 1px solid var(--border);
-}
-
-.bluff-name-cn {
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.bluff-name-en {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
 }
 
 .special-note {
