@@ -2,7 +2,7 @@
 html { line-height: normal; }
 h1, h2, h3, h4, h5, h6 { font-size: revert; font-weight: revert; }
 ul, ol { list-style: revert; }
-button, input, select, textarea { font: revert; }
+button, input, select, textarea { font: revert; color: revert; }
 small { font-size: revert; }
 ::placeholder { color: revert; opacity: revert; }
 
