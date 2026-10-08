@@ -180,56 +180,6 @@ body {
   background: #e74c3c;
 }
 
-/* ===== AbilityProcessor ===== */
-
-.ability-processor {
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.ability-target {
-  margin-bottom: 12px;
-}
-
-.ability-target p {
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-}
-
-.ability-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.ability-result {
-  margin-top: 12px;
-}
-
-.result-display {
-  background: var(--bg-card);
-  padding: 12px;
-  border-radius: 6px;
-  white-space: pre-line;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.result-warning {
-  margin-top: 6px;
-  color: #e74c3c;
-  font-weight: bold;
-  font-size: 0.9rem;
-}
-
-.result-hint {
-  margin-top: 6px;
-  color: #27ae60;
-  font-size: 0.85rem;
-}
-
 /* ===== PlayerSelector ===== */
 
 .selector-label {

@@ -57,9 +57,19 @@ const NOTE_MARGINS: Record<NoteTone, string> = {
   hint: 'mt-1.5',
 };
 
-/** 結果下方的補充說明；`margin` 取代預設的上邊距（避免兩個 mt-* 互相衝突） */
-export function ResultNote({ tone, margin, children }: ChildrenProps & { tone: NoteTone; margin?: string }) {
-  return <div className={`${margin ?? NOTE_MARGINS[tone]} ${NOTE_TONES[tone]}`}>{children}</div>;
+/**
+ * 結果下方的補充說明。
+ * `margin` 取代預設的外距（避免兩個 mt-* 互相衝突）；`className` 只能加不與預設衝突的樣式（padding、背景等）。
+ */
+export function ResultNote({
+  tone,
+  margin,
+  className,
+  children,
+}: ChildrenProps & { tone: NoteTone; margin?: string; className?: string }) {
+  return (
+    <div className={`${margin ?? NOTE_MARGINS[tone]} ${NOTE_TONES[tone]}${className ? ` ${className}` : ''}`}>{children}</div>
+  );
 }
 
 /** 自訂處理器標題（與 AbilityHeader 的標題同樣式） */
