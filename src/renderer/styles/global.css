@@ -188,18 +188,6 @@ body {
   padding: 16px;
 }
 
-.ability-header h3 {
-  font-size: 1.2rem;
-  color: var(--accent);
-  margin-bottom: 8px;
-}
-
-.ability-status {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
 .ability-target {
   margin-bottom: 12px;
 }
