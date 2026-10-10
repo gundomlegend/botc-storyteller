@@ -11,7 +11,7 @@ interface DrunkIndicatorProps {
  */
 export function DrunkIndicator({ roleData }: DrunkIndicatorProps) {
   return (
-    <div className="drunk-indicator py-2 px-3 mx-0 my-2 bg-alert-warning-surface border-2 border-alert-warning-border rounded-sm">
+    <div className="py-2 px-3 mx-0 my-2 bg-alert-warning-surface border-2 border-alert-warning-border rounded-sm">
       <strong className="text-drunk-alert">🍺 酒鬼角色</strong>
       <p className="m-0 mt-1 text-sm text-drunk-alert">
         此玩家實際上是酒鬼，以為自己是{' '}
