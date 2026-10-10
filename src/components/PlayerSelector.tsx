@@ -125,8 +125,8 @@ export function PlayerSelector({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Label keeps its legacy class: inside .day-view it is restyled by `.day-view h3` (migrated with DayView) */}
-      {label && <h3 className="selector-label">{label}</h3>}
+      {/* 標籤只在 DayView / SlayerPanel 內使用，沿用其 h3 樣式 */}
+      {label && <h3 className="text-lg font-bold text-fg mb-2.5">{label}</h3>}
 
       {mode === 'double' && selected.length === 1 && (
         <div className="py-2 px-3 bg-warning/15 border border-warning rounded-sm text-warning text-xs">

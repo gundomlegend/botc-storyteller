@@ -6,6 +6,7 @@ import { checkSaintExecution, type SaintCheckResult } from '../engine/SaintAbili
 import PlayerSelector from './PlayerSelector';
 import { DawnAnnouncement } from './DawnAnnouncement';
 import { ExecutionPhase } from './ExecutionPhase';
+import { Button } from './shared/Button';
 import { SlayerPanel } from './SlayerPanel';
 
 // ── Local state types ──────────────────────────────────────
@@ -30,6 +31,9 @@ interface NominationRecord {
 
 // Max nominations per day (rule: 4)
 const MAX_NOMINATIONS_PER_DAY = 4;
+
+const VOTE_BTN = 'py-1.5 px-3.5 border rounded-md text-xs cursor-pointer transition-all';
+const VOTED = 'bg-primary border-primary text-white';
 
 export default function DayView() {
   const {
@@ -427,8 +431,8 @@ export default function DayView() {
   // ─────────────────────────────────────────────────────────
 
   return (
-    <div className="day-view">
-      <h2>第 {day} 天</h2>
+    <div className="max-w-200 mx-auto">
+      <h2 className="text-3xl font-bold text-primary mb-4">第 {day} 天</h2>
 
       {/* B1: 黎明公告 */}
       {!dawnDismissed && (
@@ -439,20 +443,20 @@ export default function DayView() {
       )}
 
       {/* 玩家狀態列表 */}
-      <div className="day-players">
-        <h3>玩家狀態</h3>
-        <div className="player-status-list">
+      <div className="mb-6">
+        <h3 className="text-lg font-bold text-fg mb-2.5">玩家狀態</h3>
+        <div className="flex flex-col gap-1">
           {players.map((p) => (
             <div
               key={p.seat}
-              className={`player-status-row ${!p.isAlive ? 'dead' : ''}`}
+              className={`flex items-center gap-3 py-1.5 px-2.5 rounded-sm bg-surface-raised text-sm${p.isAlive ? '' : ' opacity-40'}`}
             >
-              <span className="ps-seat">{p.seat}</span>
-              <span className="ps-name">{p.name}</span>
-              <span className="ps-role">{roleRegistry.getPlayerRoleName(p)}</span>
-              <span className="ps-alive">{p.isAlive ? '存活' : '死亡'}</span>
+              <span className="w-7 text-center text-primary font-bold">{p.seat}</span>
+              <span className="flex-1">{p.name}</span>
+              <span className="text-fg-muted w-30">{roleRegistry.getPlayerRoleName(p)}</span>
+              <span className="w-12.5 text-center text-2xs">{p.isAlive ? '存活' : '死亡'}</span>
               {!p.isAlive && p.hasDeathVote && (
-                <span className="ps-death-vote" title="持有死亡投票權">💀</span>
+                <span title="持有死亡投票權">💀</span>
               )}
             </div>
           ))}
@@ -461,19 +465,12 @@ export default function DayView() {
 
       {/* 遊戲結束畫面 */}
       {gameOver && (
-        <div style={{
-          backgroundColor: winner === 'evil' ? '#f8d7da' : '#d4edda',
-          border: `2px solid ${winner === 'evil' ? '#f5c6cb' : '#c3e6cb'}`,
-          padding: '1.5rem',
-          borderRadius: '8px',
-          marginBottom: '1rem',
-          textAlign: 'center',
-        }}>
-          <h2>遊戲結束</h2>
-          <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: winner === 'evil' ? '#721c24' : '#155724' }}>
+        <div className={`border-2 p-6 rounded-lg mb-4 text-center ${winner === 'evil' ? 'bg-alert-danger-surface border-alert-danger-border' : 'bg-alert-success-surface border-alert-success-border'}`}>
+          <h2 className="text-3xl font-bold text-primary mb-4">遊戲結束</h2>
+          <p className={`text-xl font-bold ${winner === 'evil' ? 'text-alert-danger-text' : 'text-alert-success-text'}`}>
             {winner === 'evil' ? '邪惡陣營獲勝！' : '善良陣營獲勝！'}
           </p>
-          {gameOverReason && <p style={{ color: '#333' }}>{gameOverReason}</p>}
+          {gameOverReason && <p className="text-neutral-800">{gameOverReason}</p>}
         </div>
       )}
 
@@ -522,23 +519,23 @@ export default function DayView() {
 
       {/* 提名區域 */}
       {!showVoting && !gameOver && !inExecutionPhase && virginDialog.type === 'none' && saintDialog.type === 'none' && (
-        <div className="day-nomination">
+        <div className="mb-6">
           {/* B5: 提名計數 */}
-          <h3>
+          <h3 className="text-lg font-bold text-fg mb-2.5">
             提名
-            <span style={{ fontWeight: 'normal', fontSize: '0.9em', marginLeft: '0.5rem', color: nominationCountToday >= MAX_NOMINATIONS_PER_DAY ? '#dc3545' : '#666' }}>
+            <span className={`font-normal text-base ml-2 ${nominationCountToday >= MAX_NOMINATIONS_PER_DAY ? 'text-alert-danger-accent' : 'text-neutral-600'}`}>
               （今天第 {nominationCountToday} 次，最多 {MAX_NOMINATIONS_PER_DAY} 次）
             </span>
           </h3>
 
           {!canNominate && (
-            <p style={{ color: '#dc3545', fontWeight: 'bold' }}>今天提名次數已達上限（{MAX_NOMINATIONS_PER_DAY} 次）</p>
+            <p className="text-alert-danger-accent font-bold">今天提名次數已達上限（{MAX_NOMINATIONS_PER_DAY} 次）</p>
           )}
 
           {canNominate && (
-            <div className="nomination-selectors">
-              <div className="nomination-group">
-                <p>提名者：</p>
+            <div className="flex gap-6 mb-3">
+              <div className="flex-1">
+                <p className="text-fg-muted mb-1.5 text-sm">提名者：</p>
                 <PlayerSelector
                   mode="single"
                   onlyAlive={true}
@@ -546,11 +543,11 @@ export default function DayView() {
                   onSelect={(ps: Player[]) => setNominatorSeat(ps[0]?.seat ?? null)}
                 />
                 {getNominatorHint() && (
-                  <p style={{ color: '#dc3545', fontSize: '0.85em' }}>{getNominatorHint()}</p>
+                  <p className="text-alert-danger-accent text-xs mb-1.5">{getNominatorHint()}</p>
                 )}
               </div>
-              <div className="nomination-group">
-                <p>被提名者：</p>
+              <div className="flex-1">
+                <p className="text-fg-muted mb-1.5 text-sm">被提名者：</p>
                 <PlayerSelector
                   mode="single"
                   onlyAlive={false}
@@ -562,40 +559,36 @@ export default function DayView() {
                   onSelect={(ps: Player[]) => setNomineeSeat(ps[0]?.seat ?? null)}
                 />
                 {getNomineeHint() && (
-                  <p style={{ color: '#dc3545', fontSize: '0.85em' }}>{getNomineeHint()}</p>
+                  <p className="text-alert-danger-accent text-xs mb-1.5">{getNomineeHint()}</p>
                 )}
               </div>
             </div>
           )}
 
           {canNominate && (
-            <button
-              className="btn-primary"
-              disabled={nominateDisabled}
-              onClick={handleNominate}
-            >
+            <Button disabled={nominateDisabled} onClick={handleNominate}>
               發起投票
-            </button>
+            </Button>
           )}
         </div>
       )}
 
       {/* 投票區域 */}
       {showVoting && !gameOver && nominee && (
-        <div className="day-voting">
-          <h3>
+        <div className="mb-6 bg-surface-raised p-4 rounded-lg">
+          <h3 className="text-lg font-bold text-fg mb-2.5">
             投票 — {nominee.name}（{nominee.seat}號）
           </h3>
-          <p>
+          <p className="text-fg-muted mb-3 text-sm">
             需要 {voteThreshold} 票通過（存活 {alivePlayers.length} 人）
           </p>
 
-          <div className="voting-players">
+          <div className="flex flex-wrap gap-1.5 mb-3">
             {/* B4: alive players */}
             {alivePlayers.map((p) => (
               <button
                 key={p.seat}
-                className={`vote-btn ${votes.has(p.seat) ? 'voted' : ''}`}
+                className={`${VOTE_BTN} ${votes.has(p.seat) ? VOTED : 'bg-transparent border-border text-fg-muted'} hover:border-primary`}
                 onClick={() => toggleVote(p.seat)}
               >
                 {p.seat} {p.name}
@@ -605,60 +598,53 @@ export default function DayView() {
             {players.filter((p) => !p.isAlive && p.hasDeathVote).map((p) => (
               <button
                 key={p.seat}
-                className={`vote-btn death-vote-btn ${votes.has(p.seat) ? 'voted' : ''}`}
+                className={`${VOTE_BTN} ${votes.has(p.seat) ? 'bg-primary text-white' : 'bg-transparent text-fg-muted'} opacity-75 border-2 border-dashed border-neutral-600`}
                 onClick={() => toggleVote(p.seat)}
                 title="死亡投票權（使用後失效）"
-                style={{ opacity: 0.75, border: '2px dashed #666' }}
               >
                 {p.seat} {p.name} 💀
               </button>
             ))}
           </div>
 
-          <div className="voting-result">
+          <div className="flex gap-3 items-center mb-3 text-md">
             <span>
               票數：{voteCount} / {voteThreshold}
             </span>
-            {votePassed && <span className="vote-passed">通過</span>}
+            {votePassed && <span className="text-success font-bold">通過</span>}
           </div>
 
           {butlerVoted && !masterVoted && !butlerPoisoned && (
-            <div className="voting-warning">
+            <div className="py-2 px-3 mb-3 bg-warning/15 border border-warning rounded-sm text-warning text-xs font-bold">
               注意：管家（{butler!.name}）已投票，但主人（{masterSeat}號）尚未投票，此票可能無效
             </div>
           )}
 
-          <div className="voting-actions">
+          <div className="flex gap-2">
             {votePassed && (
-              <button className="btn-danger" onClick={handleExecute}>
+              <Button variant="danger" onClick={handleExecute}>
                 處決 {nominee.name}
-              </button>
+              </Button>
             )}
             {!votePassed && (
-              <button className="btn-secondary" onClick={handleVoteFail}>
+              <Button variant="secondary" onClick={handleVoteFail}>
                 確認票數不足，結束投票
-              </button>
+              </Button>
             )}
-            <button className="btn-secondary" onClick={resetNomination}>
+            <Button variant="secondary" onClick={resetNomination}>
               取消
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {!gameOver && !inExecutionPhase && (
-        <div className="day-footer" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button className="btn-primary" onClick={handleEndDay}>
-            進入夜晚
-          </button>
+        <div className="flex gap-2 items-center pt-4 text-right">
+          <Button onClick={handleEndDay}>進入夜晚</Button>
           {!showSlayerPanel && !showVoting && (
-            <button
-              className="btn-secondary"
-              onClick={() => setShowSlayerPanel(true)}
-              title="任何存活玩家宣稱自己是獵手"
-            >
+            <Button variant="secondary" onClick={() => setShowSlayerPanel(true)} title="任何存活玩家宣稱自己是獵手">
               宣稱是獵手
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -689,18 +675,16 @@ function VirginDialog({
 
   if (state.type === 'triggered') {
     return (
-      <div className="virgin-dialog" style={{
-        backgroundColor: '#fff3cd', border: '2px solid #ffc107', padding: '1rem', borderRadius: '8px', marginBottom: '1rem',
-      }}>
-        <h3 style={{ color: '#856404' }}>⚡ 貞潔者能力觸發！</h3>
-        <p style={{ color: '#000000' }}>{virgin.seat}號 {virgin.name}（{virginRoleName}）被提名</p>
-        <p style={{ color: '#000000' }}>提名者：{nominator.seat}號 {nominator.name}（{nominatorRoleName}）← 鎮民</p>
-        <p style={{ fontWeight: 'bold', marginTop: '0.5rem', color: '#ff6b6b' }}>
+      <div className="bg-alert-warning-surface border-2 border-alert-warning-border p-4 rounded-lg mb-4">
+        <h3 className="text-lg font-bold mb-2.5 text-alert-warning-text">⚡ 貞潔者能力觸發！</h3>
+        <p className="text-black">{virgin.seat}號 {virgin.name}（{virginRoleName}）被提名</p>
+        <p className="text-black">提名者：{nominator.seat}號 {nominator.name}（{nominatorRoleName}）← 鎮民</p>
+        <p className="font-bold mt-2 text-danger-soft">
           → {nominator.seat}號 {nominator.name} 將被立即處決
         </p>
-        <p style={{ fontWeight: 'bold', color: '#ff6b6b' }}>→ 直接進入夜間階段</p>
-        <div style={{ marginTop: '1rem' }}>
-          <button className="btn-danger" onClick={onExecute}>確認處決，進入夜間</button>
+        <p className="font-bold text-danger-soft">→ 直接進入夜間階段</p>
+        <div className="mt-4">
+          <Button variant="danger" onClick={onExecute}>確認處決，進入夜間</Button>
         </div>
       </div>
     );
@@ -708,20 +692,18 @@ function VirginDialog({
 
   if (state.type === 'spy_choice') {
     return (
-      <div className="virgin-dialog" style={{
-        backgroundColor: '#e8f4fd', border: '2px solid #0d6efd', padding: '1rem', borderRadius: '8px', marginBottom: '1rem',
-      }}>
-        <h3 style={{ color: '#ff6b6b' }}>貞潔者被提名</h3>
-        <p style={{ color: '#000000' }}>{virgin.seat}號 {virgin.name}（{virginRoleName}）被提名</p>
-        <p style={{ color: '#000000' }}>提名者：{nominator.seat}號 {nominator.name}（{nominatorRoleName}，能力正常）</p>
-        <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-          <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>選擇判定：</p>
-          <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
-            <button className="btn-danger" onClick={onExecute}>間諜被視為鎮民 → 觸發處決，進入夜間</button>
-            <button className="btn-secondary" onClick={onContinueVoting}>間諜保持爪牙身份 → 不觸發，正常投票</button>
+      <div className="bg-alert-info-surface border-2 border-alert-info-border p-4 rounded-lg mb-4">
+        <h3 className="text-lg font-bold mb-2.5 text-danger-soft">貞潔者被提名</h3>
+        <p className="text-black">{virgin.seat}號 {virgin.name}（{virginRoleName}）被提名</p>
+        <p className="text-black">提名者：{nominator.seat}號 {nominator.name}（{nominatorRoleName}，能力正常）</p>
+        <div className="mt-4 p-3 bg-neutral-50 rounded-sm">
+          <p className="font-bold mb-2">選擇判定：</p>
+          <div className="flex gap-2 flex-col">
+            <Button variant="danger" onClick={onExecute}>間諜被視為鎮民 → 觸發處決，進入夜間</Button>
+            <Button variant="secondary" onClick={onContinueVoting}>間諜保持爪牙身份 → 不觸發，正常投票</Button>
           </div>
         </div>
-        <div style={{ marginTop: '0.75rem', fontSize: '0.9em', color: '#666' }}>
+        <div className="mt-3 text-sm text-neutral-600">
           ℹ️ 提示：間諜能力正常，可以被認定為善良角色
         </div>
       </div>
@@ -733,27 +715,25 @@ function VirginDialog({
   const isMalfunctioned = result.abilityMalfunctioned;
 
   return (
-    <div className="virgin-dialog" style={{
-      backgroundColor: '#f8f9fa', border: '1px solid #dee2e6', padding: '1rem', borderRadius: '8px', marginBottom: '1rem',
-    }}>
-      <h3 style={{ color: '#ff6b6b' }}>貞潔者被提名</h3>
-      <p style={{ color: '#000000' }}>{virgin.seat}號 {virgin.name}（{virginRoleName}）被提名</p>
+    <div className="bg-neutral-50 border border-alert-neutral-border p-4 rounded-lg mb-4">
+      <h3 className="text-lg font-bold mb-2.5 text-danger-soft">貞潔者被提名</h3>
+      <p className="text-black">{virgin.seat}號 {virgin.name}（{virginRoleName}）被提名</p>
       {isMalfunctioned && (
-        <p style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+        <p className="text-danger-soft font-bold">
           {isDrunk ? '🍺 實際上是酒鬼（無能力）' : '⚠️ 中毒（能力失效）'}
         </p>
       )}
       {!isDrunk && (
-        <p style={{ color: '#000000' }}>
+        <p className="text-black">
           提名者：{nominator.seat}號 {nominator.name}（{nominatorRoleName}）
           {nominator.team !== 'townsfolk' ? '← 非鎮民' : '← 鎮民'}
         </p>
       )}
-      <p style={{ marginTop: '0.5rem', color: '#ff6b6b' }}>
+      <p className="mt-2 text-danger-soft">
         → 能力未觸發，正常進入投票（貞潔者能力已消耗）
       </p>
-      <div style={{ marginTop: '1rem' }}>
-        <button className="btn-primary" onClick={onContinueVoting}>確認，進入投票</button>
+      <div className="mt-4">
+        <Button onClick={onContinueVoting}>確認，進入投票</Button>
       </div>
     </div>
   );
@@ -783,17 +763,15 @@ function SaintDialog({
 
   if (state.type === 'game_ending') {
     return (
-      <div className="saint-dialog" style={{
-        backgroundColor: '#f8d7da', border: '2px solid #f5c6cb', padding: '1rem', borderRadius: '8px', marginBottom: '1rem',
-      }}>
-        <h3 style={{ color: '#721c24' }}>⚠️ 即將處決聖徒！</h3>
-        <p style={{ color: '#000000' }}>{player.seat}號 {player.name}（{roleName}）即將被處決</p>
-        <p style={{ color: '#000000' }}>能力狀態：✅ 能力正常</p>
-        <p style={{ fontWeight: 'bold', marginTop: '0.5rem', color: '#721c24' }}>→ 若處決聖徒，善良陣營立即落敗！</p>
-        <p style={{ fontWeight: 'bold', color: '#721c24' }}>→ 邪惡陣營獲勝，遊戲結束</p>
-        <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-          <button className="btn-danger" onClick={onConfirmExecute}>確認處決 → 邪惡獲勝</button>
-          <button className="btn-secondary" onClick={onCancel}>取消</button>
+      <div className="bg-alert-danger-surface border-2 border-alert-danger-border p-4 rounded-lg mb-4">
+        <h3 className="text-lg font-bold mb-2.5 text-alert-danger-text">⚠️ 即將處決聖徒！</h3>
+        <p className="text-black">{player.seat}號 {player.name}（{roleName}）即將被處決</p>
+        <p className="text-black">能力狀態：✅ 能力正常</p>
+        <p className="font-bold mt-2 text-alert-danger-text">→ 若處決聖徒，善良陣營立即落敗！</p>
+        <p className="font-bold text-alert-danger-text">→ 邪惡陣營獲勝，遊戲結束</p>
+        <div className="mt-4 flex gap-2">
+          <Button variant="danger" onClick={onConfirmExecute}>確認處決 → 邪惡獲勝</Button>
+          <Button variant="secondary" onClick={onCancel}>取消</Button>
         </div>
       </div>
     );
@@ -802,22 +780,20 @@ function SaintDialog({
   const isDrunk = player.role === 'drunk';
 
   return (
-    <div className="saint-dialog" style={{
-      backgroundColor: '#fff3cd', border: '2px solid #ffc107', padding: '1rem', borderRadius: '8px', marginBottom: '1rem',
-    }}>
-      <h3 style={{ color: '#856404' }}>
+    <div className="bg-alert-warning-surface border-2 border-alert-warning-border p-4 rounded-lg mb-4">
+      <h3 className="text-lg font-bold mb-2.5 text-alert-warning-text">
         {isDrunk ? '「聖徒」即將被處決' : '即將處決聖徒'}
       </h3>
-      <p style={{ color: '#000000' }}>{player.seat}號 {player.name}（{roleName}）即將被處決</p>
-      <p style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+      <p className="text-black">{player.seat}號 {player.name}（{roleName}）即將被處決</p>
+      <p className="text-danger-soft font-bold">
         {isDrunk ? '🍺 實際上是酒鬼（無能力）' : `⚠️ ${result.reason}`}
       </p>
-      <p style={{ marginTop: '0.5rem', color: '#000000' }}>
+      <p className="mt-2 text-black">
         → {isDrunk ? '無聖徒能力，正常處決' : '聖徒中毒，處決不會導致善良陣營落敗'}
       </p>
-      <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-        <button className="btn-primary" onClick={onExecuteNormal}>確認處決</button>
-        <button className="btn-secondary" onClick={onCancel}>取消</button>
+      <div className="mt-4 flex gap-2">
+        <Button onClick={onExecuteNormal}>確認處決</Button>
+        <Button variant="secondary" onClick={onCancel}>取消</Button>
       </div>
     </div>
   );
