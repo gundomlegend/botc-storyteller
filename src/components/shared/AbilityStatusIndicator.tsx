@@ -16,11 +16,11 @@ export default function AbilityStatusIndicator({
   isProtected,
 }: AbilityStatusIndicatorProps) {
   return (
-    <div className="ability-status">
-      {isDead && <span className="status-tag dead">已死亡</span>}
-      {isPoisoned && <span className="status-tag poisoned">中毒</span>}
-      {isDrunk && <span className="status-tag drunk">醉酒</span>}
-      {isProtected && <span className="status-tag protected">受保護</span>}
+    <div className="flex gap-1.5 mb-3">
+      {isDead && <span className="text-2xs px-2 py-0.5 rounded-sm font-bold bg-dead text-neutral-300">已死亡</span>}
+      {isPoisoned && <span className="text-2xs px-2 py-0.5 rounded-sm font-bold bg-poisoned text-white">中毒</span>}
+      {isDrunk && <span className="text-2xs px-2 py-0.5 rounded-sm font-bold bg-drunk text-white">醉酒</span>}
+      {isProtected && <span className="text-2xs px-2 py-0.5 rounded-sm font-bold bg-protected text-white">受保護</span>}
     </div>
   );
 }

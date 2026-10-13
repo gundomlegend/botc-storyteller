@@ -4,11 +4,10 @@
  */
 
 import { DisplayFactory } from './display/DisplayFactory';
-import './styles/display.css';
 
 function DisplayPage() {
   return (
-    <div className="app display-app">
+    <div className="flex flex-col h-screen bg-black">
       <DisplayFactory />
     </div>
   );

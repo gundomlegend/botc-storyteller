@@ -5,6 +5,8 @@ import type { RoleProcessorProps } from './index';
 import AbilityHeader from '../shared/AbilityHeader';
 import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
+import { AbilityPanel, AbilityActions, AbilityResult, ResultDisplay, ResultNote } from '../shared/AbilityPanel';
+import { Button } from '../shared/Button';
 
 export default function EmpathProcessor({ item, onDone }: RoleProcessorProps) {
   const { processAbility, roleRegistry, stateManager } = useGameStore();
@@ -64,7 +66,7 @@ export default function EmpathProcessor({ item, onDone }: RoleProcessorProps) {
   const actualEvilCount = (info?.actualEvilCount as number) ?? 0;
 
   return (
-    <div className="ability-processor">
+    <AbilityPanel>
       <AbilityHeader
         seat={item.seat}
         roleName={item.roleName}
@@ -81,19 +83,19 @@ export default function EmpathProcessor({ item, onDone }: RoleProcessorProps) {
 
       {/* 顯示結果 */}
       {result && (
-        <div className="ability-result">
-          <div className="result-display">{result.display}</div>
+        <AbilityResult>
+          <ResultDisplay>{result.display}</ResultDisplay>
 
-          <div className="storyteller-choice">
+          <div>
             {isPoisonedOrDrunk && (
-              <div className="result-warning">
+              <ResultNote tone="warning">
                 ℹ️ 共情者已{isPoisoned && isDrunk ? '中毒且醉酒' : isPoisoned ? '中毒' : '醉酒'}，你可以提示 0-2 的數字。
                 <br />
                 <strong>ℹ️ 相鄰的邪惡玩家：{actualEvilCount} 位（你可以選擇說謊）</strong>
-              </div>
+              </ResultNote>
             )}
 
-            {isPoisonedOrDrunk && <div style={{ marginTop: '1rem' }}>
+            {isPoisonedOrDrunk && <div className="mt-4">
               <label htmlFor="empath-number">
                 <strong>告訴共情者的數字 (建議範圍: 0-2)：</strong>
               </label>
@@ -105,44 +107,35 @@ export default function EmpathProcessor({ item, onDone }: RoleProcessorProps) {
                 value={toldEvilCount}
                 onChange={(e) => setToldEvilCount(e.target.value)}
                 placeholder={isPoisonedOrDrunk ? '請輸入數字' : String(actualEvilCount)}
-                style={{
-                  marginLeft: '0.5rem',
-                  padding: '0.5rem',
-                  fontSize: '1rem',
-                  width: '100px',
-                }}
+                className="ml-2 p-2 text-base w-25"
               />
-              <span style={{ marginLeft: '0.5rem' }}>位</span>
+              <span className="ml-2">位</span>
             </div>}
 
             {toldEvilCount !== '' && parseInt(toldEvilCount, 10) !== actualEvilCount && (
-              <div className="result-warning" style={{ marginTop: '1rem' }}>
+              <ResultNote tone="warning" margin="mt-4">
                 ⚠️ 注意：你將告訴共情者不同於實際的數字（說謊）
-              </div>
+              </ResultNote>
             )}
           </div>
 
-          <div className="ability-actions">
-            <button
-              className="btn-primary"
-              onClick={handleConfirm}
-              disabled={toldEvilCount === '' || isNaN(parseInt(toldEvilCount, 10))}
-            >
+          <AbilityActions>
+            <Button onClick={handleConfirm} disabled={toldEvilCount === '' || isNaN(parseInt(toldEvilCount, 10))}>
               確認
-            </button>
-            <button className="btn-secondary" onClick={onDone}>
+            </Button>
+            <Button variant="secondary" onClick={onDone}>
               跳過
-            </button>
-          </div>
-        </div>
+            </Button>
+          </AbilityActions>
+        </AbilityResult>
       )}
 
       {/* 載入中 */}
       {!result && (
-        <div className="ability-result">
+        <AbilityResult>
           <p>計算中...</p>
-        </div>
+        </AbilityResult>
       )}
-    </div>
+    </AbilityPanel>
   );
 }

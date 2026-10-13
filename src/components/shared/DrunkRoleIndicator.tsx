@@ -15,18 +15,9 @@ export default function DrunkRoleIndicator({ isDrunkRole, roleData }: DrunkRoleI
   }
 
   return (
-    <div
-      className="drunk-indicator"
-      style={{
-        background: '#3a1a1a',
-        border: '2px solid #e01111',
-        borderRadius: '8px',
-        padding: '1rem',
-        marginBottom: '1rem',
-      }}
-    >
-      <strong style={{ color: '#e01111' }}>🍺 酒鬼角色</strong>
-      <p style={{ marginTop: '0.5rem', color: '#ffffff' }}>
+    <div className="bg-drunk-alert-surface border-2 border-drunk-alert rounded-lg p-4 mb-4">
+      <strong className="text-drunk-alert">🍺 酒鬼角色</strong>
+      <p className="mt-2 text-white">
         此玩家實際上是酒鬼，以為自己是 <strong>{roleData.name_cn}</strong>。
         他們會執行假角色的行為，但能力不會生效。說書人可給予任意假資訊。
       </p>

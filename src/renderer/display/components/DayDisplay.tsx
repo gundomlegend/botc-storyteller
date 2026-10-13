@@ -36,11 +36,11 @@ export function DayDisplay({ day, alivePlayers, nomination, voting, history = []
   const recentEvents = history.slice(-5);
 
   return (
-    <BaseDisplay title={`第 ${day} 天`} className="day-display">
-      <div className="day-content">
+    <BaseDisplay title={`第 ${day} 天`} background="bg-linear-135/srgb from-day-from to-day-to">
+      <div className="max-w-175 w-full">
 
         {/* 黎明公告 */}
-        <div className="dawn-announcement">
+        <div>
           {dawnDeaths.length > 0 ? (
             <>
               <h3>昨夜死亡</h3>
@@ -51,19 +51,16 @@ export function DayDisplay({ day, alivePlayers, nomination, voting, history = []
               </ul>
             </>
           ) : (
-            <p className="peaceful-night">昨夜平安</p>
+            <p>昨夜平安</p>
           )}
         </div>
 
         {/* 玩家列表 */}
-        <div className="player-list">
+        <div className="flex flex-col gap-3">
           <h3>玩家（{aliveCount} / {totalCount} 存活）</h3>
           <ul>
             {alivePlayers.map((p) => (
-              <li
-                key={p.seat}
-                style={p.isAlive ? undefined : { opacity: 0.5, color: '#888' }}
-              >
+              <li key={p.seat} className={p.isAlive ? undefined : 'opacity-50 text-neutral-500'}>
                 {p.seat}號 {p.name}{!p.isAlive && ' †'}
               </li>
             ))}
@@ -72,7 +69,7 @@ export function DayDisplay({ day, alivePlayers, nomination, voting, history = []
 
         {/* 公開事件（最後 5 筆，從舊到新） */}
         {recentEvents.length > 0 && (
-          <div className="public-events">
+          <div>
             <h3>公開事件</h3>
             <ul>
               {recentEvents.map((e, i) => (
@@ -83,29 +80,29 @@ export function DayDisplay({ day, alivePlayers, nomination, voting, history = []
         )}
 
         {/* 提名 / 投票 */}
-        <div className="day-info">
-          <p className="alive-count">
+        <div className="text-center mb-8">
+          <p className="text-6xl text-info">
             存活玩家：{aliveCount} / {totalCount}
           </p>
         </div>
 
         {nomination && !voting && (
-          <div className="nomination-section">
-            <h3>提名階段</h3>
-            <p>提名者：{nomination.nominatorName}</p>
-            <p>被提名者：{nomination.nomineeName}</p>
+          <div className="bg-black/30 p-8 rounded-2xl mt-4">
+            <h3 className="mt-0 text-4xl font-bold text-highlight">提名階段</h3>
+            <p className="text-2xl my-3">提名者：{nomination.nominatorName}</p>
+            <p className="text-2xl my-3">被提名者：{nomination.nomineeName}</p>
           </div>
         )}
 
         {voting && (
-          <div className="voting-section">
-            <h3>投票中 - {voting.nomineeName}</h3>
-            <p className="vote-count">
+          <div className="bg-black/30 p-8 rounded-2xl mt-4">
+            <h3 className="mt-0 text-4xl font-bold text-highlight">投票中 - {voting.nomineeName}</h3>
+            <p className="text-2xl font-bold text-fg my-3">
               票數：{voting.voteCount} / {voting.threshold}
               {voting.voteCount >= voting.threshold && '（通過）'}
             </p>
             {voting.voters.length > 0 && (
-              <p className="voters">已投票：{voting.voters.join(', ')}</p>
+              <p className="text-2xl text-fg-subtle my-3">已投票：{voting.voters.join(', ')}</p>
             )}
           </div>
         )}

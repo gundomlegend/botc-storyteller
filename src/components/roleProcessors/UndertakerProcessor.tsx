@@ -10,6 +10,8 @@ import type { NightResult } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import type { UndertakerHandlerInfo } from './shared/types';
 import { useGameStore } from '../../store/gameStore';
+import { AbilityPanel, AbilityActions, ProcessorTitle, StatusLine, StatusReason, WarningBox, HintList } from '../shared/AbilityPanel';
+import { Button } from '../shared/Button';
 
 export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps) {
   const { processAbility, stateManager, roleRegistry } = useGameStore();
@@ -41,7 +43,7 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
   }, [result]);
 
   if (!result) {
-    return <div className="ability-processor"><p>載入中...</p></div>;
+    return <AbilityPanel><p>載入中...</p></AbilityPanel>;
   }
 
   const info = result.info as UndertakerHandlerInfo | undefined;
@@ -49,21 +51,21 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
   // 如果跳過或沒有資訊，顯示簡單的確認按鈕
   if (result.skip || !info) {
     return (
-      <div className="ability-processor">
-        <div className="ability-header">
-          <h3>送葬者（{item.seat}號 {stateManager?.getPlayer(item.seat)?.name}）</h3>
+      <AbilityPanel>
+        <div>
+          <ProcessorTitle>送葬者（{item.seat}號 {stateManager?.getPlayer(item.seat)?.name}）</ProcessorTitle>
         </div>
 
-        <div className="ability-content">
+        <div>
           <p>{result.display}</p>
         </div>
 
-        <div className="ability-actions" style={{ marginTop: '1rem' }}>
-          <button className="btn-primary" onClick={onDone}>
+        <AbilityActions margin="mt-4">
+          <Button onClick={onDone}>
             確認
-          </button>
-        </div>
-      </div>
+          </Button>
+        </AbilityActions>
+      </AbilityPanel>
     );
   }
 
@@ -144,44 +146,33 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
   };
 
   return (
-    <div className="ability-processor">
+    <AbilityPanel>
       {/* 標題 */}
-      <div className="ability-header">
-        <h3>送葬者（{item.seat}號 {stateManager?.getPlayer(item.seat)?.name}）</h3>
-        <div className="ability-status" >
+      <div>
+        <ProcessorTitle>送葬者（{item.seat}號 {stateManager?.getPlayer(item.seat)?.name}）</ProcessorTitle>
+        <StatusLine>
           能力狀態：{getStatusDisplay()}
-        </div>
+        </StatusLine>
         {statusReason && (
-          <div className="status-reason" style={{ fontSize: '0.9em', color: '#666', marginTop: '0.25rem' }}>
+          <StatusReason>
             {statusReason}
-          </div>
+          </StatusReason>
         )}
       </div>
 
       {/* 警告訊息 */}
       {warning && (
-        <div className="ability-warning" style={{
-          backgroundColor: '#fff3cd',
-          border: '1px solid #ffc107',
-          padding: '0.75rem',
-          borderRadius: '4px',
-          marginBottom: '1rem'
-        }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: '#ff6b6b' }}>{warning.message}</div>
-          {warning.recommendation && (
-            <div style={{ fontSize: '0.9em', color: '#ff6b6b' }}>{warning.recommendation}</div>
-          )}
-        </div>
+        <WarningBox message={warning.message} recommendation={warning.recommendation} />
       )}
 
       {/* 處決資訊 */}
-      <div className="ability-content">
-        <div style={{ marginBottom: '1rem' }}>
+      <div>
+        <div className="mb-4">
           <strong>今日處決：</strong>
-          <div style={{ marginLeft: '1rem', marginTop: '0.5rem' }}>
+          <div className="ml-4 mt-2">
             {executedPlayer.seat}號 {executedPlayer.name}（{executedPlayer.roleName}）
             {executedPlayer.isDrunk && executedPlayer.believesRole && (
-              <span style={{ color: '#ff6b6b', marginLeft: '0.5rem' }}>
+              <span className="text-danger-soft ml-2">
                 [酒鬼，以為自己是{roleRegistry?.getRoleName(executedPlayer.believesRole)}]
               </span>
             )}
@@ -190,13 +181,13 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
 
         {/* 角色選擇（特殊情況） */}
         {needRoleSelection && selectableRoles.length > 0 && (
-          <div className="ability-target" style={{ marginTop: '1rem' }}>
+          <div className="mt-4 mb-3">
             <label htmlFor="role-select">選擇顯示角色：</label>
             <select
               id="role-select"
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
+              className="w-full p-2 mt-2"
             >
               <option value="">-- 請選擇 --</option>
               {(isRecluse || isSpy) && (
@@ -221,27 +212,19 @@ export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps
 
         {/* 提示訊息 */}
         {hints.length > 0 && (
-          <div className="ability-hints" style={{ marginTop: '1rem' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>ℹ️ 提示：</div>
-            <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-              {hints.map((hint, index) => (
-                <li key={index}>{hint}</li>
-              ))}
-            </ul>
-          </div>
+          <HintList hints={hints} />
         )}
       </div>
 
       {/* 按鈕 */}
-      <div className="ability-actions" style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-        <button
-          className="btn-primary"
+      <AbilityActions margin="mt-4">
+        <Button
           onClick={handleConfirm}
           disabled={needRoleSelection && !selectedRole}
         >
           確認
-        </button>
-      </div>
-    </div>
+        </Button>
+      </AbilityActions>
+    </AbilityPanel>
   );
 }

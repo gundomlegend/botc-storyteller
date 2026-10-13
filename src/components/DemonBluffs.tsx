@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { Button } from './shared/Button';
 
 interface DemonBluffsProps {
   onComplete: () => void;
@@ -42,65 +43,65 @@ export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
   // 人數不足：跳過
   if (!hasBluffs) {
     return (
-      <div className="first-night-special">
-        <h3>惡魔虛張聲勢</h3>
-        <div className="special-instruction">
-          <p className="special-note">人數未達 7 人，跳過惡魔虛張聲勢。</p>
+      <div className="bg-surface-raised rounded-lg p-5">
+        <h3 className="text-2xl font-bold text-warning mb-4">惡魔虛張聲勢</h3>
+        <div className="mb-4">
+          <p className="text-fg-muted text-xs my-2.5">人數未達 7 人，跳過惡魔虛張聲勢。</p>
         </div>
-        <div className="special-actions">
-          <button className="btn-primary" onClick={onComplete}>
+        <div className="mt-4">
+          <Button onClick={onComplete}>
             確認跳過 →
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="first-night-special">
-      <h3>惡魔虛張聲勢</h3>
+    <div className="bg-surface-raised rounded-lg p-5">
+      <h3 className="text-2xl font-bold text-warning mb-4">惡魔虛張聲勢</h3>
 
-      <div className="special-instruction">
+      <div className="mb-4">
         {step === 'wake_demon' && demon && (
-          <p className="special-step">
+          <p className="text-fg text-md mb-2.5">
             讓 {demon.seat}號 {demon.name}（
             {roleRegistry.getPlayerRoleName(demon)}）睜眼
           </p>
         )}
 
-        <p className="special-step">展示以下三個角色標記：</p>
+        <p className="text-fg text-md mb-2.5">展示以下三個角色標記：</p>
 
-        <div className="bluff-tokens">
+        <div className="flex gap-3 my-3">
           {bluffs.map((roleId) => {
             const roleData = roleRegistry.getRoleData(roleId);
             return (
-              <div key={roleId} className="bluff-token">
-                <div className="bluff-name-cn">{roleRegistry.getRoleName(roleId)}</div>
-                <div className="bluff-name-en">{roleData?.name ?? roleId}</div>
+              <div key={roleId} className="flex-1 py-4 px-3 rounded-lg bg-surface-card text-center border border-border">
+                <div className="text-lg font-bold text-fg mb-1">{roleRegistry.getRoleName(roleId)}</div>
+                <div className="text-2xs text-fg-muted">{roleData?.name ?? roleId}</div>
               </div>
             );
           })}
         </div>
 
-        <p className="special-note">
+        <p className="text-fg-muted text-xs my-2.5">
           這些是未被分配的善良角色，惡魔可以宣稱是這些角色。
         </p>
 
         {step === 'show_bluffs' && (
-          <p className="special-step">讓惡魔閉眼。</p>
+          <p className="text-fg text-md mb-2.5">讓惡魔閉眼。</p>
         )}
       </div>
 
-      <div className="special-actions">
+      <div className="mt-4">
         {step === 'wake_demon' && (
-          <button className="btn-primary" onClick={handleShowBluffs}>
+          <Button onClick={handleShowBluffs}>
             展示偽裝 →
-          </button>
+          </Button>
         )}
         {step === 'show_bluffs' && (
-          <button className="btn-primary" onClick={onComplete}>
+          <Button onClick={onComplete}>
             完成 →
-          </button>
+          </Button>
         )}
       </div>
     </div>
