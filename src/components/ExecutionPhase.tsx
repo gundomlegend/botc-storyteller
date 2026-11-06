@@ -2,7 +2,8 @@
  * ExecutionPhase — 強制處決階段
  * 在以下情況觸發：連續 2 次投票失敗、提名達 4 次、說書人手動結束白天
  *
- * 規則：所有提名中取得最高票者被處決；平票則宣告無處決。
+ * 規則：只有達到半數門檻（passed）的提名能參與處決；其中取得最高票者被處決，
+ *       平票或無人達門檻則宣告無處決。
  */
 
 import type { Player } from '../engine/types';
@@ -32,9 +33,10 @@ export function ExecutionPhase({
 }: ExecutionPhaseProps) {
   const getPlayer = (seat: number) => players.find((p) => p.seat === seat);
 
-  // Find highest vote-getter
-  const maxVotes = Math.max(...nominationHistory.map((r) => r.voteCount), 0);
-  const topCandidates = nominationHistory.filter((r) => r.voteCount === maxVotes && maxVotes > 0);
+  // Find highest vote-getter — only nominations that reached the threshold (passed) are eligible
+  const passedNominations = nominationHistory.filter((r) => r.passed);
+  const maxVotes = Math.max(...passedNominations.map((r) => r.voteCount), 0);
+  const topCandidates = passedNominations.filter((r) => r.voteCount === maxVotes && maxVotes > 0);
   const isTie = topCandidates.length > 1;
   const winner = !isTie && topCandidates.length === 1 ? getPlayer(topCandidates[0].nomineeSeat) : null;
 
@@ -55,7 +57,7 @@ export function ExecutionPhase({
                 <li key={i}>
                   {nominator?.name ?? r.nominatorSeat}號 提名 {nominee?.name ?? r.nomineeSeat}號 —{' '}
                   {r.voteCount} 票 {r.passed ? '（通過）' : '（未通過）'}
-                  {r.voteCount === maxVotes && !isTie && maxVotes > 0 && (
+                  {r.passed && r.voteCount === maxVotes && !isTie && maxVotes > 0 && (
                     <span className="text-alert-warning-text font-bold"> ← 最高票</span>
                   )}
                 </li>
