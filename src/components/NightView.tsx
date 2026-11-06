@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import AbilityProcessor from './AbilityProcessor';
 import MinionDemonRecognition from './MinionDemonRecognition';
 import DemonBluffs from './DemonBluffs';
@@ -22,7 +23,21 @@ function isSpecialPhase(role: string): boolean {
 }
 
 export default function NightView() {
-  const { night, nightOrder, startDay, setDisplayNightAction, clearDisplayState } = useGameStore();
+  const {
+    night,
+    nightOrder,
+    startDay,
+    setDisplayNightAction,
+    clearDisplayState,
+  } = useGameStore(
+    useShallow((s) => ({
+      night: s.night,
+      nightOrder: s.nightOrder,
+      startDay: s.startDay,
+      setDisplayNightAction: s.setDisplayNightAction,
+      clearDisplayState: s.clearDisplayState,
+    })),
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [allDone, setAllDone] = useState(false);
 

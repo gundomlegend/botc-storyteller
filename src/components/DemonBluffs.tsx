@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Button } from './shared/Button';
 
 interface DemonBluffsProps {
@@ -9,7 +10,14 @@ interface DemonBluffsProps {
 type Step = 'wake_demon' | 'show_bluffs';
 
 export default function DemonBluffs({ onComplete }: DemonBluffsProps) {
-  const { stateManager, roleRegistry, setSpecialNightPhase } = useGameStore();
+  const { stateManager, roleRegistry, setSpecialNightPhase } = useGameStore(
+    useShallow((s) => ({
+      stateManager: s.stateManager,
+      roleRegistry: s.roleRegistry,
+      setSpecialNightPhase: s.setSpecialNightPhase,
+      players: s.players,
+    })),
+  );
   const [bluffs, setBluffs] = useState<string[]>([]);
   const [step, setStep] = useState<Step>('wake_demon');
 
