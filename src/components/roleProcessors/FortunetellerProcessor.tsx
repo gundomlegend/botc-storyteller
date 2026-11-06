@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import type { NightResult, Player } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import PlayerSelector from '../PlayerSelector';
@@ -11,7 +12,14 @@ import { Button } from '../shared/Button';
 import { SELECTABLE_CARD } from '../PlayerSelector';
 
 export default function FortunetellerProcessor({ item, onDone }: RoleProcessorProps) {
-  const { processAbility, roleRegistry, stateManager } = useGameStore();
+  const { processAbility, roleRegistry, stateManager } = useGameStore(
+    useShallow((s) => ({
+      processAbility: s.processAbility,
+      roleRegistry: s.roleRegistry,
+      stateManager: s.stateManager,
+      players: s.players,
+    })),
+  );
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null);
   const [selectedSecondTarget, setSelectedSecondTarget] = useState<number | null>(null);
   const [result, setResult] = useState<NightResult | null>(null);
