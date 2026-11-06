@@ -16,7 +16,8 @@
     "package": "npm run build && electron-builder",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "assets:fetch": "node scripts/fetch-local-assets.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

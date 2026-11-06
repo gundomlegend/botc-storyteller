@@ -10,13 +10,14 @@ v1 前不做：其他劇本、旅行者、傳奇角色、音樂、視覺風格�
 ## 節奏：實作 → 測試驗收 → 試玩回饋
 
 - 一次只做 `TODOS.md` 最上面一項。
-- 不寫規格文件；設計理由寫在註解或 commit，`docs/` 已停止維護。
+- 不寫規格文件；設計理由寫在註解或 commit。`docs/` 除了 `docs/rules/` 都已停止維護。
 - 修 bug 先寫會失敗的測試。完成＝`npm test` 全過、`npx tsc -p tsconfig.json --noEmit` 無錯、`TODOS.md` 已更新。
 - 規則不確定就停下來問，不自行發明。
 
 ## 角色與測試
 
-- 角色規格＝集石官方 wiki（clocktower-wiki.gstonegames.com）角色頁的「运作方式」「范例」「规则细节」。先把範例改寫成測試案例，交使用者確認，再實作。
+- 規則依據：`docs/rules/trouble-brewing/`（整理自集石官方 wiki）。只讀當下需要的角色檔；「測試案例」直接轉成測試，「待確認」項目先問使用者。
+- 新增角色：從集石 wiki 角色頁照同格式整理一份角色檔，交使用者確認後再實作。
 - 自動測試：引擎能確定判斷的規則（資訊正確性、毒醉與保護的時效、死亡、提名投票、勝負）。
 - 說書人裁量（假資訊內容、登記選擇）只測「提供哪些選項」，不測選了什麼。
 - 規則邏輯放引擎，不放元件；UI 外觀與操作手感交給試玩，不寫測試。
@@ -27,6 +28,7 @@ v1 前不做：其他劇本、旅行者、傳奇角色、音樂、視覺風格�
 - `src/store/gameStore.ts`：包裝 `GameStateManager`
 - `src/components/`：說書人端 UI；`src/renderer/display/`：投影視窗（IPC）
 - `src/data/roles/trouble-brewing.json`：角色 id 小寫無分隔（`fortuneteller`）
+- `assets-local/`：角色圖示與魔典素材（不進 Git，用 `npm run assets:fetch` 下載）
 
 ## 陷阱
 
