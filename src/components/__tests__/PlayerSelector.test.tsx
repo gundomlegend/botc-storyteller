@@ -186,10 +186,10 @@ describe('PlayerSelector', () => {
         />
       );
 
-      const aliceCard = screen.getByText('Alice').closest('.player-card');
-      const bobCard = screen.getByText('Bob').closest('.player-card');
-      expect(aliceCard?.className).toContain('highlighted');
-      expect(bobCard?.className).not.toContain('highlighted');
+      const aliceCard = screen.getByText('Alice').closest('[data-player-card]');
+      const bobCard = screen.getByText('Bob').closest('[data-player-card]');
+      expect(aliceCard).toHaveAttribute('data-highlighted');
+      expect(bobCard).not.toHaveAttribute('data-highlighted');
     });
   });
 

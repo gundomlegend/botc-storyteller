@@ -1,5 +1,6 @@
 import { defineConfig, Plugin, ViteDevServer } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { exec } from 'child_process';
 
@@ -35,7 +36,7 @@ function openDualBrowser(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), openDualBrowser()],
+  plugins: [react(), tailwindcss(), openDualBrowser()],
   base: './',
   root: 'src/renderer',
   build: {

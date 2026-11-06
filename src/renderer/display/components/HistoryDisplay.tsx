@@ -15,15 +15,15 @@ interface HistoryDisplayProps {
 
 export function HistoryDisplay({ history }: HistoryDisplayProps) {
   return (
-    <BaseDisplay title="遊戲復盤" className="history-display">
-      <div className="history-content">
-        <div className="timeline">
+    <BaseDisplay title="遊戲復盤">
+      <div>
+        <div className="w-full max-w-200">
           {history.length === 0 ? (
             <p>尚無歷史記錄</p>
           ) : (
             history.map((event, index) => (
-              <div key={index} className="event-item">
-                <p className="event-description">{event.description}</p>
+              <div key={index} className="bg-black/30 p-4 rounded-lg border-l-3 border-l-info mb-3">
+                <p className="text-xl m-0">{event.description}</p>
               </div>
             ))
           )}

@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+/* Vite's root is src/renderer, so auto-detection would miss src/components — scan all of src/. */
+@source "../..";
+
+/* Class-based dark variant, reserved for a future nativeTheme-driven toggle.
+   The app is dark-only today, so the tokens below are the dark values. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens — the single source of truth for colors, type, radius, shadows and motion. */
+@theme {
+  /* Only semantic tokens below; Tailwind's default palette/scales are disabled. */
+  --color-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei',
+    'Noto Sans CJK TC', 'Noto Sans TC', 'WenQuanYi Micro Hei', sans-serif;
+  --font-display: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  /* ── Base neutrals ── */
+  --color-white: #fff;
+  --color-black: #000;
+  --color-neutral-50: #f8f9fa;
+  --color-neutral-100: #f0f0f0;
+  --color-neutral-200: #e0e0e0;
+  --color-neutral-300: #ccc;
+  --color-neutral-400: #aaa;
+  --color-neutral-500: #888;
+  --color-neutral-600: #666;
+  --color-neutral-700: #555;
+  --color-neutral-800: #333;
+
+  /* ── App surfaces & text ── */
+  --color-surface: #1a1a2e;
+  --color-surface-raised: #16213e;
+  --color-surface-card: #0f3460;
+  --color-border: #2a2a4a;
+  --color-fg: #e6e6e6;
+  --color-fg-muted: #a8a8b3;
+  --color-fg-subtle: #b0bec5;
+  --color-primary: #e94560;
+  --color-primary-hover: #ff6b81;
+
+  /* ── Feedback ── */
+  --color-warning: #f39c12;
+  --color-danger: #c0392b;
+  --color-danger-hover: #e74c3c;
+  --color-danger-soft: #ff6b6b;
+  --color-success: #27ae60;
+  --color-info: #90caf9;
+  --color-highlight: #ffeb3b;
+
+  /* ── Player status ── */
+  --color-poisoned: #8e44ad;
+  --color-drunk: #d35400;
+  --color-drunk-alert: #e01111;
+  --color-drunk-alert-surface: #3a1a1a;
+  --color-protected: #27ae60;
+  --color-dead: #555;
+
+  /* ── Teams ── */
+  --color-good: #4caf50;
+  --color-evil: #f44336;
+  --color-demon: #c0392b;
+  --color-minion: #8e44ad;
+  --color-team-demon: #9c27b0;
+  --color-team-bluff: #ffa726;
+  --color-team-minion: #f44336;
+
+  /* ── Day / night (display window) ── */
+  --color-night: #3498db;
+  --color-night-from: #0a0a1a;
+  --color-night-to: #1a1a3e;
+  --color-day: #f39c12;
+  --color-day-from: #2a4a6a;
+  --color-day-to: #3a5a7a;
+
+  /* ── Light alert panels (storyteller prompts) ── */
+  --color-alert-warning-surface: #fff3cd;
+  --color-alert-warning-border: #ffc107;
+  --color-alert-warning-text: #856404;
+  --color-alert-danger-surface: #f8d7da;
+  --color-alert-danger-border: #f5c6cb;
+  --color-alert-danger-accent: #dc3545;
+  --color-alert-danger-text: #721c24;
+  --color-alert-success-surface: #d4edda;
+  --color-alert-success-border: #c3e6cb;
+  --color-alert-success-text: #155724;
+  --color-alert-info-surface: #e8f4fd;
+  --color-alert-info-surface-alt: #e3f2fd;
+  --color-alert-info-border: #0d6efd;
+  --color-alert-info-text: #0d47a1;
+  --color-alert-neutral-border: #dee2e6;
+
+  /* ── Type scale (no line-height pairing: text inherits the base `normal` line-height) ── */
+  --text-4xs: 0.7rem;
+  --text-3xs: 0.75rem;
+  --text-2xs: 0.8rem;
+  --text-xs: 0.85rem;
+  --text-sm: 0.9rem;
+  --text-md: 0.95rem;
+  --text-base: 1rem;
+  --text-lg: 1.1rem;
+  --text-xl: 1.2rem;
+  --text-2xl: 1.3rem;
+  --text-3xl: 1.4rem;
+  --text-4xl: 1.5rem;
+  --text-5xl: 1.6rem;
+  --text-6xl: 1.8rem;
+  --text-7xl: 2rem;
+  --text-8xl: 2.5rem;
+  --text-9xl: 3rem;
+
+  --tracking-title: 2px;
+
+  /* ── Radius ── */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+
+  /* ── Shadows ── */
+  --shadow-glow-warning: 0 0 8px rgb(243 156 18 / 0.4);
+  --text-shadow-title: 2px 2px 4px rgb(0 0 0 / 0.5);
+
+  /* Plain CSS transition defaults (ease, 0.2s), as the original styles used. */
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: ease;
+
+  /* ── Motion (display window) ── */
+  --animate-fade-in: fadeIn 0.5s ease-in;
+  --animate-fade-in-fast: fadeIn 0.4s ease-in;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* `transition: background 0.2s` — transition-colors would also animate text/border colors. */
+@utility transition-background {
+  transition-property: background;
+  transition-timing-function: var(--default-transition-timing-function);
+  transition-duration: var(--default-transition-duration);
+}
+
+/*
+ * Base styles on top of Preflight (same `base` layer, declared later, so they win).
+ * The app was built on browser defaults: `normal` line-height, browser-styled form
+ * controls, default heading sizes and list bullets. Preflight resets all of these;
+ * these rules restore them so the UI looks exactly as it did before Tailwind.
+ * `revert` rolls a property back to the browser's own default.
+ */
+@layer base {
+  html {
+    line-height: normal;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-size: revert;
+    font-weight: revert;
+  }
+
+  ul, ol {
+    list-style: revert;
+  }
+
+  button, input, select, textarea {
+    font: revert;
+    color: revert;
+    background-color: revert;
+    border: revert;
+    border-radius: revert;
+  }
+
+  small {
+    font-size: revert;
+  }
+
+  ::placeholder {
+    color: revert;
+    opacity: revert;
+  }
+
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-fg);
+    min-height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #root {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+}

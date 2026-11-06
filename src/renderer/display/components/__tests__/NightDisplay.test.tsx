@@ -53,7 +53,7 @@ describe('NightDisplay', () => {
       expect(screen.getByText('惡魔')).toBeInTheDocument();
       const card = screen.getByText('1號 惡魔玩家');
       expect(card).toBeInTheDocument();
-      expect(card.className).toBe('display-demon-card');
+      expect(card).toBe(screen.getByTestId('demon-card'));
     });
 
     it('reveal_minions：顯示爪牙卡片', () => {

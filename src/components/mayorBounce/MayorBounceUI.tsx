@@ -1,6 +1,8 @@
 import type { NightOrderItem, NightResult } from '../../engine/types';
 import PlayerSelector from '../PlayerSelector';
-import { useMayorBounce } from './useMayorBounce';
+import { useMayorBounce } from './useMayorBounce';
+import { Button } from '../shared/Button';
+import { AbilityTarget, TargetLabel, AbilityActions, AbilityResult, ResultDisplay } from '../shared/AbilityPanel';
 
 interface MayorBounceUIProps {
   result: NightResult;
@@ -28,15 +30,15 @@ export default function MayorBounceUI({ result, item, onDone }: MayorBounceUIPro
   } = useMayorBounce(result, onDone);
 
   return (
-    <div className="ability-result">
-      <div className="result-display">{result.display}</div>
+    <AbilityResult>
+      <ResultDisplay>{result.display}</ResultDisplay>
 
       {/* 未確認階段：選擇處理方式 */}
       {!confirmed && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <h4>🎯 選擇處理方式</h4>
-          <div className="ability-target">
-            <p style={{ marginBottom: '0.5rem' }}>轉移給其他角色（不包含惡魔）：</p>
+        <div className="mt-6">
+          <h4 className="font-bold">🎯 選擇處理方式</h4>
+          <AbilityTarget>
+            <TargetLabel>轉移給其他角色（不包含惡魔）：</TargetLabel>
             <PlayerSelector
               mode="single"
               canSelectSelf={false}
@@ -47,62 +49,61 @@ export default function MayorBounceUI({ result, item, onDone }: MayorBounceUIPro
               excludePlayers={[mayorSeat]}
               onSelect={handleTargetSelect}
             />
-          </div>
-          <div className="ability-actions">
-            <button
-              className="btn-primary"
+          </AbilityTarget>
+          <AbilityActions>
+            <Button
               onClick={handleConfirmTransfer}
               disabled={target === null || target === -1}
             >
               確認轉移
-            </button>
-            <button className="btn-secondary" onClick={handleNoTransfer}>
+            </Button>
+            <Button variant="secondary" onClick={handleNoTransfer}>
               不轉移 - 鎮長死亡
-            </button>
-          </div>
+            </Button>
+          </AbilityActions>
         </div>
       )}
 
       {/* 已確認階段：顯示最終決定 */}
       {confirmed && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div className="mt-6">
           {/* 不轉移：鎮長死亡 */}
           {target === -1 && (
             <>
-              <div className="result-display">
+              <ResultDisplay>
                 ✅ 確認：鎮長 {mayorSeat}號 ({mayorName}) 被小惡魔擊殺
-              </div>
-              <div className="ability-actions">
-                <button className="btn-primary" onClick={executeNoTransfer}>
+              </ResultDisplay>
+              <AbilityActions>
+                <Button onClick={executeNoTransfer}>
                   確認
-                </button>
-                <button className="btn-secondary" onClick={handleReset}>
+                </Button>
+                <Button variant="secondary" onClick={handleReset}>
                   重選
-                </button>
-              </div>
+                </Button>
+              </AbilityActions>
             </>
           )}
 
           {/* 轉移：目標玩家死亡 */}
           {target !== null && target !== -1 && (
             <>
-              <div className="result-display">
+              <ResultDisplay>
                 ✅ 確認轉移：{target}號 {stateManager.getPlayer(target)?.name ?? ''} 被擊殺
                 <br />
                 <small>（原目標：鎮長 {mayorSeat}號）</small>
-              </div>
-              <div className="ability-actions">
-                <button className="btn-primary" onClick={() => executeTransfer(target)}>
+              </ResultDisplay>
+              <AbilityActions>
+                <Button onClick={() => executeTransfer(target)}>
                   確認
-                </button>
-                <button className="btn-secondary" onClick={handleReset}>
+                </Button>
+                <Button variant="secondary" onClick={handleReset}>
                   重選
-                </button>
-              </div>
+                </Button>
+              </AbilityActions>
             </>
           )}
         </div>
       )}
-    </div>
+    </AbilityResult>
   );
 }

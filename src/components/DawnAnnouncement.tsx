@@ -8,42 +8,29 @@ interface DawnAnnouncementProps {
 }
 
 export function DawnAnnouncement({ dawnDeaths, onDismiss }: DawnAnnouncementProps) {
+  const hasDeaths = dawnDeaths.length > 0;
+  const tone = hasDeaths
+    ? 'bg-alert-danger-surface border-alert-danger-border'
+    : 'bg-alert-success-surface border-alert-success-border';
+  const textTone = hasDeaths ? 'text-alert-danger-text' : 'text-alert-success-text';
+
   return (
-    <div
-      className="dawn-announcement"
-      style={{
-        backgroundColor: dawnDeaths.length > 0 ? '#f8d7da' : '#d4edda',
-        border: `2px solid ${dawnDeaths.length > 0 ? '#f5c6cb' : '#c3e6cb'}`,
-        padding: '0.75rem 1rem',
-        borderRadius: '8px',
-        marginBottom: '1rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-    >
+    <div className={`${tone} border-2 py-3 px-4 rounded-lg mb-4 flex items-center justify-between`}>
       <div>
-        {dawnDeaths.length > 0 ? (
+        {hasDeaths ? (
           <>
-            <strong style={{ color: '#721c24' }}>昨夜死亡：</strong>
-            <span style={{ color: '#721c24' }}>
+            <strong className={textTone}>昨夜死亡：</strong>
+            <span className={textTone}>
               {dawnDeaths.map((p) => `${p.seat}號 ${p.name}`).join('、')}
             </span>
           </>
         ) : (
-          <strong style={{ color: '#155724' }}>昨夜平安，無人死亡</strong>
+          <strong className={textTone}>昨夜平安，無人死亡</strong>
         )}
       </div>
       <button
         onClick={onDismiss}
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          fontSize: '1.1rem',
-          color: dawnDeaths.length > 0 ? '#721c24' : '#155724',
-          padding: '0 0.25rem',
-        }}
+        className={`bg-none bg-transparent border-none cursor-pointer text-lg ${textTone} py-0 px-1`}
         aria-label="關閉公告"
       >
         ✕

@@ -14,6 +14,8 @@ import type { RoleProcessorProps } from './index';
 import type { RavenkeeperHandlerInfo } from './shared/types';
 import { useGameStore } from '../../store/gameStore';
 import PlayerSelector from '../PlayerSelector';
+import { AbilityPanel, AbilityActions, ProcessorTitle, StatusLine, StatusReason, WarningBox, HintList } from '../shared/AbilityPanel';
+import { Button } from '../shared/Button';
 
 export default function RavenkeeperProcessor({ item, onDone }: RoleProcessorProps) {
   const { processAbility, stateManager, roleRegistry } = useGameStore();
@@ -57,7 +59,7 @@ export default function RavenkeeperProcessor({ item, onDone }: RoleProcessorProp
 
   // 載入中
   if (!triggerResult) {
-    return <div className="ability-processor"><p>載入中...</p></div>;
+    return <AbilityPanel><p>載入中...</p></AbilityPanel>;
   }
 
   const playerName = stateManager?.getPlayer(item.seat)?.name;
@@ -65,33 +67,33 @@ export default function RavenkeeperProcessor({ item, onDone }: RoleProcessorProp
   // 跳過：未觸發（第一夜 / 今晚未死亡）
   if (triggerResult.skip) {
     return (
-      <div className="ability-processor">
-        <div className="ability-header">
-          <h3>守鴉人（{item.seat}號 {playerName}）</h3>
+      <AbilityPanel>
+        <div>
+          <ProcessorTitle>守鴉人（{item.seat}號 {playerName}）</ProcessorTitle>
         </div>
-        <div className="ability-content">
+        <div>
           <p>{triggerResult.display}</p>
         </div>
-        <div className="ability-actions" style={{ marginTop: '1rem' }}>
-          <button className="btn-primary" onClick={onDone}>
+        <AbilityActions margin="mt-4">
+          <Button onClick={onDone}>
             確認
-          </button>
-        </div>
-      </div>
+          </Button>
+        </AbilityActions>
+      </AbilityPanel>
     );
   }
 
   // Step 2: 需要選擇目標玩家
   if (triggerResult.needInput && selectedTarget == null) {
     return (
-      <div className="ability-processor">
-        <div className="ability-header">
-          <h3>守鴉人（{item.seat}號 {playerName}）</h3>
-          <div className="ability-status">
+      <AbilityPanel>
+        <div>
+          <ProcessorTitle>守鴉人（{item.seat}號 {playerName}）</ProcessorTitle>
+          <StatusLine>
             觸發原因：今晚被殺死
-          </div>
+          </StatusLine>
         </div>
-        <div className="ability-content">
+        <div>
           <p>{triggerResult.inputPrompt}</p>
           <PlayerSelector
             mode="single"
@@ -105,13 +107,13 @@ export default function RavenkeeperProcessor({ item, onDone }: RoleProcessorProp
             }}
           />
         </div>
-      </div>
+      </AbilityPanel>
     );
   }
 
   // 等待結果
   if (!result) {
-    return <div className="ability-processor"><p>處理中...</p></div>;
+    return <AbilityPanel><p>處理中...</p></AbilityPanel>;
   }
 
   const info = result.info as RavenkeeperHandlerInfo | undefined;
@@ -119,17 +121,17 @@ export default function RavenkeeperProcessor({ item, onDone }: RoleProcessorProp
   // 無 info（異常）
   if (!info) {
     return (
-      <div className="ability-processor">
-        <div className="ability-header">
-          <h3>守鴉人（{item.seat}號 {playerName}）</h3>
+      <AbilityPanel>
+        <div>
+          <ProcessorTitle>守鴉人（{item.seat}號 {playerName}）</ProcessorTitle>
         </div>
-        <div className="ability-content">
+        <div>
           <p>{result.display}</p>
         </div>
-        <div className="ability-actions" style={{ marginTop: '1rem' }}>
-          <button className="btn-primary" onClick={onDone}>確認</button>
-        </div>
-      </div>
+        <AbilityActions margin="mt-4">
+          <Button onClick={onDone}>確認</Button>
+        </AbilityActions>
+      </AbilityPanel>
     );
   }
 
@@ -215,47 +217,36 @@ export default function RavenkeeperProcessor({ item, onDone }: RoleProcessorProp
   };
 
   return (
-    <div className="ability-processor">
+    <AbilityPanel>
       {/* 標題 */}
-      <div className="ability-header">
-        <h3>守鴉人（{item.seat}號 {playerName}）</h3>
-        <div className="ability-status">
+      <div>
+        <ProcessorTitle>守鴉人（{item.seat}號 {playerName}）</ProcessorTitle>
+        <StatusLine>
           能力狀態：{getStatusDisplay()}
-        </div>
-        <div className="ability-status">
+        </StatusLine>
+        <StatusLine>
           觸發原因：今晚被殺死
-        </div>
+        </StatusLine>
         {statusReason && (
-          <div className="status-reason" style={{ fontSize: '0.9em', color: '#666', marginTop: '0.25rem' }}>
+          <StatusReason>
             {statusReason}
-          </div>
+          </StatusReason>
         )}
       </div>
 
       {/* 警告訊息 */}
       {warning && (
-        <div className="ability-warning" style={{
-          backgroundColor: '#fff3cd',
-          border: '1px solid #ffc107',
-          padding: '0.75rem',
-          borderRadius: '4px',
-          marginBottom: '1rem'
-        }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: '#ff6b6b' }}>{warning.message}</div>
-          {warning.recommendation && (
-            <div style={{ fontSize: '0.9em', color: '#ff6b6b' }}>{warning.recommendation}</div>
-          )}
-        </div>
+        <WarningBox message={warning.message} recommendation={warning.recommendation} />
       )}
 
       {/* 查看結果 */}
-      <div className="ability-content">
-        <div style={{ marginBottom: '1rem' }}>
+      <div>
+        <div className="mb-4">
           <strong>查看目標：</strong>
-          <div style={{ marginLeft: '1rem', marginTop: '0.5rem' }}>
+          <div className="ml-4 mt-2">
             {targetPlayer.seat}號 {targetPlayer.name}（{targetPlayer.roleName}）
             {targetPlayer.isDrunk && targetPlayer.believesRole && (
-              <span style={{ color: '#ff6b6b', marginLeft: '0.5rem' }}>
+              <span className="text-danger-soft ml-2">
                 [酒鬼，以為自己是{roleRegistry?.getRoleName(targetPlayer.believesRole)}]
               </span>
             )}
@@ -264,13 +255,13 @@ export default function RavenkeeperProcessor({ item, onDone }: RoleProcessorProp
 
         {/* 角色選擇（特殊情況） */}
         {needRoleSelection && selectableRoles.length > 0 && (
-          <div className="ability-target" style={{ marginTop: '1rem' }}>
+          <div className="mt-4 mb-3">
             <label htmlFor="role-select">選擇顯示角色：</label>
             <select
               id="role-select"
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
+              className="w-full p-2 mt-2"
             >
               <option value="">-- 請選擇 --</option>
               {(isRecluse || isSpy) && (
@@ -295,30 +286,22 @@ export default function RavenkeeperProcessor({ item, onDone }: RoleProcessorProp
 
         {/* 提示訊息 */}
         {hints.length > 0 && (
-          <div className="ability-hints" style={{ marginTop: '1rem' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>ℹ️ 提示：</div>
-            <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-              {hints.map((hint, index) => (
-                <li key={index}>{hint}</li>
-              ))}
-            </ul>
-          </div>
+          <HintList hints={hints} />
         )}
       </div>
 
       {/* 按鈕 */}
-      <div className="ability-actions" style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-        <button
-          className="btn-primary"
+      <AbilityActions margin="mt-4">
+        <Button
           onClick={handleConfirm}
           disabled={needRoleSelection && !selectedRole}
         >
           確認
-        </button>
-        <button className="btn-secondary" onClick={handleReset}>
+        </Button>
+        <Button variant="secondary" onClick={handleReset}>
           重選目標
-        </button>
-      </div>
-    </div>
+        </Button>
+      </AbilityActions>
+    </AbilityPanel>
   );
 }

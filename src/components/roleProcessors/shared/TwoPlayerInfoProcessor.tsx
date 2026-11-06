@@ -18,6 +18,8 @@ import DrunkRoleIndicator from '../../shared/DrunkRoleIndicator';
 import { usePlayerRealTimeStatus } from '../../../hooks/usePlayerRealTimeStatus';
 import rolesData from '../../../data/roles/trouble-brewing.json';
 import type { ProcessorContext, RoleProcessorConfig, TargetPlayerInfo, SpecialPlayerInfo } from './types';
+import { AbilityPanel, AbilityActions, AbilityResult, ResultDisplay, ResultNote } from '../../shared/AbilityPanel';
+import { Button } from '../../shared/Button';
 
 /**
  * 格式化玩家選項文字（包含座號、名稱、角色、狀態圖示）
@@ -160,7 +162,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
   // ============================================================
   if (!result) {
     return (
-      <div className="ability-processor">
+      <AbilityPanel>
         <AbilityHeader
           seat={item.seat}
           roleName={item.roleName}
@@ -168,7 +170,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
           reminder={item.reminder}
         />
         <p>載入中...</p>
-      </div>
+      </AbilityPanel>
     );
   }
 
@@ -181,7 +183,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
   // ============================================================
   if (info?.noOutsiderInGame || info?.noMinionInGame) {
     return (
-      <div className="ability-processor">
+      <AbilityPanel>
         <AbilityHeader
           seat={item.seat}
           roleName={item.roleName}
@@ -194,17 +196,15 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
           isDrunk={isDrunk}
           isProtected={isProtected}
         />
-        <div className="ability-result">
-          <div className="result-display">
+        <AbilityResult>
+          <ResultDisplay>
             {config.targetTeam === 'outsider' ? '場上沒有任何外來者角色' : '場上沒有任何爪牙角色'}
-          </div>
-          <div className="ability-actions">
-            <button className="btn-primary" onClick={onDone}>
-              確認
-            </button>
-          </div>
-        </div>
-      </div>
+          </ResultDisplay>
+          <AbilityActions>
+            <Button onClick={onDone}>確認</Button>
+          </AbilityActions>
+        </AbilityResult>
+      </AbilityPanel>
     );
   }
 
@@ -230,7 +230,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
   // Step 6: 渲染 UI（Template Method - 固定結構）
   // ============================================================
   return (
-    <div className="ability-processor">
+    <AbilityPanel>
       <AbilityHeader
         seat={item.seat}
         roleName={item.roleName}
@@ -249,7 +249,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
 
       {/* 不可靠警告（Strategy） */}
       {unreliableWarning && (
-        <div className="result-warning" style={{ marginBottom: '1rem' }}>
+        <ResultNote tone="warning" margin="mt-1.5 mb-4">
           ℹ️ {unreliableWarning.message}
           {unreliableWarning.recommendation && (
             <>
@@ -257,19 +257,19 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
               <small>{unreliableWarning.recommendation}</small>
             </>
           )}
-        </div>
+        </ResultNote>
       )}
 
       {/* 顯示目標列表 */}
       {targets.length > 0 && (
-        <div className="result-info" style={{ marginBottom: '1rem', padding: '0.5rem', background: '#f0f0f0', borderRadius: '4px' }}>
-          <strong style={{ color: '#ff6b6b' }}>{targetListLabel}：</strong>
-          <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
+        <div className="mb-4 p-2 bg-neutral-100 rounded-sm">
+          <strong className="text-danger-soft">{targetListLabel}：</strong>
+          <ul className="list-disc my-2 mx-0 pl-6">
             {targets.map((t: TargetPlayerInfo) => (
-              <li style={{ color: '#ff6b6b' }} key={t.seat}>
+              <li className="text-danger-soft" key={t.seat}>
                 {t.seat}號 - {t.name} - {t.roleName}
-                {t.role === 'recluse' && config.targetTeam === 'outsider' && <span style={{ color: '#ff6b6b' }}> [可不視為外來者]</span>}
-                {t.role === 'spy' && config.targetTeam === 'minion' && <span style={{ color: '#ff6b6b' }}> [可不視為爪牙]</span>}
+                {t.role === 'recluse' && config.targetTeam === 'outsider' && <span className="text-danger-soft"> [可不視為外來者]</span>}
+                {t.role === 'spy' && config.targetTeam === 'minion' && <span className="text-danger-soft"> [可不視為爪牙]</span>}
               </li>
             ))}
           </ul>
@@ -278,11 +278,11 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
 
       {/* 顯示特殊玩家列表（間諜等） */}
       {specialPlayers.length > 0 && (
-        <div className="result-info" style={{ marginBottom: '1rem', padding: '0.5rem', background: '#fff3cd', borderRadius: '4px' }}>
-          <strong style={{ color: '#ff6b6b' }}>{suspectedListLabel}：</strong>
-          <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
+        <div className="mb-4 p-2 bg-alert-warning-surface rounded-sm">
+          <strong className="text-danger-soft">{suspectedListLabel}：</strong>
+          <ul className="list-disc my-2 mx-0 pl-6">
             {specialPlayers.map((sp: SpecialPlayerInfo) => (
-              <li style={{ color: '#ff6b6b' }} key={sp.seat}>
+              <li className="text-danger-soft" key={sp.seat}>
                 {sp.seat}號 - {sp.name} - {sp.roleName}
               </li>
             ))}
@@ -292,28 +292,24 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
 
       {/* 提示訊息（Strategy） */}
       {hints.length > 0 && hints.map((hint: string, index: number) => (
-        <div
+        <ResultNote
           key={index}
-          className={onlySpyInGame ? 'result-hint' : 'result-hint'}
-          style={{
-            marginBottom: index === hints.length - 1 ? '1rem' : '0.5rem',
-            padding: onlySpyInGame ? '0.5rem' : '0',
-            background: onlySpyInGame ? '#e3f2fd' : 'transparent',
-            borderRadius: onlySpyInGame ? '4px' : '0',
-          }}
+          tone="hint"
+          margin={`mt-1.5 ${index === hints.length - 1 ? 'mb-4' : 'mb-2'}`}
+          className={onlySpyInGame ? 'p-2 bg-alert-info-surface-alt rounded-sm' : 'p-0 bg-transparent rounded-none'}
         >
           ℹ️ {onlySpyInGame && <strong>只有間諜在場</strong>} {hint}
-        </div>
+        </ResultNote>
       ))}
 
       {/* 選擇角色 */}
-      <div className="ability-target">
+      <div className="mb-3">
         <label htmlFor="role-select">選擇展示的{targetRole}角色：</label>
         <select
           id="role-select"
           value={selectedRole}
           onChange={(e) => setSelectedRole(e.target.value)}
-          style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
+          className="w-full p-2 mt-2"
         >
           <option value="">-- 請選擇 --</option>
           {targetRoles.map((role: any) => (
@@ -326,13 +322,13 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
       </div>
 
       {/* 選擇兩位玩家 */}
-      <div className="ability-target" style={{ marginTop: '1rem' }}>
+      <div className="mt-4 mb-3">
         <label htmlFor="player1-select">選擇第一位玩家（該角色）：</label>
         <select
           id="player1-select"
           value={selectedPlayer1 ?? ''}
           onChange={(e) => setSelectedPlayer1(e.target.value ? Number(e.target.value) : null)}
-          style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
+          className="w-full p-2 mt-2"
         >
           <option value="">-- 請選擇 --</option>
           {stateManager.getAlivePlayers()
@@ -345,13 +341,13 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
         </select>
       </div>
 
-      <div className="ability-target" style={{ marginTop: '1rem' }}>
+      <div className="mt-4 mb-3">
         <label htmlFor="player2-select">選擇第二位玩家（非該角色）：</label>
         <select
           id="player2-select"
           value={selectedPlayer2 ?? ''}
           onChange={(e) => setSelectedPlayer2(e.target.value ? Number(e.target.value) : null)}
-          style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
+          className="w-full p-2 mt-2"
         >
           <option value="">-- 請選擇 --</option>
           {stateManager.getAlivePlayers()
@@ -365,25 +361,18 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
       </div>
 
       {/* 確認按鈕 */}
-      <div className="ability-actions" style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-        <button
-          className="btn-primary"
-          onClick={handleConfirm}
-          disabled={!isSelectionComplete}
-        >
+      <AbilityActions margin="mt-4">
+        <Button onClick={handleConfirm} disabled={!isSelectionComplete}>
           確認
-        </button>
+        </Button>
 
         {/* 給予「無目標」資訊按鈕（Strategy） */}
         {shouldShowNoTargetButton && (
-          <button
-            className="btn-secondary"
-            onClick={handleNoTarget}
-          >
+          <Button variant="secondary" onClick={handleNoTarget}>
             {noTargetButtonText}
-          </button>
+          </Button>
         )}
-      </div>
-    </div>
+      </AbilityActions>
+    </AbilityPanel>
   );
 }

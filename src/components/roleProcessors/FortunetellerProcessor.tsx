@@ -6,6 +6,9 @@ import PlayerSelector from '../PlayerSelector';
 import AbilityHeader from '../shared/AbilityHeader';
 import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
+import { AbilityPanel, AbilityTarget, TargetLabel, AbilityActions, AbilityResult, ResultDisplay, ResultNote } from '../shared/AbilityPanel';
+import { Button } from '../shared/Button';
+import { SELECTABLE_CARD } from '../PlayerSelector';
 
 export default function FortunetellerProcessor({ item, onDone }: RoleProcessorProps) {
   const { processAbility, roleRegistry, stateManager } = useGameStore();
@@ -67,7 +70,7 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
   const isTargetReady = selectedTarget != null && selectedSecondTarget != null;
 
   return (
-    <div className="ability-processor">
+    <AbilityPanel>
       <AbilityHeader
         seat={item.seat}
         roleName={item.roleName}
@@ -84,13 +87,13 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
 
       {/* 第一晚：干擾項選擇 */}
       {needsRedHerring && (
-        <div className="ability-target">
-          <p>設定干擾項：選擇一位善良角色作為占卜師的干擾項</p>
-          <p className="ability-reminder" style={{ color: '#ffffff' }}>
+        <AbilityTarget>
+          <TargetLabel>設定干擾項：選擇一位善良角色作為占卜師的干擾項</TargetLabel>
+          <p className="text-white text-sm p-2 bg-surface-card rounded-sm mb-2">
             想讓邪惡贏就選「資訊多或發言好的角色」；想讓遊戲簡單點就選「身分透明的好人」。
           </p>
-          <div className="player-selector">
-            <div className="player-container layout-grid">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {stateManager.getAllPlayers()
                 .filter((p) => {
                   if (p.team === 'minion' || p.team === 'demon') return false;
@@ -100,27 +103,23 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
                 .map((p) => {
                   const roleName = roleRegistry.getPlayerRoleName(p);
                   return (
-                    <div
-                      key={p.seat}
-                      className="player-card selectable"
-                      onClick={() => handleRedHerringSelect(p)}
-                    >
-                      <span style={{ fontWeight: 'bold' }}>{roleName}</span>
+                    <div key={p.seat} className={SELECTABLE_CARD} onClick={() => handleRedHerringSelect(p)}>
+                      <span className="font-bold">{roleName}</span>
                     </div>
                   );
                 })}
             </div>
           </div>
-        </div>
+        </AbilityTarget>
       )}
 
       {/* 雙目標選擇 */}
       {!result && !needsRedHerring && (
         <>
-          <div className="ability-target">
+          <AbilityTarget>
             {selectedTarget == null ? (
               <>
-                <p>選擇第一位查驗玩家：</p>
+                <TargetLabel>選擇第一位查驗玩家：</TargetLabel>
                 <PlayerSelector
                   mode="single"
                   canSelectSelf={false}
@@ -132,7 +131,7 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
               </>
             ) : selectedSecondTarget == null ? (
               <>
-                <p>已選擇 {selectedTarget}號，選擇第二位查驗玩家：</p>
+                <TargetLabel>已選擇 {selectedTarget}號，選擇第二位查驗玩家：</TargetLabel>
                 <PlayerSelector
                   mode="single"
                   canSelectSelf={false}
@@ -143,37 +142,33 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
                 />
               </>
             ) : (
-              <p>已選擇 {selectedTarget}號 和 {selectedSecondTarget}號</p>
+              <TargetLabel>已選擇 {selectedTarget}號 和 {selectedSecondTarget}號</TargetLabel>
             )}
-          </div>
-          <div className="ability-actions">
-            <button
-              className="btn-primary"
-              onClick={handleProcess}
-              disabled={!isTargetReady}
-            >
+          </AbilityTarget>
+          <AbilityActions>
+            <Button onClick={handleProcess} disabled={!isTargetReady}>
               執行能力
-            </button>
-            <button className="btn-secondary" onClick={onDone}>
+            </Button>
+            <Button variant="secondary" onClick={onDone}>
               跳過
-            </button>
-          </div>
+            </Button>
+          </AbilityActions>
         </>
       )}
 
       {/* 顯示結果 + 說書人選擇 */}
       {result && (
-        <div className="ability-result">
-          <div className="result-display">{result.display}</div>
+        <AbilityResult>
+          <ResultDisplay>{result.display}</ResultDisplay>
 
-          <div className="storyteller-choice">
+          <div>
             {isPoisonedOrDrunk && (
-              <div className="result-warning">
+              <ResultNote tone="warning">
                 該占卜師已{isPoisoned && isDrunk ? '中毒且醉酒' : isPoisoned ? '中毒' : '醉酒'}，說書人可以任意回答。
-              </div>
+              </ResultNote>
             )}
             <p>說書人選擇回答：</p>
-            <label className="radio-option">
+            <label>
               <input
                 type="radio"
                 name="ft-answer"
@@ -182,7 +177,7 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
               />
               有惡魔（點頭）
             </label>
-            <label className="radio-option">
+            <label>
               <input
                 type="radio"
                 name="ft-answer"
@@ -193,16 +188,16 @@ export default function FortunetellerProcessor({ item, onDone }: RoleProcessorPr
             </label>
           </div>
 
-          <div className="ability-actions">
-            <button className="btn-primary" onClick={handleConfirm} disabled={storytellerAnswer === null}>
+          <AbilityActions>
+            <Button onClick={handleConfirm} disabled={storytellerAnswer === null}>
               確認
-            </button>
-            <button className="btn-secondary" onClick={handleReset}>
+            </Button>
+            <Button variant="secondary" onClick={handleReset}>
               重選
-            </button>
-          </div>
-        </div>
+            </Button>
+          </AbilityActions>
+        </AbilityResult>
       )}
-    </div>
+    </AbilityPanel>
   );
 }

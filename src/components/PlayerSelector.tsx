@@ -2,6 +2,11 @@ import { useState, useMemo } from 'react';
 import type { Player } from '../engine/types';
 import { useGameStore } from '../store/gameStore';
 
+const CARD_BASE = 'flex items-center gap-2 py-2 px-3 border rounded-md text-xs transition-all';
+
+/** 可點選玩家卡片的靜止樣式（供自訂卡片清單重用，例如占卜師干擾項） */
+export const SELECTABLE_CARD = `${CARD_BASE} border-border bg-transparent text-fg-muted cursor-pointer hover:border-primary hover:text-fg`;
+
 interface PlayerSelectorProps {
   mode?: 'single' | 'double' | 'multiple' | 'display';
   canSelectSelf?: boolean;
@@ -119,51 +124,63 @@ export function PlayerSelector({
     : players.filter((p) => p.isAlive);
 
   return (
-    <div className={`player-selector player-selector-${layout}`}>
-      {label && <h3 className="selector-label">{label}</h3>}
+    <div className="flex flex-col gap-2">
+      {/* 標籤只在 DayView / SlayerPanel 內使用，沿用其 h3 樣式 */}
+      {label && <h3 className="text-lg font-bold text-fg mb-2.5">{label}</h3>}
 
       {mode === 'double' && selected.length === 1 && (
-        <div className="selection-hint">
+        <div className="py-2 px-3 bg-warning/15 border border-warning rounded-sm text-warning text-xs">
           已選擇 {selected[0]}號，請選擇第二位玩家
         </div>
       )}
 
       {showVoteCount && (
-        <div className="vote-count">已投票：{selected.length} 人</div>
+        <div className="text-sm font-bold text-fg">已投票：{selected.length} 人</div>
       )}
 
-      <div className={`player-container layout-${layout}`}>
+      <div className={layout === 'grid' ? 'flex flex-wrap gap-1.5' : 'flex flex-col gap-1'}>
         {displayPlayers.map((player) => {
           const selectable = isSelectable(player);
           const selectedState = isSelected(player);
           const highlighted = isHighlighted(player);
+          const dead = !player.isAlive;
+
+          // Resting colors resolved here (highlighted border beats selected); hover:* utilities still win on hover.
+          const cardClass = [
+            CARD_BASE,
+            highlighted ? 'border-warning shadow-glow-warning' : selectedState ? 'border-primary' : 'border-border',
+            selectedState ? 'bg-primary text-white' : 'bg-transparent text-fg-muted',
+            selectable ? 'cursor-pointer hover:border-primary hover:text-fg' : 'cursor-not-allowed',
+            !selectable || dead ? 'opacity-40' : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
 
           return (
             <div
               key={player.seat}
-              className={[
-                'player-card',
-                selectable ? 'selectable' : 'disabled',
-                selectedState ? 'selected' : '',
-                highlighted ? 'highlighted' : '',
-                !player.isAlive ? 'dead' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
+              className={cardClass}
+              data-player-card=""
+              data-selectable={selectable || undefined}
+              data-selected={selectedState || undefined}
+              data-highlighted={highlighted || undefined}
+              data-dead={dead || undefined}
               onClick={() => handleClick(player)}
             >
-              {showUsers && <div className="player-seat">{player.seat}號</div>}
-              {showUsers && <div className="player-name">{player.name}</div>}
+              {showUsers && <div className="font-bold min-w-8">{player.seat}號</div>}
+              {showUsers && <div className={dead ? 'flex-1 line-through' : 'flex-1'}>{player.name}</div>}
 
               {showRoles && (
-                <div className="player-role">{roleRegistry.getPlayerRoleName(player)}</div>
+                <div className={`text-2xs ${selectedState ? 'text-white/80' : 'text-fg-muted'}`}>
+                  {roleRegistry.getPlayerRoleName(player)}
+                </div>
               )}
 
               {showStatus && (
-                <div className="player-status">
-                  {!player.isAlive && <span className="icon-dead">💀</span>}
-                  {player.isPoisoned && <span className="icon-poisoned">🧪</span>}
-                  {player.isProtected && <span className="icon-protected">🛡️</span>}
+                <div className="flex gap-0.5 text-sm">
+                  {dead && <span>💀</span>}
+                  {player.isPoisoned && <span>🧪</span>}
+                  {player.isProtected && <span>🛡️</span>}
                 </div>
               )}
             </div>

@@ -5,6 +5,8 @@ import type { RoleProcessorProps } from './index';
 import AbilityHeader from '../shared/AbilityHeader';
 import AbilityStatusIndicator from '../shared/AbilityStatusIndicator';
 import { usePlayerRealTimeStatus } from '../../hooks/usePlayerRealTimeStatus';
+import { AbilityPanel, AbilityActions, AbilityResult, ResultDisplay, ResultNote } from '../shared/AbilityPanel';
+import { Button } from '../shared/Button';
 
 export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
   const { processAbility, roleRegistry, stateManager } = useGameStore();
@@ -66,7 +68,7 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
   const maxPossiblePairs = Math.max(0, evilSeats.length - 1);
 
   return (
-    <div className="ability-processor">
+    <AbilityPanel>
       <AbilityHeader
         seat={item.seat}
         roleName={item.roleName}
@@ -83,19 +85,19 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
 
       {/* 顯示結果 */}
       {result && (
-        <div className="ability-result">
-          <div className="result-display">{result.display}</div>
+        <AbilityResult>
+          <ResultDisplay>{result.display}</ResultDisplay>
 
-          <div className="storyteller-choice">
+          <div>
             {isPoisonedOrDrunk && (
-              <div className="result-warning">
+              <ResultNote tone="warning">
                 ℹ️ 廚師已{isPoisoned && isDrunk ? '中毒且醉酒' : isPoisoned ? '中毒' : '醉酒'}，你可以告訴玩家任意數字。
                 <br />
                 <strong>ℹ️ 相鄰的邪惡客人：{actualPairCount} 組（你可以選擇撒謊）</strong>
-              </div>
+              </ResultNote>
             )}
 
-            {isPoisonedOrDrunk && <div style={{ marginTop: '1rem' }}>
+            {isPoisonedOrDrunk && <div className="mt-4">
               <label htmlFor="chef-number">
                 <strong>告訴廚師的數字 (建議範圍: 0-{maxPossiblePairs})：</strong>
               </label>
@@ -107,44 +109,35 @@ export default function ChefProcessor({ item, onDone }: RoleProcessorProps) {
                 value={toldPairCount}
                 onChange={(e) => setToldPairCount(e.target.value)}
                 placeholder={isPoisonedOrDrunk ? '請輸入數字' : String(actualPairCount)}
-                style={{
-                  marginLeft: '0.5rem',
-                  padding: '0.5rem',
-                  fontSize: '1rem',
-                  width: '100px',
-                }}
+                className="ml-2 p-2 text-base w-25"
               />
-              <span style={{ marginLeft: '0.5rem' }}>組</span>
+              <span className="ml-2">組</span>
             </div>}
 
             {toldPairCount !== '' && parseInt(toldPairCount, 10) !== actualPairCount && (
-              <div className="result-warning" style={{ marginTop: '1rem' }}>
+              <ResultNote tone="warning" margin="mt-4">
                 ⚠️ 注意：你將告訴廚師不同於實際的數字（撒謊）
-              </div>
+              </ResultNote>
             )}
           </div>
 
-          <div className="ability-actions">
-            <button
-              className="btn-primary"
-              onClick={handleConfirm}
-              disabled={toldPairCount === '' || isNaN(parseInt(toldPairCount, 10))}
-            >
+          <AbilityActions>
+            <Button onClick={handleConfirm} disabled={toldPairCount === '' || isNaN(parseInt(toldPairCount, 10))}>
               確認
-            </button>
-            <button className="btn-secondary" onClick={onDone}>
+            </Button>
+            <Button variant="secondary" onClick={onDone}>
               跳過
-            </button>
-          </div>
-        </div>
+            </Button>
+          </AbilityActions>
+        </AbilityResult>
       )}
 
       {/* 載入中 */}
       {!result && (
-        <div className="ability-result">
+        <AbilityResult>
           <p>計算中...</p>
-        </div>
+        </AbilityResult>
       )}
-    </div>
+    </AbilityPanel>
   );
 }

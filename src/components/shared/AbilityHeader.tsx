@@ -19,12 +19,12 @@ export default function AbilityHeader({
   reminder,
 }: AbilityHeaderProps) {
   return (
-    <div className="ability-header">
-      <h3>
+    <div>
+      <h3 className="text-xl font-bold text-primary mb-2">
         {seat}號 — {roleName}
       </h3>
-      {roleData && <p className="ability-desc">{t(roleData, 'ability')}</p>}
-      <p className="ability-reminder">{reminder}</p>
+      {roleData && <p className="text-xs text-fg-muted mb-1">{t(roleData, 'ability')}</p>}
+      <p className="text-sm text-fg p-2 bg-surface-card rounded-sm mb-3">{reminder}</p>
     </div>
   );
 }
