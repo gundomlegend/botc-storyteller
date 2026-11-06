@@ -83,13 +83,15 @@ export const useGameStore = create<GameStore>(
 
   const refresh = () => {
     const state = stateManager.getState();
+    // 引擎原地修改物件：複製出新的陣列與 player 物件，selector 訂閱的元件才會更新
+    const players = stateManager.getAllPlayers().map((p) => ({ ...p }));
     set({
       phase: state.phase,
       night: state.night,
       day: state.day,
-      players: stateManager.getAllPlayers(),
-      alivePlayers: stateManager.getAlivePlayers(),
-      history: stateManager.getHistory(),
+      players,
+      alivePlayers: players.filter((p) => p.isAlive),
+      history: [...stateManager.getHistory()],
       gameOver: state.gameOver,
       winner: state.winner,
       gameOverReason: state.gameOverReason,
