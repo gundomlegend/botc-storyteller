@@ -1,17 +1,10 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { useShallow } from 'zustand/react/shallow';
 import { getPlayerDestribution, RoleRegistry } from '../engine/RoleRegistry';
 import { Button } from './shared/Button';
 
 export default function SetupView() {
-  const { initGame, startNight, roleRegistry } = useGameStore(
-    useShallow((s) => ({
-      initGame: s.initGame,
-      startNight: s.startNight,
-      roleRegistry: s.roleRegistry,
-    })),
-  );
+  const { initGame, startNight, roleRegistry } = useGameStore();
   const [playerCount, setPlayerCount] = useState(7);
   const [names, setNames] = useState<string[]>(() => Array(7).fill(''));
   const [assignedRoles, setAssignedRoles] = useState<string[] | null>(null);
@@ -38,6 +31,7 @@ export default function SetupView() {
   const handleStart = () => {
     const roleIds = RoleRegistry.getInstance().randomizeRolesWithSetup(playerCount);
     setAssignedRoles(roleIds);
+    console.log('Starting game with roleIds:', roleIds);
 
     const players = names.map((name, i) => ({
       seat: i + 1,
@@ -46,6 +40,7 @@ export default function SetupView() {
       roleName: roleRegistry.getRoleName(roleIds[i]),
     }));
 
+    console.log('Starting game with players:', players);
 
     initGame(players);
     startNight();

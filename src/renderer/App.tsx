@@ -1,11 +1,10 @@
 import { useGameStore } from '../store/gameStore';
-import { useShallow } from 'zustand/react/shallow';
 import SetupView from '../components/SetupView';
 import NightView from '../components/NightView';
 import DayView from '../components/DayView';
 
 function App() {
-  const { phase } = useGameStore(useShallow((s) => ({ phase: s.phase })));
+  const { phase } = useGameStore();
 
   return (
     <div className="flex flex-col h-screen">

@@ -36,6 +36,7 @@ export class GameStateManager {
     this.state.players.clear();
 
     for (const p of players) {
+      console.log(`[InitPlayers] 處理玩家 ${p.seat}號 ${p.name} - 角色: ${p.role}`);
       const roleData = this.roleRegistry.getRoleData(p.role);
       if (!roleData) {
         throw new Error(`Unknown role: ${p.role}`);

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { useShallow } from 'zustand/react/shallow';
 import { Button } from './shared/Button';
 
 interface MinionDemonRecognitionProps {
@@ -10,15 +9,7 @@ interface MinionDemonRecognitionProps {
 type Step = 'wake_minions' | 'reveal_demon' | 'reveal_minions';
 
 export default function MinionDemonRecognition({ onComplete }: MinionDemonRecognitionProps) {
-  const { stateManager, ruleEngine, roleRegistry, setSpecialNightPhase } = useGameStore(
-    useShallow((s) => ({
-      stateManager: s.stateManager,
-      ruleEngine: s.ruleEngine,
-      roleRegistry: s.roleRegistry,
-      setSpecialNightPhase: s.setSpecialNightPhase,
-      players: s.players,
-    })),
-  );
+  const { stateManager, ruleEngine, roleRegistry, setSpecialNightPhase } = useGameStore();
   const [step, setStep] = useState<Step>('wake_minions');
 
   const result = ruleEngine.processMinionDemonRecognition(stateManager);

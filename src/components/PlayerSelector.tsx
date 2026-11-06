@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { Player } from '../engine/types';
 import { useGameStore } from '../store/gameStore';
-import { useShallow } from 'zustand/react/shallow';
 
 const CARD_BASE = 'flex items-center gap-2 py-2 px-3 border rounded-md text-xs transition-all';
 
@@ -45,12 +44,7 @@ export function PlayerSelector({
   onSelect,
   onError,
 }: PlayerSelectorProps) {
-  const { players, roleRegistry } = useGameStore(
-    useShallow((s) => ({
-      players: s.players,
-      roleRegistry: s.roleRegistry,
-    })),
-  );
+  const { players, roleRegistry } = useGameStore();
   const [selected, setSelected] = useState<number[]>([]);
 
   const selectablePlayers = useMemo(() => {

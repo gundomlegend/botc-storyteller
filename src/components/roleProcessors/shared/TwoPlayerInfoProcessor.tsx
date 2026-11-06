@@ -10,7 +10,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useGameStore } from '../../../store/gameStore';
-import { useShallow } from 'zustand/react/shallow';
 import type { NightResult } from '../../../engine/types';
 import type { RoleProcessorProps } from '../index';
 import AbilityHeader from '../../shared/AbilityHeader';
@@ -54,14 +53,7 @@ export default function TwoPlayerInfoProcessor<THandlerInfo = unknown>({
   onDone,
   config,
 }: TwoPlayerInfoProcessorProps<THandlerInfo>) {
-  const { processAbility, stateManager, roleRegistry } = useGameStore(
-    useShallow((s) => ({
-      processAbility: s.processAbility,
-      stateManager: s.stateManager,
-      roleRegistry: s.roleRegistry,
-      players: s.players,
-    })),
-  );
+  const { processAbility, stateManager, roleRegistry } = useGameStore();
   const [result, setResult] = useState<NightResult | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [selectedPlayer1, setSelectedPlayer1] = useState<number | null>(null);

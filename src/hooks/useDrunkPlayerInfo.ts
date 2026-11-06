@@ -1,5 +1,4 @@
 import { useGameStore } from '../store/gameStore';
-import { useShallow } from 'zustand/react/shallow';
 import type { NightOrderItem } from '../engine/types';
 
 /**
@@ -7,13 +6,7 @@ import type { NightOrderItem } from '../engine/types';
  * 處理酒鬼角色的檢測和有效角色計算
  */
 export function useDrunkPlayerInfo(item: NightOrderItem) {
-  const { stateManager, roleRegistry } = useGameStore(
-    useShallow((s) => ({
-      stateManager: s.stateManager,
-      roleRegistry: s.roleRegistry,
-      players: s.players,
-    })),
-  );
+  const { stateManager, roleRegistry } = useGameStore();
 
   const player = stateManager.getPlayer(item.seat);
   const isDrunkRole = player?.role === 'drunk';

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { useShallow } from 'zustand/react/shallow';
 import type { NightOrderItem, NightResult, Player } from '../engine/types';
 import { ROLE_PROCESSORS } from './roleProcessors';
 import PlayerSelector from './PlayerSelector';
@@ -30,13 +29,7 @@ export default function AbilityProcessor({ item, onDone }: AbilityProcessorProps
   }
 
   // ─── 以下為通用流程 ───
-  const { processAbility, setDisplayNightAction, displayState } = useGameStore(
-    useShallow((s) => ({
-      processAbility: s.processAbility,
-      setDisplayNightAction: s.setDisplayNightAction,
-      displayState: s.displayState,
-    })),
-  );
+  const { processAbility, setDisplayNightAction, displayState } = useGameStore();
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null);
   const [result, setResult] = useState<NightResult | null>(null);
 

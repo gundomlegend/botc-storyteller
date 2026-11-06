@@ -22,17 +22,13 @@ type StateSyncMiddleware = <
  */
 export const createStateSyncMiddleware = (ipcService: IPCService): StateSyncMiddleware => {
   return (config) => (set, get, api) => {
-    // 上一次送出的內容；投影資料沒變就不送，避免每次 store 變動都序列化並跨程序傳遞
-    let lastSent: string | null = null;
-
+    // Subscribe to all state changes
     api.subscribe((state) => {
       try {
         // Use selector to filter state (Strategy Pattern)
         const syncData = selectDisplayState(state as any);
-        const serialized = JSON.stringify(syncData);
-        if (serialized === lastSent) return;
-        lastSent = serialized;
 
+        // Send via IPC
         ipcService.send('state-sync', syncData);
       } catch (error) {
         // Don't crash the app if IPC fails

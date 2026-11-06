@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { useShallow } from 'zustand/react/shallow';
 import type { Player } from '../engine/types';
 import { checkVirginAbility, type VirginCheckResult } from '../engine/VirginAbility';
 import { checkSaintExecution, type SaintCheckResult } from '../engine/SaintAbility';
@@ -38,40 +37,12 @@ const VOTED = 'bg-primary border-primary text-white';
 
 export default function DayView() {
   const {
-    day,
-    night,
-    players,
-    alivePlayers,
-    killPlayer,
-    useDeathVote,
-    startNight,
-    stateManager,
-    roleRegistry,
-    endGame,
-    gameOver,
-    winner,
-    gameOverReason,
-    setDisplayNomination,
-    setDisplayVoting,
-  } = useGameStore(
-    useShallow((s) => ({
-      day: s.day,
-      night: s.night,
-      players: s.players,
-      alivePlayers: s.alivePlayers,
-      killPlayer: s.killPlayer,
-      useDeathVote: s.useDeathVote,
-      startNight: s.startNight,
-      stateManager: s.stateManager,
-      roleRegistry: s.roleRegistry,
-      endGame: s.endGame,
-      gameOver: s.gameOver,
-      winner: s.winner,
-      gameOverReason: s.gameOverReason,
-      setDisplayNomination: s.setDisplayNomination,
-      setDisplayVoting: s.setDisplayVoting,
-    })),
-  );
+    day, night, players, alivePlayers,
+    killPlayer, useDeathVote, startNight,
+    stateManager, roleRegistry,
+    endGame, gameOver, winner, gameOverReason,
+    setDisplayNomination, setDisplayVoting,
+  } = useGameStore();
 
   // ── Per-nomination state ──────────────────────────────────
   const [nominatorSeat, setNominatorSeat] = useState<number | null>(null);

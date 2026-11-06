@@ -4,10 +4,10 @@
 
 ## v1：現在做（暗流湧動正常可玩）
 
-- [x] **效能**：`gameStore.refresh()` 產生新的 players 陣列與新 player 物件、新的 history 陣列
-- [x] **效能**：元件改用 selector 訂閱 store（16 處；`storeSubscription.guard.test.ts` 防止寫回）
-- [x] **效能**：`stateSyncMiddleware` 只在 `selectDisplayState` 結果有變時才送 IPC
-- [x] 移除開局時的 5 個除錯 log（其餘 38 個在未被引用的 `verifyBaronSetup.ts`，不會執行；這項其實不影響效能）
+- [ ] **效能**：`gameStore.refresh()` 產生新的 players 陣列與新 player 物件、新的 history 陣列
+- [ ] **效能**：元件改用 selector 訂閱 store（目前 16 處 `const { ... } = useGameStore()`）
+- [ ] **效能**：`stateSyncMiddleware` 只在 `selectDisplayState` 結果有變時才送 IPC
+- [ ] **效能**：移除或以開關控制 `console.log`（約 43 處）
 - [ ] **規則**：`ExecutionPhase` 只能從達到半數門檻的提名中選處決對象（目前會把未過門檻的提名也算進最高票）
 - [ ] **規則**：允許提名自己（官方規則允許；`DayView.usecase.md` 寫的是不能）
 - [ ] **待確認**：「每天最多 4 次提名」、「連續兩次失敗進入處決」是房規嗎？不是的話改成官方限制：每人每天只能提名一次、只能被提名一次

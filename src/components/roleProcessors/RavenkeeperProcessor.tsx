@@ -13,20 +13,12 @@ import type { NightResult, Player } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import type { RavenkeeperHandlerInfo } from './shared/types';
 import { useGameStore } from '../../store/gameStore';
-import { useShallow } from 'zustand/react/shallow';
 import PlayerSelector from '../PlayerSelector';
 import { AbilityPanel, AbilityActions, ProcessorTitle, StatusLine, StatusReason, WarningBox, HintList } from '../shared/AbilityPanel';
 import { Button } from '../shared/Button';
 
 export default function RavenkeeperProcessor({ item, onDone }: RoleProcessorProps) {
-  const { processAbility, stateManager, roleRegistry } = useGameStore(
-    useShallow((s) => ({
-      processAbility: s.processAbility,
-      stateManager: s.stateManager,
-      roleRegistry: s.roleRegistry,
-      players: s.players,
-    })),
-  );
+  const { processAbility, stateManager, roleRegistry } = useGameStore();
   const [triggerResult, setTriggerResult] = useState<NightResult | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null);
   const [result, setResult] = useState<NightResult | null>(null);
