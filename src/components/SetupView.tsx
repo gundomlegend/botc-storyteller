@@ -38,7 +38,6 @@ export default function SetupView() {
   const handleStart = () => {
     const roleIds = RoleRegistry.getInstance().randomizeRolesWithSetup(playerCount);
     setAssignedRoles(roleIds);
-    console.log('Starting game with roleIds:', roleIds);
 
     const players = names.map((name, i) => ({
       seat: i + 1,
@@ -47,7 +46,6 @@ export default function SetupView() {
       roleName: roleRegistry.getRoleName(roleIds[i]),
     }));
 
-    console.log('Starting game with players:', players);
 
     initGame(players);
     startNight();
