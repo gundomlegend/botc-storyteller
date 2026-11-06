@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import type { NightResult } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import AbilityHeader from '../shared/AbilityHeader';
@@ -9,7 +10,14 @@ import { AbilityPanel, AbilityActions, AbilityResult, ResultDisplay, ResultNote 
 import { Button } from '../shared/Button';
 
 export default function EmpathProcessor({ item, onDone }: RoleProcessorProps) {
-  const { processAbility, roleRegistry, stateManager } = useGameStore();
+  const { processAbility, roleRegistry, stateManager } = useGameStore(
+    useShallow((s) => ({
+      processAbility: s.processAbility,
+      roleRegistry: s.roleRegistry,
+      stateManager: s.stateManager,
+      players: s.players,
+    })),
+  );
   const [result, setResult] = useState<NightResult | null>(null);
   const [toldEvilCount, setToldEvilCount] = useState<string>('');
 

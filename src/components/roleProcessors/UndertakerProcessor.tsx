@@ -10,11 +10,19 @@ import type { NightResult } from '../../engine/types';
 import type { RoleProcessorProps } from './index';
 import type { UndertakerHandlerInfo } from './shared/types';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { AbilityPanel, AbilityActions, ProcessorTitle, StatusLine, StatusReason, WarningBox, HintList } from '../shared/AbilityPanel';
 import { Button } from '../shared/Button';
 
 export default function UndertakerProcessor({ item, onDone }: RoleProcessorProps) {
-  const { processAbility, stateManager, roleRegistry } = useGameStore();
+  const { processAbility, stateManager, roleRegistry } = useGameStore(
+    useShallow((s) => ({
+      processAbility: s.processAbility,
+      stateManager: s.stateManager,
+      roleRegistry: s.roleRegistry,
+      players: s.players,
+    })),
+  );
   const [result, setResult] = useState<NightResult | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('');
 

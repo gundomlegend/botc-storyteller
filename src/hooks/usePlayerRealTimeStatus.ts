@@ -1,4 +1,5 @@
 import { useGameStore } from '../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import type { NightOrderItem } from '../engine/types';
 
 export interface PlayerRealTimeStatus {
@@ -19,7 +20,12 @@ export interface PlayerRealTimeStatus {
  * 此 hook 從 stateManager 讀取最新狀態以確保即時性。
  */
 export function usePlayerRealTimeStatus(item: NightOrderItem): PlayerRealTimeStatus {
-  const { stateManager } = useGameStore();
+  const { stateManager } = useGameStore(
+    useShallow((s) => ({
+      stateManager: s.stateManager,
+      players: s.players,
+    })),
+  );
 
   const currentPlayer = stateManager.getPlayer(item.seat);
   const isPoisoned = currentPlayer?.isPoisoned ?? item.isPoisoned;
