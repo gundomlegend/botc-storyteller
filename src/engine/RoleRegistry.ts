@@ -214,7 +214,6 @@ export class RoleRegistry {
 
             const minPlayers = roleData.minPlayers ?? 0;
             if (minPlayers > 0 && playerCount < minPlayers) {
-                console.log(`[RoleFilter] 移除 ${roleId}（需要 ${minPlayers} 人，當前 ${playerCount} 人）`);
                 return false; // 不符合最小玩家數量要求
             }
 
@@ -302,7 +301,6 @@ export class RoleRegistry {
                 finalDistribution.townsfolk -= townfolkReduction;
                 finalDistribution.outsiders += townfolkReduction;
 
-                console.log(`[Baron] 男爵生效：鎮民 ${baseDistribution.townsfolk} → ${finalDistribution.townsfolk}，外來者 ${baseDistribution.outsiders} → ${finalDistribution.outsiders}`);
             }
         }
 
